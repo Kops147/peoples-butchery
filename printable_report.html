@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Peoples — Full Business & Technical Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --gold: #e8a020;
+            --black: #000000;
+            --muted: #555555;
+            --border: #dddddd;
+            --font-head: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            line-height: 1.5;
+            color: #111;
+            margin: 0;
+            padding: 0;
+            background: #e0e0e0;
+        }
+
+        .no-print {
+            padding: 15px 30px;
+            background: #111;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-print {
+            background: var(--gold);
+            color: #000;
+            border: none;
+            padding: 10px 25px;
+            font-weight: 900;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .report-page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 30px auto;
+            background: white;
+            padding: 25mm;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-break {
+            page-break-after: always;
+            margin-bottom: 50px;
+        }
+
+        .section-break:last-child {
+            page-break-after: auto;
+        }
+
+        /* Typography */
+        h1 {
+            font-family: var(--font-head);
+            font-weight: 900;
+            font-size: 2.5rem;
+            color: var(--black);
+            border-bottom: 4px solid var(--gold);
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+
+        h2 {
+            font-family: var(--font-head);
+            font-weight: 800;
+            font-size: 1.8rem;
+            color: var(--gold);
+            margin-top: 35px;
+            border-left: 6px solid var(--gold);
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 1.3rem;
+            margin-top: 25px;
+            color: #333;
+        }
+
+        p,
+        li {
+            font-size: 11.5pt;
+            color: #222;
+            margin-bottom: 12px;
+        }
+
+        strong {
+            font-weight: 700;
+            color: #000;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: #f2f2f2;
+            text-align: left;
+            font-weight: 800;
+            border-bottom: 2px solid var(--black);
+            padding: 12px;
+            font-size: 10.5pt;
+        }
+
+        td {
+            border-bottom: 1px solid var(--border);
+            padding: 12px;
+            font-size: 10.5pt;
+        }
+
+        /* Alerts */
+        .alert {
+            background: #fffdf5;
+            border: 1px solid #f0e6c0;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 25px 0;
+        }
+
+        .alert-title {
+            font-weight: 900;
+            color: #856404;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* Title Page */
+        .title-hero {
+            text-align: center;
+            padding-top: 100px;
+        }
+
+        .logo-box {
+            height: 100px;
+            margin-bottom: 50px;
+        }
+
+        .hero-main {
+            font-family: var(--font-head);
+            font-weight: 900;
+            font-size: 4rem;
+            margin: 0;
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+
+        .hero-sub {
+            font-size: 1.8rem;
+            color: var(--muted);
+            margin-top: 15px;
+        }
+
+        .hero-footer {
+            margin-top: 200px;
+            text-align: left;
+            border-top: 2px solid #eee;
+            padding-top: 30px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            .report-page {
+                width: 100%;
+                margin: 0;
+                padding: 20mm;
+                box-shadow: none;
+                border: none;
+            }
+
+            .section-break {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="no-print">
+        <div style="font-family:var(--font-head);font-weight:900;">DOLF & KOPS <span style="color:var(--gold)">MASTER
+                SUITE</span></div>
+        <button class="btn-print" onclick="window.print()">🖨️ PRINT COMPLETE DOCUMENTATION</button>
+    </div>
+
+    <!-- PAGE 1: TITLE PAGE -->
+    <div class="report-page section-break">
+        <div class="title-hero">
+            <img src="assets/img/dk-logo.png" alt="Logo" class="logo-box"
+                onerror="this.src='https://via.placeholder.com/200x100?text=DOLF+%26+KOPS'">
+            <div class="hero-main">The Peoples<br>BUTCHERY</div>
+            <div class="hero-sub">Autonomous Business Transformation</div>
+
+            <div class="hero-footer">
+                <p><strong>CLIENT:</strong> The Peoples Management (East Lynne, Pretoria)</p>
+                <p><strong>PROVIDER:</strong> DOLF & KOPS Solutions</p>
+                <p><strong>PHASE:</strong> Final Presentation & Handover</p>
+                <p><strong>DATE:</strong> April 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: PROJECT PROPOSAL -->
+    <div class="report-page section-break" id="doc-proposal">
+        <h1>1. PROJECT PROPOSAL</h1>
+        <p><strong>Prepared by DOLF & KOPS Solutions</strong></p>
+
+        <h2>Executive Summary</h2>
+        <p>The Peoples Butchery is set to become the first <strong>Autonomous Meat Market</strong> in East Lynne. By
+            integrating ultra-lean logistics with artificial intelligence, we are moving beyond "online ordering" into a
+            self-managing operation. <strong>DOLF & KOPS Solutions</strong> provides the software, the AI brain, and the
+            high-performance delivery hardware required to dominate the local market.</p>
+
+        <h2>The "Irrefutable" Value Proposition</h2>
+        <p>You already have the hardware (Tablets/Admin PC). We bring the intellect. Our system doesn't just take
+            orders; it manages your business.</p>
+        <ul>
+            <li><strong>Autonomous Agent</strong>: An AI that monitors your kitchen and dispatch. It "cooks,"
+                "packages," and "dispatches" digitally, alerting you only when an action is required.</li>
+            <li><strong>Zero Placeholder Inventory</strong>: We track raw material in <strong>kilograms (kg)</strong>.
+                When a customer buys a "Cooked Meal," the AI automatically deducts the raw meat used from your
+                inventory.</li>
+            <li><strong>Advanced Geofencing</strong>: No more guessing delivery fees. Our system calculates the exact
+                price per km using satellite geocoding, ensuring every delivery is profitable.</li>
+        </ul>
+
+        <h2>High-Performance Logistics</h2>
+        <p>Traditional delivery uses standard cars (too expensive) or basic motorbikes (high maintenance). <strong>DOLF
+                & KOPS Solutions</strong> has engineered custom <strong>2-Stroke Delivery Bicycles</strong>.</p>
+        <ul>
+            <li><strong>Agile</strong>: Perfect for Pretoria's traffic and side-streets.</li>
+            <li><strong>Cost-Effective</strong>: Massive fuel savings compared to 4-stroke engines or cars.</li>
+            <li><strong>Reliable</strong>: Built and maintained locally by DOLF & KOPS.</li>
+        </ul>
+
+        <h2>Community & Sponsorship (The Peoples Gives Back)</h2>
+        <p>The Peoples Butchery isn't just a business; it's a pillar of East Lynne. Our platform includes a dedicated
+            <strong>Community Sponsorship Hub</strong> powered by DOLF & KOPS AI.
+        </p>
+        <ul>
+            <li><strong>Automated Social Impact</strong>: A portion of every online order can be diverted to local
+                community initiatives.</li>
+            <li><strong>Public Sponsorship Portal</strong>: Community leaders can apply for sponsorship directly through
+                the website.</li>
+            <li><strong>DOLF & KOPS Partnership</strong>: We facilitate the logistics of "The Peoples Gives Back"
+                programs using our 2-stroke delivery fleet.</li>
+        </ul>
+
+        <div class="alert">
+            <span class="alert-title">💡 THE D&K EDGE</span>
+            We provide 24/7 technical oversight of the AI Engine. If your stock is running low, the AI tells us; we tell
+            you. We handle the complexity so you can focus on the meat and the community.
+        </div>
+    </div>
+
+    <!-- PAGE 3: FINANCIAL MODEL -->
+    <div class="report-page section-break" id="doc-financials">
+        <h1>2. FINANCIAL MODEL</h1>
+        <p><strong>Investment Tiers & Operational Projections</strong></p>
+
+        <h2>Digital Infrastructure Options</h2>
+        <p>We provide two distinct investment models to suit your growth strategy. Both models leverage your existing
+            hardware.</p>
+
+        <h3>Option A: The "Premium Management" Plan</h3>
+        <p><em>Best for established operations seeking fixed costs.</em></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Cost</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Setup Fee</strong></td>
+                    <td>R25,000</td>
+                    <td>Full software deployment, AI training, and initial setup.</td>
+                </tr>
+                <tr>
+                    <td><strong>Monthly Management</strong></td>
+                    <td>R2,850 /mo</td>
+                    <td>Hosting, Domain, AI Engine Fees, and 24/7 Support.</td>
+                </tr>
+                <tr>
+                    <td><strong>Order Commission</strong></td>
+                    <td>0%</td>
+                    <td>All online revenue is yours.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Option B: The "Scaling Partnership" Plan</h3>
+        <p><em>Best for aggressive growth with shared risk.</em></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Cost</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Setup Fee</strong></td>
+                    <td>R8,500</td>
+                    <td>Discounted setup for early partners.</td>
+                </tr>
+                <tr>
+                    <td><strong>Monthly Management</strong></td>
+                    <td>R1,200 /mo</td>
+                    <td>Base technical fee for hosting and uptime.</td>
+                </tr>
+                <tr>
+                    <td><strong>Order Commission</strong></td>
+                    <td>2.5%</td>
+                    <td>Percentage of online order total.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Projected Operational Costs (Opex)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Expense</th>
+                    <th>Estimated Cost</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Software Maintenance</td>
+                    <td>R1,200 - R2,850</td>
+                    <td>Depending on Plan choice.</td>
+                </tr>
+                <tr>
+                    <td>Fuel (per Bike)</td>
+                    <td>R650 - R900</td>
+                    <td>High-efficiency 2-stroke bikes.</td>
+                </tr>
+                <tr>
+                    <td>Geocoding API Credits</td>
+                    <td>R150</td>
+                    <td>Approx. 500 deliveries.</td>
+                </tr>
+                <tr>
+                    <td>Community Fund</td>
+                    <td>1.0% of Revenue</td>
+                    <td>Automated community pledge.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGE 4-5: OPERATIONS MANUAL (THE ADMIN SECTION) -->
+    <div class="report-page section-break" id="doc-manual">
+        <h1>3. MASTER OPERATIONS GUIDE</h1>
+        <p><strong>The Peoples Autonomous Admin Portal Manual</strong></p>
+
+        <h2>The Command Center (Overview Dashboard)</h2>
+        <p>The moment you log in, you are presented with real-time business metrics.</p>
+        <ul>
+            <li><strong>Metric Tiles</strong>: Instantly view Total Customers, Total Revenue, and Pending Orders.</li>
+            <li><strong>AI Today</strong>: Shows orders placed within the last 24 hours that the AI is currently
+                managing.</li>
+            <li><strong>Recent Order Stream</strong>: A live list of the most recent orders. Use the Status Quick-Select
+                to manually override any AI decision.</li>
+        </ul>
+
+        <h2>Advanced Inventory & AI Stock Prediction ⚖️</h2>
+        <p>Located in the "Inventory (kg)" tab, this is the most critical part of your operation.</p>
+        <ul>
+            <li><strong>Weight-Based Accuracy</strong>: Track individual cuts to the tenth of a kilogram (0.1kg).</li>
+            <li><strong>The AI "Low Stock" Warning</strong>: When stock hits the Min Level, the system highlights the
+                row in <strong>Red</strong>.</li>
+            <li><strong>Self-Deducting Menu</strong>: When a meal is sold, the AI automatically deducts the raw meat
+                used from stock.</li>
+            <li><strong>Add Stock</strong>: Enter the kg amount and hit +. The AI instantly recalculates your "Days
+                Left" estimate.</li>
+        </ul>
+
+        <h2>AI Business Intelligence & Forecasting 📊</h2>
+        <p>The "AI Reports" tab provides data traditionally unavailable to local butcheries.</p>
+        <ul>
+            <li><strong>Revenue Forecast</strong>: The AI predicts your total revenue for the next 30 days based on
+                growth velocity.</li>
+            <li><strong>Stock Depletion AI</strong>: Provides an estimate of exactly <strong>how many days of stock
+                    remain</strong> for every item.</li>
+            <li><strong>CLV (Customer Lifetime Value)</strong>: Identify your VIP patriots who spend the most over time.
+            </li>
+        </ul>
+
+        <h2>Autonomous Dispatch & Order Management 📦</h2>
+        <p>Traditional butcheries waste time calling drivers. Our AI handles the logistics.</p>
+        <ul>
+            <li><strong>Granular Tracking</strong>: Orders move from Pending → Braai → Packaging → Dispatched →
+                Delivered.</li>
+            <li><strong>Escalation Protocol</strong>: If an order stays Pending for too long, a <strong>⚠ AI
+                    Escalated</strong> badge appears.</li>
+        </ul>
+
+        <h2>Financial & Credit System 💳</h2>
+        <p>The Peoples is a Credit-First butchery to prevent payment friction.</p>
+        <ul>
+            <li><strong>Lookup by REF</strong>: Find customers via their unique ID (e.g., NL-2024-0001).</li>
+            <li><strong>One-Click Credit</strong>: Enter deposit amounts and notes easily.</li>
+            <li><strong>Audit Log</strong>: Every transaction is logged with timestamps and admin names for
+                accountability.</li>
+        </ul>
+
+        <h2>Troubleshooting & AI FAQ</h2>
+        <p><strong>Q: Can I stop the AI from automatically moving an order?</strong><br>A: Yes. Manually changing a
+            status hands over full control for that order.</p>
+        <p><strong>Q: What happens if the internet goes down?</strong><br>A: Local-first processing keeps your current
+            session data safe.</p>
+        <p><strong>Q: How accurate is the "Days Left" prediction?</strong><br>A: The AI requires 7 days of sales data to
+            become highly accurate.</p>
+
+        <div class="alert">
+            <span class="alert-title">⚠ SAFETY NOTICE</span>
+            Admin sessions automatically expire for security. Lock your terminal during shift changes.
+        </div>
+    </div>
+
+    <!-- PAGE 6: TECHNICAL STACK & SPECS -->
+    <div class="report-page section-break" id="doc-tech">
+        <h1>4. TECHNICAL SPECIFICATIONS</h1>
+
+        <h2>System Technology Stack</h2>
+        <table>
+            <tr>
+                <td><strong>Frontend</strong></td>
+                <td>Vanilla HTML5, CSS3, JavaScript (ES6+).</td>
+            </tr>
+            <tr>
+                <td><strong>Analytics</strong></td>
+                <td>Chart.js Business Intelligence Framework.</td>
+            </tr>
+            <tr>
+                <td><strong>Inventory</strong></td>
+                <td>Precision KG weight-based deduction logic.</td>
+            </tr>
+            <tr>
+                <td><strong>Dispatch</strong></td>
+                <td>Autonomous AI Geofencing & Dispatcher.</td>
+            </tr>
+        </table>
+
+        <h2>DOLF & KOPS 2-STROKE FLEET</h2>
+        <ul>
+            <li><strong>Engine</strong>: 80cc High-Torque variant (tuned for local terrain).</li>
+            <li><strong>Max Speed</strong>: 45 km/h (Governed for fuel efficiency).</li>
+            <li><strong>Consumption</strong>: ~1.8L / 100km.</li>
+            <li><strong>Cargo</strong>: Thermal-insulated crates for hot delivery.</li>
+            <li><strong>Lease Pricing</strong>: R1,850/mo (Full Maintenance included).</li>
+            <li><strong>Purchase Price</strong>: R10,000 per unit.</li>
+        </ul>
+
+        <h2>Community Hub Features</h2>
+        <p>Manage community applications and automated giving logs via the integrated Sponsorship Triage portal.</p>
+    </div>
+
+    <!-- PAGE 7: FINAL SUMMARY -->
+    <div class="report-page" id="doc-summary">
+        <h1>5. PROJECT SUMMARY</h1>
+        <p><strong>End-to-End Autonomous Solution</strong></p>
+
+        <h2>Final Benchmarks</h2>
+        <ul>
+            <li><strong>User Engagement</strong>: AI-driven loyalty and referral points system.</li>
+            <li><strong>Operational Efficiency</strong>: Automated stock tracking and BI forecasting.</li>
+            <li><strong>Logistical Excellence</strong>: Custom 2-stroke fleet with optimized route geofencing.</li>
+            <li><strong>Community Integration</strong>: Real-time sponsorship hub and giving fund triage.</li>
+        </ul>
+
+        <div style="margin-top:200px; text-align:center; border-top:1px solid #ccc; padding-top:20px;">
+            <p><strong>The Peoples Butchery is now open for autonomous business.</strong></p>
+            <p style="color:var(--muted); font-size:0.9rem;">Powered by DOLF & KOPS Solutions — Engineering the Future
+                of Commerce.</p>
+        </div>
+    </div>
+
+</body>
+
+</html>

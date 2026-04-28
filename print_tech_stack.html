@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Print: Tech Stack & Full Features — The Peoples Butchery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #111;
+            padding: 25mm;
+            max-width: 210mm;
+            margin: auto;
+            background: white;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            color: #000;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            border-bottom: 5px solid #e8a020;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: #e8a020;
+            margin-top: 30px;
+            border-left: 5px solid #e8a020;
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin-top: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .logo {
+            height: 80px;
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .btn-print {
+            background: #e8a020;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 800;
+            cursor: pointer;
+            float: right;
+        }
+
+        @media print {
+            .btn-print {
+                display: none;
+            }
+
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="btn-print" onclick="window.print()">🖨️ Print Detailed Tech Stack</button>
+    <img src="assets/img/dk-logo.png" alt="D&K" class="logo"
+        onerror="this.src='https://via.placeholder.com/200x80?text=DOLF+%26+KOPS'">
+    <h1>TECHNICAL STACK & FEATURES</h1>
+    <p><strong>Prepared by DOLF & KOPS Solutions</strong><br>Underlying Architecture & Business Logic — April 2026</p>
+
+    <p>This document outlines the underlying technology and advanced feature set that powers the The Peoples Autonomous
+        Butchery ecosystem.</p>
+
+    <h2>1. Technical Stack</h2>
+    <p>The platform is designed for high reliability and local-first data integrity.</p>
+    <ul>
+        <li><strong>Frontend</strong>: Vanilla HTML5, CSS3, and JavaScript (ES6+).</li>
+        <li><strong>Styling</strong>: Premium custom CSS with a focus on dark-mode aesthetics and glassmorphism.</li>
+        <li><strong>Data Layer</strong>: Local-First <em>localStorage</em> architecture with AI-ready JSON schemas.</li>
+        <li><strong>Analytics Engine</strong>: <strong>Chart.js</strong> for real-time Business Intelligence (BI)
+            rendering.</li>
+        <li><strong>AI Logic</strong>: Custom-built <strong>Autonomous Engine</strong> for order state-machine
+            management and stock prediction.</li>
+    </ul>
+
+    <h2>2. Core Business Features</h2>
+
+    <h3>⚖️ Precision Inventory (kg)</h3>
+    <p>Unlike standard e-commerce systems that track "units," the The Peoples system tracks raw inventory in
+        <strong>kilograms (kg)</strong>.</p>
+    <ul>
+        <li><strong>Auto-Deduction</strong>: The system deducts the exact meat weight from stock whenever a "Cooked
+            Meal" or "Raw Cut" is sold.</li>
+        <li><strong>Stock Depletion AI</strong>: Predicts the exact number of days remaining for each product cut based
+            on rolling sales averages.</li>
+    </ul>
+
+    <h3>📍 AI Geofencing & Logistics</h3>
+    <ul>
+        <li><strong>Geocoding Integration</strong>: Calculates delivery fees dynamically based on the customer's precise
+            geolocation.</li>
+        <li><strong>Autonomous Dispatch</strong>: The AI Agent automatically assigns orders to the <strong>2-stroke
+                delivery fleet</strong> once packaging is complete.</li>
+        <li><strong>Order Tracking</strong>: Customers can see the exact status (Braai, Packaging, Dispatched) in
+            real-time.</li>
+    </ul>
+
+    <h3>💳 Financial & Loyalty Core</h3>
+    <ul>
+        <li><strong>Credit-Based Transactions</strong>: Secure REF-based account funding to minimize payment friction.
+        </li>
+        <li><strong>Loyalty Points</strong>: Automated point accumulation (R100 = 10 pts) and one-click redemption.</li>
+        <li><strong>Referral Engine</strong>: Incentivized community growth via unique referral links linked to the
+            loyalty system.</li>
+    </ul>
+
+    <h2>3. Community Sponsorship Hub</h2>
+    <ul>
+        <li><strong>Integration</strong>: A public-facing sponsorship application portal.</li>
+        <li><strong>AI Triage</strong>: Incoming requests are automatically categorized by the AI for management review.
+        </li>
+        <li><strong>Giving Fund</strong>: Automated tracking of the 1% revenue pledge for local East Lynne initiatives.
+        </li>
+    </ul>
+
+    <p style="text-align:center; margin-top:50px; color:#666; font-size:0.8rem;">DOLF & KOPS Solutions: Engineering
+        Advanced Local Commerce.</p>
+</body>
+
+</html>

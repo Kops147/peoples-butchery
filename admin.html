@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal — The Peoples Butchery</title>
+  <meta name="description"
+    content="The Peoples Butchery admin portal — manage orders, credit customers, and update products.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <style>
+    body {
+      background: var(--bg-base);
+      margin: 0;
+      padding: 0;
+    }
+
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      background: var(--gold-glow);
+      border: 1px solid rgba(232, 160, 32, 0.3);
+      color: var(--gold);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .credit-form-card {
+      max-width: 560px;
+    }
+
+    .credit-user-info {
+      min-height: 80px;
+    }
+
+    .order-filter-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    #admin-orders-tbody tr {
+      vertical-align: top;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Mobile Top Bar -->
+  <div class="mobile-topbar">
+    <div class="brand-name">The Peoples <span style="color:var(--gold)">Admin</span></div>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Product Modal -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="product-modal-title">Add New Product</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="product-form">
+          <input type="hidden" id="prod-id">
+          <div class="form-group">
+            <label class="form-label">Product Name *</label>
+            <input type="text" id="prod-name" class="form-control" placeholder="e.g. T-Bone Steak" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <select id="prod-category" class="form-control">
+                <option value="raw">🥩 Raw Meat</option>
+                <option value="cooked">🍽️ Cooked Meal (with Pap)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (R) *</label>
+              <input type="number" id="prod-price" class="form-control" placeholder="89" min="0" step="0.01" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unit *</label>
+            <input type="text" id="prod-unit" class="form-control" placeholder="per kg / per plate / per 500g">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="prod-desc" class="form-control" rows="2" placeholder="Brief product description"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Image URL</label>
+            <input type="url" id="prod-image" class="form-control" placeholder="https://...">
+            <div class="form-hint">Leave blank to use default image</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="display:flex;align-items:center;gap:10px">
+              <input type="checkbox" id="prod-is-special" style="width:20px;height:20px">
+              <label class="form-label" style="margin-bottom:0">On Special?</label>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Discount Price (R)</label>
+              <input type="number" id="prod-discount" class="form-control" placeholder="e.g. 75" step="0.01">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full mt-2">Save Product</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Layout -->
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="navbar-brand">
+          <div class="brand-logo">NB</div>
+          <span class="brand-name">The Peoples <span>Butchery</span></span>
+        </a>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar gold">A</div>
+        <div>
+          <div class="user-name" id="admin-name">Admin</div>
+          <div><span class="admin-badge">⚙️ Admin Portal</span></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Dashboard</div>
+        <a class="sidebar-link active" data-tab="overview">
+          <span class="link-icon">📊</span> Overview
+        </a>
+        <a class="sidebar-link" data-tab="credit">
+          <span class="link-icon">💳</span> Credit Customers
+        </a>
+        <a class="sidebar-link" data-tab="orders">
+          <span class="link-icon">📦</span> All Orders
+        </a>
+        <div class="sidebar-section-label">Manage</div>
+        <a class="sidebar-link" data-tab="inventory">
+          <span class="link-icon">⚖️</span> Inventory (kg)
+        </a>
+        <a class="sidebar-link" data-tab="products">
+          <span class="link-icon">🥩</span> Products
+        </a>
+        <a class="sidebar-link" data-tab="reports">
+          <span class="link-icon">📊</span> AI Reports
+        </a>
+        <a class="sidebar-link" data-tab="customers">
+          <span class="link-icon">👥</span> Customers
+        </a>
+        <div class="sidebar-section-label">Staff Portals</div>
+        <a href="kitchen.html" class="sidebar-link" target="_blank">
+          <span class="link-icon">🍳</span> Kitchen Feed
+        </a>
+        <a href="butcher.html" class="sidebar-link" target="_blank">
+          <span class="link-icon">🥩</span> Butcher Station
+        </a>
+        <a href="cashier.html" class="sidebar-link" target="_blank">
+          <span class="link-icon">💰</span> Cashier Verification
+        </a>
+        <a href="dispatch.html" class="sidebar-link" target="_blank">
+          <span class="link-icon">🚚</span> Dispatch Control
+        </a>
+        <div class="sidebar-section-label">System</div>
+        <a class="sidebar-link" data-tab="settings">
+          <span class="link-icon">⚙️</span> yType Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div style="padding:12px;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px">
+          📍 76 Meeu St, East Lynne, Pretoria
+        </div>
+        <button class="sidebar-link btn-full" id="logout-btn" style="color:var(--error)">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- ── OVERVIEW TAB ── -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="page-header">
+          <div class="page-title">Admin Overview</div>
+          <div class="page-subtitle">The Peoples Butchery real-time business summary</div>
+        </div>
+        <div class="grid-4 mb-6">
+          <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div class="stat-value" id="stat-customers">0</div>
+            <div class="stat-label">Registered Customers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">📦</div>
+            <div class="stat-value" id="stat-orders">0</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon gold">💰</div>
+            <div class="stat-value text-gold" id="stat-revenue">R0.00</div>
+            <div class="stat-label">Total Revenue</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--warning-bg);color:var(--warning)">⏳</div>
+            <div class="stat-value" id="stat-pending">0</div>
+            <div class="stat-label">Pending Orders</div>
+          </div>
+        </div>
+        <div class="stat-card mb-6" style="display:flex;align-items:center;gap:16px;padding:20px">
+          <div style="font-size:2rem">📅</div>
+          <div>
+            <div style="color:var(--text-secondary);font-size:0.82rem">Today's Orders</div>
+            <div style="font-family:var(--font-head);font-weight:800;font-size:2rem" id="stat-today">0</div>
+          </div>
+        </div>
+        <!-- Recent Orders Quick View -->
+        <div class="card">
+          <div class="card-header">
+            <h3>📋 Recent Orders</h3>
+            <button class="btn btn-outline btn-sm" onclick="document.querySelector('[data-tab=orders]').click()">View
+              All</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Update Status</th>
+                </tr>
+              </thead>
+              <tbody id="admin-recent-orders">
+                <tr>
+                  <td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CREDIT TAB ── -->
+      <div class="tab-content" id="tab-credit">
+        <div class="page-header">
+          <div class="page-title">Credit Customers</div>
+          <div class="page-subtitle">Add credit to a customer's account using their unique REF number.</div>
+        </div>
+        <div class="grid-2" style="align-items:start">
+          <div class="card credit-form-card">
+            <div class="card-header">
+              <h3>🔍 Find Customer by REF</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Customer REF Number</label>
+                <div style="display:flex;gap:10px">
+                  <input type="text" id="credit-ref" class="form-control" placeholder="e.g. NL-2024-A3F7"
+                    style="text-transform:uppercase;font-family:var(--font-head);font-weight:700;letter-spacing:2px">
+                  <button class="btn btn-primary" id="lookup-user-btn">🔍 Find</button>
+                </div>
+              </div>
+              <div class="credit-user-info mb-4" id="credit-user-info">
+                <div class="alert alert-info">Enter a REF number and click Find to load customer details.</div>
+              </div>
+              <form id="credit-form">
+                <input type="hidden" id="credit-user-id">
+                <div class="form-group">
+                  <label class="form-label">Amount to Credit (R) *</label>
+                  <div class="input-group">
+                    <span class="input-icon">💰</span>
+                    <input type="number" id="credit-amount" class="form-control" placeholder="e.g. 500" min="1"
+                      step="0.01">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Note (optional)</label>
+                  <input type="text" id="credit-note" class="form-control" placeholder="e.g. Cash deposit R500">
+                </div>
+                <button type="submit" class="btn btn-gold btn-full btn-lg">💳 Credit Customer Account</button>
+              </form>
+            </div>
+          </div>
+          <div>
+            <div class="card mb-4">
+              <div class="card-header">
+                <h3>📋 Recent Credits</h3>
+              </div>
+              <div class="card-body" style="padding:0">
+                <div class="table-wrap" style="border:none;border-radius:0">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>REF</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody id="recent-credits-tbody">
+                      <tr>
+                        <td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">No credits added
+                          yet</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-warning">
+              ⚠️ <strong>Important:</strong> Credit transactions are irreversible. Always verify the customer's identity
+              and REF number before adding credit.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ORDERS TAB ── -->
+      <div class="tab-content" id="tab-orders">
+        <div class="page-header flex-between" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="page-title">All Orders</div>
+            <div class="page-subtitle">View and manage customer orders.</div>
+          </div>
+        </div>
+        <div class="order-filter-bar">
+          <span style="font-size:0.85rem;color:var(--text-secondary)">Filter:</span>
+          <select id="order-status-filter" class="form-control" style="width:auto;padding:8px 16px">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="delivering">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="collected">Collected</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Update</th>
+              </tr>
+            </thead>
+            <tbody id="admin-orders-tbody">
+              <tr>
+                <td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Loading orders...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── INVENTORY TAB ── -->
+      <div class="tab-content" id="tab-inventory">
+        <div class="page-header">
+          <div class="page-title">Inventory Management</div>
+          <div class="page-subtitle">Track and update stock in kilograms (kg) for raw meats and cooked materials.</div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Unit</th>
+                  <th>Current Stock</th>
+                  <th>Min Level</th>
+                  <th>Status</th>
+                  <th>Add Stock</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PRODUCTS TAB ── -->
+      <div class="tab-content" id="tab-products">
+        <div class="page-header flex-between" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="page-title">Products</div>
+            <div class="page-subtitle">Manage your meat products and meals.</div>
+          </div>
+          <button class="btn btn-primary" id="add-product-btn">+ Add New Product</button>
+        </div>
+        <div id="admin-products-list">
+          <div style="text-align:center;color:var(--text-muted);padding:40px">Loading products...</div>
+        </div>
+      </div>
+
+      <!-- ── AI REPORTS TAB ── -->
+      <div class="tab-content" id="tab-reports">
+        <div class="page-header">
+          <div class="page-title">AI Projections & Reports</div>
+          <div class="page-subtitle">Autonomous financial forecasting and stock depletion estimates.</div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>💰 Revenue Forecast (Next 7 Days)</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="height:250px">
+                <canvas id="chart-revenue"></canvas>
+              </div>
+              <div style="font-size:2.5rem;font-weight:900;color:var(--gold);margin-top:20px" id="rep-projected-income">
+                R0.00</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">Projected total revenue based on
+                growth velocity.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>⚖️ Stock Levels (kg)</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="height:250px">
+                <canvas id="chart-inventory"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CUSTOMERS TAB ── -->
+      <div class="tab-content" id="tab-customers">
+        <div class="page-header flex-between" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="page-title">Customers</div>
+            <div class="page-subtitle">All registered The Peoples Butchery customers.</div>
+          </div>
+          <div class="search-wrap" style="max-width:280px">
+            <input type="text" id="customer-search" class="form-control" placeholder="🔍 Search customers..."
+              style="padding-left:16px">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>REF Number</th>
+                <th>Phone</th>
+                <th>Balance</th>
+                <th>Orders</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody id="customers-tbody">
+              <tr>
+                <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Loading customers...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS TAB ── -->
+      <div class="tab-content" id="tab-settings">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="page-title">yType — Automate iT Pricing</div>
+            <div class="page-subtitle">Configure your platform automation models and service fees.</div>
+          </div>
+          <svg width="160" height="44" viewBox="0 0 160 44">
+            <rect width="160" height="44" rx="6" fill="#0A0A0A"/>
+            <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
+            <text x="12" y="40" font-family="Arial" font-size="10" fill="#666">Automate iT</text>
+            <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
+          </svg>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>💎 Option A: Premium Fixed</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Setup Fee (R)</label>
+                <input type="number" id="setting-opt-a-setup" class="form-control" value="25000">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Monthly Management (R)</label>
+                <input type="number" id="setting-opt-a-monthly" class="form-control" value="2850">
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>🚀 Option B: Scaling Partnership</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Setup Fee (R)</label>
+                <input type="number" id="setting-opt-b-setup" class="form-control" value="8500">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Monthly Management (R)</label>
+                <input type="number" id="setting-opt-b-monthly" class="form-control" value="1200">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Order Commission (%)</label>
+                <input type="number" id="setting-opt-b-comm" class="form-control" value="2.5" step="0.1">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-end mt-4">
+          <button class="btn btn-primary" id="save-settings-btn">💾 Save Pricing Configurations</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    // Populate recent credits from live API after admin data loads
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(async () => {
+        const tbody = document.getElementById('recent-credits-tbody');
+        if (!tbody) return;
+        try {
+          const txns = await API.get('/admin/transactions');
+          const credits = txns.filter(t => t.type === 'deposit').slice(0, 8);
+          if (credits.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">No credits yet</td></tr>`;
+            return;
+          }
+          tbody.innerHTML = credits.map(t => `<tr>
+            <td>${t.user_name || '—'}</td>
+            <td style="color:var(--gold);font-family:var(--font-head);font-weight:700;letter-spacing:1px">${t.ref_number || '—'}</td>
+            <td class="text-success font-bold">+${formatCurrency(t.amount)}</td>
+            <td style="font-size:0.78rem;color:var(--text-muted)">${formatDateShort(t.created_at)}</td>
+          </tr>`).join('');
+        } catch {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">No credits yet</td></tr>`;
+        }
+      }, 500);
+    });
+  </script>
+</body>
+
+</html>

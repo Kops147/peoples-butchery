@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Print: Full Tech Specs — D&K 2-Stroke Fleet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #111;
+            padding: 25mm;
+            max-width: 210mm;
+            margin: auto;
+            background: white;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            color: #000;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            border-bottom: 5px solid #e8a020;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: #e8a020;
+            margin-top: 30px;
+            border-left: 5px solid #e8a020;
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin-top: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .logo {
+            height: 80px;
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .btn-print {
+            background: #e8a020;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 800;
+            cursor: pointer;
+            float: right;
+        }
+
+        .alert {
+            background: #fffcf0;
+            border: 1px solid #ffe9a6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .alert strong {
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            color: #856404;
+        }
+
+        @media print {
+            .btn-print {
+                display: none;
+            }
+
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="btn-print" onclick="window.print()">🖨️ Print Detailed Specs</button>
+    <img src="assets/img/dk-logo.png" alt="D&K" class="logo"
+        onerror="this.src='https://via.placeholder.com/200x80?text=DOLF+%26+KOPS'">
+    <h1>TECHNICAL SPECIFICATIONS</h1>
+    <p><strong>DOLF & KOPS Custom 2-Stroke Delivery Fleet</strong><br>Engineering Precision for Urban Pretoria — April
+        2026</p>
+
+    <p>At <strong>DOLF & KOPS Solutions</strong>, we don't just build software—we engineer the hardware that makes local
+        delivery sustainable. Our custom-built, high-torque 2-stroke delivery bicycles are the backbone of the The
+        Peoples delivery network.</p>
+
+    <h2>1. Engine & Performance</h2>
+    <ul>
+        <li><strong>Engine Type</strong>: Single-cylinder, 2-stroke, air-cooled.</li>
+        <li><strong>Displacement</strong>: 80cc High-Torque variant (tuned for hill-climbing in Pretoria).</li>
+        <li><strong>Max Speed</strong>: 45 km/h (Governed for safety and fuel efficiency).</li>
+        <li><strong>Fuel Ratio</strong>: 20:1 during break-in / 40:1 standard operations.</li>
+        <li><strong>Consumption</strong>: ~1.8L / 100km (Highly optimized).</li>
+    </ul>
+
+    <h2>2. Load & Cargo</h2>
+    <ul>
+        <li><strong>Payload Capacity</strong>: Up to 35kg (Reinforced rear rack).</li>
+        <li><strong>Thermal Insulation</strong>: Cargo boxes come standard with reflective heat lining to keep The
+            Peoples cooked meals at serving temperature.</li>
+        <li><strong>Reinforced Frame</strong>: Dual-gusseted steel frames designed for 100+ delivery cycles per week.
+        </li>
+    </ul>
+
+    <h2>3. The "Autonomous" Connection</h2>
+    <p>Every bike is equipped with a <strong>DOLF & KOPS Telemetry Unit</strong> that connects to the shop's AI Engine.
+    </p>
+    <ul>
+        <li><strong>Route Optimization</strong>: The AI calculates the fastest route for the 2-stroke engine, avoiding
+            unnecessary steep inclines.</li>
+        <li><strong>Dispatch Pulse</strong>: The bike’s unit "pulses" when the AI marks an order as <em>Dispatched</em>,
+            notifying the rider instantly.</li>
+    </ul>
+
+    <h2>4. Maintenance Protocol (Full Service Lease Only)</h2>
+    <p>For partners on the <strong>Managed Fleet Lease</strong>, DOLF & KOPS handles all maintenance:</p>
+    <ol>
+        <li><strong>Weekly Tuning</strong>: Carburetor cleaning and spark plug check.</li>
+        <li><strong>Bi-Weekly Chain Care</strong>: Tensioning and lubrication.</li>
+        <li><strong>Monthly Overhaul</strong>: Full engine inspection and carbon removal.</li>
+        <li><strong>On-Call Support</strong>: Mobile fix units available for breakdown support between 08:00 - 18:00
+            daily.</li>
+    </ol>
+
+    <div class="alert">
+        <strong>💡 WHY 2-STROKE?</strong>
+        Simple maintenance, high torque-to-weight ratio, and immediate power delivery make it the most efficient way to
+        get Boerewors & Pap to a doorstep while it's still hot.
+    </div>
+
+    <p style="text-align:center; margin-top:50px; color:#666; font-size:0.8rem;">© 2026 DOLF & KOPS Solutions.
+        Engineering The Future of Hardware.</p>
+</body>
+
+</html>

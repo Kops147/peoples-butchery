@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account — The Peoples Butchery Dashboard</title>
+  <meta name="description"
+    content="Manage your The Peoples Butchery account, view orders, add credit and update your profile.">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      background: var(--bg-base);
+      margin: 0;
+      padding: 0;
+    }
+
+    .orders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Transaction history table specific */
+    .txn-empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Mobile Top Bar -->
+  <div class="mobile-topbar">
+    <div class="brand-name">The Peoples <span style="color:var(--gold)">Butchery</span></div>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- App Layout -->
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="navbar-brand">
+          <div class="brand-logo">NB</div>
+          <span class="brand-name">The Peoples <span>Butchery</span></span>
+        </a>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">Loading...</div>
+          <div class="user-role" id="sb-ref"
+            style="color:var(--gold);font-family:var(--font-head);font-weight:700;font-size:0.8rem;letter-spacing:1px">—
+          </div>
+        </div>
+      </div>
+      <!-- Balance Widget -->
+      <div class="sidebar-balance">
+        <div class="balance-label">💰 Credit Balance</div>
+        <div class="balance-amount" id="sb-balance">R0.00</div>
+        <a href="#" class="btn btn-gold btn-sm btn-full mt-3"
+          onclick="document.querySelector('[data-tab=credits]').click()">+ Add Credit</a>
+      </div>
+      <!-- Nav Links -->
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Menu</div>
+        <a class="sidebar-link active" data-tab="overview">
+          <span class="link-icon">📊</span> Overview
+        </a>
+        <a class="sidebar-link" href="shop.html">
+          <span class="link-icon">🛒</span> Shop Now
+        </a>
+        <a class="sidebar-link" data-tab="orders">
+          <span class="link-icon">📦</span> My Orders
+        </a>
+
+        <a class="sidebar-link" data-tab="credits">
+          <span class="link-icon">💳</span> Add Credit
+        </a>
+        <a class="sidebar-link" data-tab="transactions">
+          <span class="link-icon">📋</span> Transactions
+        </a>
+        <div class="sidebar-section-label">Account</div>
+        <a class="sidebar-link" data-tab="profile">
+          <span class="link-icon">👤</span> Profile
+        </a>
+        <a class="sidebar-link" data-tab="security">
+          <span class="link-icon">🔒</span> Security
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-link btn-full" id="logout-btn" style="color:var(--error)">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- ── OVERVIEW TAB ── -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="page-header">
+          <div class="page-title">Dashboard Overview</div>
+          <div class="page-subtitle">Welcome back! Here's your account summary.</div>
+        </div>
+        <!-- Stats -->
+        <div class="grid-4 mb-6">
+          <div class="stat-card">
+            <div class="stat-icon gold">💰</div>
+            <div class="stat-value text-gold" id="ov-balance">R0.00</div>
+            <div class="stat-label">Credit Balance</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">📦</div>
+            <div class="stat-value" id="ov-total-orders">0</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">🚗</div>
+            <div class="stat-value" id="ov-active-orders">0</div>
+            <div class="stat-label">Active Orders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">🏷️</div>
+            <div class="stat-value text-gold" style="font-size:1.3rem;letter-spacing:2px" id="ov-ref">—</div>
+            <div class="stat-label">Your REF Number</div>
+          </div>
+        </div>
+        <!-- REF Card -->
+        <div class="card mb-6">
+          <div class="card-header">
+            <h3>📬 Your Credit REF Number</h3>
+          </div>
+          <div class="card-body">
+            <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:20px">
+              To add credit to your account, deposit cash or EFT to the shop and provide your REF number to the admin.
+              They will credit your account.
+            </p>
+            <div class="ref-card">
+              <div class="ref-label">Your Unique REF Number</div>
+              <div class="ref-number" id="dash-ref-number">—</div>
+              <button class="btn btn-outline btn-sm ref-copy mt-3" id="copy-ref-btn"
+                onclick="copyToClipboard(document.getElementById('dash-ref-number').textContent, this)">📋 Copy
+                REF</button>
+            </div>
+            <div class="alert alert-info mt-4">
+              ℹ️ <strong>How to add credit:</strong> Visit or call The Peoples Butchery at 76 Meeu St, East Lynne. Make
+              a deposit and give them your REF number: <strong id="inline-ref">—</strong>. Your balance will be updated.
+            </div>
+          </div>
+        </div>
+        <!-- Recent Orders -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🕐 Recent Orders</h3>
+            <a class="sidebar-link btn-sm" data-tab="orders"
+              onclick="document.querySelector('[data-tab=orders]').click()"
+              style="font-size:0.82rem;color:var(--primary)">View all →</a>
+          </div>
+          <div class="card-body">
+            <div class="orders-list" id="ov-recent-orders">
+              <div style="text-align:center;color:var(--text-muted);padding:30px">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ORDERS TAB ── -->
+      <div class="tab-content" id="tab-orders">
+        <div class="page-header">
+          <div class="page-title">My Orders</div>
+          <div class="page-subtitle">All your past and current orders.</div>
+        </div>
+        <div class="orders-list"></div>
+      </div>
+
+
+
+      <!-- ── ADD CREDIT TAB ── -->
+      <div class="tab-content" id="tab-credits">
+        <div class="page-header">
+          <div class="page-title">Add Credit</div>
+          <div class="page-subtitle">Top up your The Peoples account to continue ordering.</div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>💳 How to Add Credit</h3>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:20px">
+                <div style="display:flex;gap:14px;align-items:flex-start">
+                  <div class="step-num" style="width:36px;height:36px;font-size:0.9rem;flex-shrink:0">1</div>
+                  <div>
+                    <div style="font-weight:600;margin-bottom:4px">Copy Your REF Number</div>
+                    <p style="font-size:0.85rem;color:var(--text-secondary)">Your unique reference number identifies
+                      your account. Copy it or write it down.</p>
+                  </div>
+                </div>
+                <div style="display:flex;gap:14px;align-items:flex-start">
+                  <div class="step-num" style="width:36px;height:36px;font-size:0.9rem;flex-shrink:0">2</div>
+                  <div>
+                    <div style="font-weight:600;margin-bottom:4px">Make a Deposit</div>
+                    <p style="font-size:0.85rem;color:var(--text-secondary)">Visit The Peoples Butchery at 76 Meeu St,
+                      East Lynne OR call us on 012 345 6789 to arrange payment.</p>
+                  </div>
+                </div>
+                <div style="display:flex;gap:14px;align-items:flex-start">
+                  <div class="step-num gold" style="width:36px;height:36px;font-size:0.9rem;flex-shrink:0">3</div>
+                  <div>
+                    <div style="font-weight:600;margin-bottom:4px">Give Your REF</div>
+                    <p style="font-size:0.85rem;color:var(--text-secondary)">Tell the admin your REF number. They will
+                      credit your account from the admin portal.</p>
+                  </div>
+                </div>
+                <div style="display:flex;gap:14px;align-items:flex-start">
+                  <div class="step-num gold" style="width:36px;height:36px;font-size:0.9rem;flex-shrink:0">4</div>
+                  <div>
+                    <div style="font-weight:600;margin-bottom:4px">Balance Updated!</div>
+                    <p style="font-size:0.85rem;color:var(--text-secondary)">Refresh your dashboard and your credit
+                      balance will be updated. You can now shop!</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="ref-card mb-6">
+              <div class="ref-label">Your REF Number</div>
+              <div class="ref-number" id="credit-ref-display">—</div>
+              <button class="btn btn-outline btn-sm mt-3" id="copy-ref-credit-btn">📋 Copy REF Number</button>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon gold">💰</div>
+              <div class="stat-value text-gold" id="credit-current-balance">R0.00</div>
+              <div class="stat-label">Current Balance</div>
+              <div class="divider"></div>
+              <div style="font-size:0.82rem;color:var(--text-secondary)">Credit is non-refundable. Used to pay for
+                orders at checkout.</div>
+            </div>
+            <div class="alert alert-info mt-4">
+              📞 Call us: <strong>012 345 6789</strong><br>
+              📍 Visit: 76 Meeu St, East Lynne, Pretoria
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TRANSACTIONS TAB ── -->
+      <div class="tab-content" id="tab-transactions">
+        <div class="page-header">
+          <div class="page-title">Credit Transactions</div>
+          <div class="page-subtitle">History of all credit added to your account.</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount Credited</th>
+                <th>Note</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="txn-tbody">
+              <tr>
+                <td colspan="4" class="txn-empty">No transactions yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PROFILE TAB ── -->
+      <div class="tab-content" id="tab-profile">
+        <div class="page-header">
+          <div class="page-title">My Profile</div>
+          <div class="page-subtitle">Update your personal and delivery information.</div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>👤 Personal Information</h3>
+            </div>
+            <div class="card-body">
+              <form id="profile-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input id="pf-name" type="text" class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input id="pf-surname" type="text" class="form-control">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input id="pf-email" type="email" class="form-control" readonly
+                    style="opacity:0.6;cursor:not-allowed">
+                  <div class="form-hint">Email cannot be changed</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Phone Number</label>
+                  <input id="pf-phone" type="tel" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Suburb / Area</label>
+                  <input id="pf-suburb" type="text" class="form-control" placeholder="e.g. Silverton">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Delivery Address</label>
+                  <textarea id="pf-address" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="delivery-estimate hidden" id="delivery-fee-estimate-box">
+                  🚗 Estimated delivery fee: <strong id="delivery-fee-preview">—</strong>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full mt-4" id="save-profile-btn">Save Changes</button>
+              </form>
+            </div>
+          </div>
+          <div>
+            <div class="stat-card mb-6">
+              <div class="stat-icon red">🏷️</div>
+              <div
+                style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:4px">
+                Your REF Number</div>
+              <div
+                style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;letter-spacing:3px;color:var(--gold)"
+                id="pf-ref-display">—</div>
+              <div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px">Use this to add credit via the admin
+              </div>
+            </div>
+            <div class="alert alert-warning">
+              ⚠️ If you update your address, your delivery fee will be recalculated automatically.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECURITY TAB ── -->
+      <div class="tab-content" id="tab-security">
+        <div class="page-header">
+          <div class="page-title">Security</div>
+          <div class="page-subtitle">Change your account password.</div>
+        </div>
+        <div class="card" style="max-width:480px">
+          <div class="card-header">
+            <h3>🔒 Change Password</h3>
+          </div>
+          <div class="card-body">
+            <form id="password-form">
+              <div class="form-group">
+                <label class="form-label">Current Password</label>
+                <input type="password" id="pw-current" class="form-control" placeholder="Enter current password">
+              </div>
+              <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" id="pw-new" class="form-control" placeholder="Min 6 characters">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" id="pw-confirm" class="form-control" placeholder="Repeat new password">
+              </div>
+              <button type="submit" class="btn btn-primary btn-full">Update Password</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+      <footer class="footer" style="padding:40px 0;border-top:1px solid var(--border);text-align:center;background:var(--bg-card);margin-top:60px">
+        <div class="container">
+          <div class="footer-support-links" style="display:flex;justify-content:center;gap:24px;margin-bottom:30px;font-size:0.85rem">
+            <a href="https://wa.me/27790534865" target="_blank" style="color:var(--text-secondary);text-decoration:none;transition:var(--transition)">💬 WhatsApp Support</a>
+            <a href="#" onclick="toggleAIChat(); return false;" style="color:var(--text-secondary);text-decoration:none;transition:var(--transition)">🤖 Live AI Support</a>
+          </div>
+          <div class="sponsor-brand animate-fade-in" style="flex-direction:column;gap:12px;display:flex;align-items:center">
+            <span style="font-size:0.7rem;color:var(--text-muted);letter-spacing:1.5px">POWERED BY</span>
+            <svg width="160" height="44" viewBox="0 0 160 44">
+              <rect width="160" height="44" rx="6" fill="#0A0A0A"/>
+              <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
+              <text x="12" y="40" font-family="Arial" font-size="10" fill="#666">Automate iT</text>
+              <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
+            </svg>
+          </div>
+          <p style="margin-top:20px;font-size:0.8rem;color:var(--text-muted)">&copy; 2026 The Peoples Butchery. All rights reserved.</p>
+        </div>
+      </footer>
+
+      <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script>
+    // Extra DOM-based setup after dashboard.js loads
+    document.addEventListener('DOMContentLoaded', () => {
+      // Populate REF in multiple places
+      setTimeout(() => {
+        const user = Auth.getCurrentUser();
+        if (!user) return;
+        ['dash-ref-number', 'credit-ref-display', 'pf-ref-display', 'inline-ref'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = user.refNumber;
+        });
+        document.getElementById('credit-current-balance').textContent = formatCurrency(user.creditBalance);
+        const copyBtn = document.getElementById('copy-ref-credit-btn');
+        if (copyBtn) copyBtn.addEventListener('click', () => copyToClipboard(user.refNumber, copyBtn));
+
+        // Show delivery fee estimate on profile tab
+        if (user.coordinates) {
+          const fee = calcDeliveryFee(user.coordinates);
+          const box = document.getElementById('delivery-fee-estimate-box');
+          const feeEl = document.getElementById('delivery-fee-preview');
+          if (box && feeEl) {
+            box.classList.remove('hidden');
+            feeEl.textContent = fee === 0 ? 'R0.00' : `R${fee.toFixed(2)}`;
+          }
+        }
+      }, 100);
+    });
+  </script>
+</body>
+
+</html>

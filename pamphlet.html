@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Peoples Butchery - Pamphlet Flyer</title>
+  <style>
+    /* Reset & Page Settings */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    @page {
+      size: A5;
+      margin: 0;
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background-color: #2a2a2a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    /* Print styling */
+    @media print {
+      body {
+        background-color: white;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Pamphlet Container */
+    .pamphlet-container {
+      position: relative;
+      width: 148mm;
+      height: 210mm;
+      background-image: url('assets/img/pamflet.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      background-color: #111;
+    }
+
+    .overlay-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.85) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px 20px 20px;
+      color: white;
+      text-align: center;
+    }
+
+    /* Header / Brand */
+    .brand-header h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      line-height: 1.1;
+      letter-spacing: 2px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.9);
+      margin-bottom: 5px;
+    }
+    .brand-header .gold-text {
+      color: #e8a020;
+    }
+
+    /* Middle Spacer */
+    .spacer {
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Bottom Area */
+    .bottom-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    .qr-container {
+      background: white;
+      padding: 10px;
+      border-radius: 12px;
+      display: inline-block;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      border: 3px solid #e8a020;
+      margin-bottom: 8px;
+    }
+    .qr-code {
+      width: 160px;
+      height: 160px;
+      display: block;
+    }
+    .qr-label {
+      font-size: 1.25rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+      letter-spacing: 1px;
+    }
+    .qr-sublabel {
+      font-size: 1.05rem;
+      color: #e8a020;
+      font-weight: 700;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+      margin-top: 3px;
+      margin-bottom: 8px;
+    }
+    
+    /* New Contact Info at BOTTOM */
+    .contact-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .contact-phone {
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+    }
+    .contact-address {
+      font-size: 0.85rem;
+      color: #e0e0e0;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+    }
+
+    /* Print overlay controls */
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+    .btn {
+      background: #e8a020;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .btn:hover {
+      background: #f1b340;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- UI Controls (hidden when printing) -->
+  <div class="controls no-print">
+    <button class="btn" onclick="window.print()">🖨️ Print Pamphlet</button>
+  </div>
+
+  <div class="pamphlet-container">
+    <div class="overlay-gradient">
+      
+      <!-- Top Branding ONLY -->
+      <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div class="brand-header">
+          <h1 class="gold-text">The Peoples</h1>
+          <h1>Butchery</h1>
+        </div>
+      </div>
+
+      <!-- Transparent spacer so the cow/background is visible -->
+      <div class="spacer"></div>
+
+      <!-- Stack everything at the bottom -->
+      <div class="bottom-section">
+        <div class="qr-container">
+          <!-- URL encoded QR targeting the homepage -->
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://thepeoplesbutchery.co.za&margin=0" alt="QR Code" class="qr-code">
+        </div>
+        
+        <div class="qr-label">Scan To Order Online</div>
+        <div class="qr-sublabel">www.thepeoplesbutchery.co.za</div>
+        
+        <div class="contact-info">
+          <div class="contact-phone">💬 072 241 9751 (Call / WhatsApp)</div>
+          <div class="contact-address">📍 76 Meeu Street, East Lynne 0186</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

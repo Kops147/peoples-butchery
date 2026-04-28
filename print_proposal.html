@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Print: Full Project Proposal — The Peoples Butchery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #111;
+            padding: 25mm;
+            max-width: 210mm;
+            margin: auto;
+            background: white;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            color: #000;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            border-bottom: 5px solid #e8a020;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: #e8a020;
+            margin-top: 30px;
+            border-left: 5px solid #e8a020;
+            padding-left: 15px;
+        }
+
+        .logo {
+            height: 80px;
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .btn-print {
+            background: #e8a020;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 800;
+            cursor: pointer;
+            float: right;
+        }
+
+        .alert {
+            background: #fffcf0;
+            border: 1px solid #ffe9a6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .alert strong {
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            color: #856404;
+        }
+
+        @media print {
+            .btn-print {
+                display: none;
+            }
+
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="btn-print" onclick="window.print()">🖨️ Print Detailed Proposal</button>
+    <img src="assets/img/dk-logo.png" alt="D&K" class="logo"
+        onerror="this.src='https://via.placeholder.com/200x80?text=DOLF+%26+KOPS'">
+    <h1>PROJECT PROPOSAL</h1>
+    <p><strong>The Peoples Autonomous Meat Market — Transformation Plan</strong><br>April 2026</p>
+
+    <h2>Executive Summary</h2>
+    <p>The Peoples Butchery is set to become the first <strong>Autonomous Meat Market</strong> in East Lynne. By
+        integrating ultra-lean logistics with artificial intelligence, we are moving beyond "online ordering" into a
+        self-managing operation. <strong>DOLF & KOPS Solutions</strong> provides the software, the AI brain, and the
+        high-performance delivery hardware required to dominate the local market.</p>
+
+    <h2>The "Irrefutable" Value Proposition</h2>
+    <p>You already have the hardware (Tablets/Admin PC). We bring the intellect. Our system doesn't just take orders; it
+        manages your business.</p>
+    <ul>
+        <li><strong>Autonomous Agent</strong>: An AI that monitors your kitchen and dispatch. It "cooks," "packages,"
+            and "dispatches" digitally, alerting you only when an action is required or if an SLA is breached.</li>
+        <li><strong>Zero Placeholder Inventory</strong>: We track raw material in <strong>kilograms (kg)</strong>. When
+            a customer buys a "Cooked Meal," the AI automatically deducts the raw meat used from your inventory.</li>
+        <li><strong>Advanced Geofencing</strong>: No more guessing delivery fees. Our system calculates the exact price
+            per km using satellite geocoding, ensuring every delivery is profitable.</li>
+    </ul>
+
+    <h2>High-Performance Logistics</h2>
+    <p>Traditional delivery uses standard cars (too expensive) or basic motorbikes (high maintenance). <strong>DOLF &
+            KOPS Solutions</strong> has engineered custom <strong>2-Stroke Delivery Bicycles</strong>.</p>
+    <ul>
+        <li><strong>Agile</strong>: Perfect for Pretoria's traffic and side-streets.</li>
+        <li><strong>Cost-Effective</strong>: Massive fuel savings compared to 4-stroke engines or cars.</li>
+        <li><strong>Reliable</strong>: Built and maintained locally by DOLF & KOPS.</li>
+    </ul>
+
+    <h2>Community & Sponsorship</h2>
+    <p>The Peoples Butchery isn't just a business; it's a pillar of East Lynne. Our platform includes a dedicated
+        <strong>Community Sponsorship Hub</strong> powered by DOLF & KOPS AI.</p>
+    <ul>
+        <li><strong>Automated Social Impact</strong>: A portion of every online order can be diverted to local community
+            initiatives (sports clubs, feeding schemes).</li>
+        <li><strong>Public Sponsorship Portal</strong>: Community leaders can apply for sponsorship directly through the
+            website.</li>
+        <li><strong>DOLF & KOPS Partnership</strong>: We facilitate the logistics of "The Peoples Gives Back" programs
+            using our 2-stroke delivery fleet.</li>
+    </ul>
+
+    <div class="alert">
+        <strong>💡 THE DOLF & KOPS EDGE</strong>
+        We provide 24/7 technical oversight of the AI Engine. If your stock is running low, the AI tells us; we tell
+        you. We handle the complexity so you can focus on the meat and the community.
+    </div>
+
+    <p style="text-align:center; margin-top:50px; color:#666; font-size:0.8rem;">DOLF & KOPS Solutions: Engineering the
+        Future of Local Commerce.</p>
+</body>
+
+</html>

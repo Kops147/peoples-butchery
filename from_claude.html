@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Peoples Butchery — Fresh Meat, Delivered to Your Door | East Lynne, Pretoria</title>
+    <meta name="description"
+        content="The Peoples Butchery offers premium raw cuts and traditional South African cooked meals with pap. Order online and get delivery to your door in Pretoria. Located at 76 Meeu St, East Lynne.">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <style>
+        /* ── Index-specific ── */
+        .hero {
+            padding-top: var(--navbar-h);
+        }
+
+        .hero-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 60px;
+            padding: 80px 0;
+        }
+
+        @media(max-width:900px) {
+            .hero-inner {
+                grid-template-columns: 1fr;
+                gap: 40px;
+                padding: 60px 0;
+            }
+        }
+
+        .hero-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .hero-ctas {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 32px;
+        }
+
+        .hero-img-wrap {
+            position: relative;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero-img-wrap img {
+            width: 100%;
+            height: 480px;
+            object-fit: cover;
+        }
+
+        .hero-img-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(8, 8, 8, 0.6) 0%, transparent 50%);
+        }
+
+        .hero-img-badge {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* LOGO in navbar */
+        .brand-logo-img {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .brand-logo-svg {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        @media(max-width:768px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 32px 28px;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            border-color: rgba(192, 57, 43, 0.3);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+
+        .feature-title {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media(max-width:600px) {
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .category-card {
+            position: relative;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            height: 320px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .category-card:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .category-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .category-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(8, 8, 8, 0.85) 0%, rgba(8, 8, 8, 0.2) 60%, transparent 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 28px;
+        }
+
+        .how-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 32px;
+        }
+
+        @media(max-width:900px) {
+            .how-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media(max-width:500px) {
+            .how-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .address-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        @media(max-width:768px) {
+            .address-card {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        .hours-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .hours-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .hours-row:last-child {
+            border-bottom: none;
+        }
+
+        .hours-open {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .map-placeholder {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-lg);
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .float-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            border-radius: var(--radius-full);
+            background: rgba(8, 8, 8, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .promo-strip {
+            background: linear-gradient(135deg, var(--primary), #8b1a13);
+            padding: 14px 0;
+            text-align: center;
+            font-family: var(--font-head);
+            font-weight: 600;
+            font-size: 0.88rem;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media(max-width:768px) {
+            .testimonial-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+        }
+
+        .stars {
+            color: var(--gold);
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+
+        .testimonial-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .testimonial-author {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        /* ── yType footer logo ── */
+        .ytype-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #0A0A0A;
+            border: 1px solid rgba(61, 214, 140, 0.2);
+            border-radius: 8px;
+            padding: 8px 14px;
+            text-decoration: none;
+        }
+
+        .ytype-wordmark {
+            line-height: 1;
+        }
+
+        .ytype-wordmark-main {
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            color: #3DD68C;
+            display: block;
+        }
+
+        .ytype-wordmark-sub {
+            font-family: Arial, sans-serif;
+            font-size: 9px;
+            color: #666;
+            display: block;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ── Logo image in navbar ── */
+        .navbar-brand-img {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .navbar-brand-img .brand-name {
+            font-family: var(--font-head);
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .navbar-brand-img .brand-name span {
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toast-container"></div>
+
+    <!-- Promo Strip -->
+    <div class="promo-strip">
+        🥩 R5/km delivery · Order online, we deliver to your door · 📍 76 Meeu St, Pretoria
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" role="navigation">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-brand-img">
+                <!-- Logo: cow + crossed cleavers, fire background -->
+                <svg class="brand-logo-svg" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="fireBg" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#E8700A" />
+                            <stop offset="60%" stop-color="#C0390A" />
+                            <stop offset="100%" stop-color="#1a0500" />
+                        </radialGradient>
+                    </defs>
+                    <rect width="38" height="38" rx="8" fill="url(#fireBg)" />
+                    <!-- crossed cleavers simplified -->
+                    <line x1="8" y1="28" x2="30" y2="10" stroke="#d0d0d0" stroke-width="3" stroke-linecap="round" />
+                    <line x1="30" y1="28" x2="8" y2="10" stroke="#d0d0d0" stroke-width="3" stroke-linecap="round" />
+                    <!-- cow head circle -->
+                    <circle cx="19" cy="17" r="7" fill="#1a0800" stroke="#d0d0d0" stroke-width="1" />
+                    <text x="19" y="21" text-anchor="middle" font-size="8" fill="white">🐄</text>
+                </svg>
+                <span class="brand-name">The Peoples <span>Butchery</span></span>
+            </a>
+            <ul class="navbar-nav" id="nav-menu">
+                <li><a href="index.html" class="nav-link active">Home</a></li>
+                <li><a href="shop.html" class="nav-link">Shop</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <a href="shop.html" class="btn btn-outline btn-sm" id="nav-login-btn">Login / Register</a>
+                <a href="dashboard.html" class="btn btn-primary btn-sm hidden" id="nav-dash-btn">My Account</a>
+                <a href="shop.html" class="btn btn-gold btn-sm">Order Now</a>
+                <button class="hamburger" id="hamburger" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="hero-grid"></div>
+            <div class="hero-noise"></div>
+            <div class="hero-bg-img"
+                style="background-image:url('https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=1800&h=900&fit=crop')">
+            </div>
+        </div>
+        <div class="hero-content container">
+            <div class="hero-inner">
+                <div>
+                    <div class="hero-badges">
+                        <div class="hero-eyebrow">🔥 East Lynne, Pretoria</div>
+                    </div>
+                    <h1 class="heading-xl">
+                        Premium Meat,<br>
+                        <span class="gradient-text">Delivered Fresh</span><br>
+                        To Your Door
+                    </h1>
+                    <p class="mt-6"
+                        style="font-size:1.05rem;color:var(--text-secondary);max-width:480px;line-height:1.75">
+                        The Peoples Butchery brings you the finest raw cuts and traditional South African cooked meals —
+                        boerewors,
+                        oxtail, lamb and more — right to your home. Fresh daily, always quality.
+                    </p>
+                    <div class="hero-ctas">
+                        <a href="shop.html" class="btn btn-primary btn-lg">🛒 Shop Now</a>
+                        <a href="register.html" class="btn btn-outline btn-lg">Create Account</a>
+                    </div>
+                    <div class="flex gap-4 mt-6" style="flex-wrap:wrap">
+                        <div class="float-badge">
+                            <div class="pulse-dot"></div>Open Today
+                        </div>
+                        <div class="float-badge">🚗 Delivery from R15</div>
+                        <div class="float-badge">🏪 Collect Available</div>
+                    </div>
+                </div>
+                <div class="hero-img-wrap animate-float">
+                    <img src="https://images.unsplash.com/photo-1558030006-450675393462?w=800&h=600&fit=crop"
+                        alt="Premium The Peoples Butchery meats">
+                    <div class="hero-img-overlay"></div>
+                    <div class="hero-img-badge">
+                        <div style="font-size:2rem">🥩</div>
+                        <div>
+                            <div style="font-family:var(--font-head);font-weight:700;font-size:0.95rem">Fresh Daily
+                            </div>
+                            <div style="font-size:0.78rem;color:var(--text-secondary)">150+ products available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="about">
+        <div class="container">
+            <div style="text-align:center;margin-bottom:48px">
+                <div class="section-label">🏆 Why The Peoples?</div>
+                <h2 class="heading-lg">Quality You Can <span class="gradient-text">Taste</span></h2>
+                <p class="mt-4 text-muted" style="max-width:540px;margin:16px auto 0">We're East Lynne's newest
+                    butchery,
+                    combining traditional South African meat culture with the convenience of online ordering.</p>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🥩</div>
+                    <div class="feature-title">Premium Cuts</div>
+                    <div class="feature-desc">Sourced fresh every morning. T-bones, lamb chops, boerewors, chicken — all
+                        top
+                        quality. No compromise.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🍽️</div>
+                    <div class="feature-title">Cooked Meals with Pap</div>
+                    <div class="feature-desc">From oxtail stew to grilled boerewors — our cooked meals come with smooth
+                        pap, ready
+                        to eat.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚗</div>
+                    <div class="feature-title">Home Delivery</div>
+                    <div class="feature-desc">We deliver straight to your door. Free within 5km, just R5/km beyond that.
+                        Fast and
+                        reliable.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="section-sm"
+        style="background:var(--bg-surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <div class="container">
+            <div style="text-align:center;margin-bottom:40px">
+                <div class="section-label">🛒 Browse</div>
+                <h2 class="heading-lg">What We <span class="gradient-text">Offer</span></h2>
+            </div>
+            <div class="categories-grid">
+                <a href="shop.html?filter=raw" class="category-card">
+                    <img src="https://images.unsplash.com/photo-1544025162-d76694265947?w=700&h=500&fit=crop"
+                        alt="Raw Meats">
+                    <div class="category-overlay">
+                        <span class="hero-tag">🥩 Raw Cuts</span>
+                        <h3 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;margin-top:8px">Raw
+                            Meats</h3>
+                        <p style="color:rgba(255,255,255,0.7);font-size:0.9rem;margin-top:6px">T-bones, boerewors, lamb,
+                            chicken &
+                            more</p>
+                        <div class="btn btn-outline btn-sm mt-3" style="display:inline-flex;width:auto;margin-top:12px">
+                            Shop Raw →
+                        </div>
+                    </div>
+                </a>
+                <a href="shop.html?filter=cooked" class="category-card">
+                    <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=700&h=500&fit=crop"
+                        alt="Cooked Meals with Pap">
+                    <div class="category-overlay">
+                        <span class="badge badge-gold">🍽️ Meals</span>
+                        <h3 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;margin-top:8px">Cooked
+                            Meals</h3>
+                        <p style="color:rgba(255,255,255,0.7);font-size:0.9rem;margin-top:6px">Served with pap — oxtail,
+                            boerewors &
+                            more</p>
+                        <div class="btn btn-gold btn-sm mt-3" style="display:inline-flex;width:auto;margin-top:12px">
+                            Order Meal →
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="section" id="how-it-works">
+        <div class="container">
+            <div style="text-align:center;margin-bottom:48px">
+                <div class="section-label">📋 Simple Process</div>
+                <h2 class="heading-lg">How It <span class="gradient-text">Works</span></h2>
+                <p class="text-muted mt-4" style="max-width:500px;margin:16px auto 0">Get fresh meat at your door in 4
+                    simple
+                    steps.</p>
+            </div>
+            <div class="how-grid">
+                <div class="how-step">
+                    <div class="step-num">1</div>
+                    <h3 class="heading-sm mt-3">Register</h3>
+                    <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.6;margin-top:6px">Create your
+                        account
+                        with your address and contact details. You'll receive a unique REF number.</p>
+                </div>
+                <div class="how-step">
+                    <div class="step-num gold">2</div>
+                    <h3 class="heading-sm mt-3">Add Credit</h3>
+                    <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.6;margin-top:6px">Deposit to
+                        the shop
+                        and give the admin your REF number. They'll credit your account instantly.</p>
+                </div>
+                <div class="how-step">
+                    <div class="step-num">3</div>
+                    <h3 class="heading-sm mt-3">Order Online</h3>
+                    <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.6;margin-top:6px">Browse raw
+                        meats and
+                        cooked meals. Add to cart and checkout — payment deducted from your balance.</p>
+                </div>
+                <div class="how-step">
+                    <div class="step-num gold">4</div>
+                    <h3 class="heading-sm mt-3">Deliver or Collect</h3>
+                    <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.6;margin-top:6px">We deliver
+                        to you
+                        (free within 5km, R5/km beyond) or you collect from us at the shop.</p>
+                </div>
+            </div>
+            <div style="text-align:center;margin-top:48px">
+                <a href="register.html" class="btn btn-primary btn-lg">Get Started — It's Free</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Delivery Info -->
+    <section class="section-sm"
+        style="background:var(--bg-surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <div class="container">
+            <div style="text-align:center;margin-bottom:32px">
+                <div class="section-label">🚗 Delivery</div>
+                <h2 class="heading-md">Simple & <span class="gradient-text">Transparent</span> Pricing</h2>
+            </div>
+            <div class="grid-2" style="max-width:700px;margin:0 auto">
+                <div class="stat-card" style="text-align:center">
+                    <div class="stat-icon green" style="margin:0 auto 12px">💵</div>
+                    <div class="stat-value text-success">FREE</div>
+                    <div class="stat-label">Within 5km of our store</div>
+                </div>
+                <div class="stat-card" style="text-align:center">
+                    <div class="stat-icon gold" style="margin:0 auto 12px">📍</div>
+                    <div class="stat-value text-gold">R5/km</div>
+                    <div class="stat-label">Beyond 5km (charged per km)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="section">
+        <div class="container">
+            <div style="text-align:center;margin-bottom:48px">
+                <div class="section-label">⭐ Reviews</div>
+                <h2 class="heading-lg">Happy <span class="gradient-text">Customers</span></h2>
+            </div>
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <div class="stars">⭐⭐⭐⭐⭐</div>
+                    <div class="testimonial-text">"The oxtail stew with pap was incredible — tastes just like gogo used
+                        to make.
+                        Delivery was fast and the meat was still hot!"</div>
+                    <div class="testimonial-author">Thandeka M. · East Lynne</div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="stars">⭐⭐⭐⭐⭐</div>
+                    <div class="testimonial-text">"Best boerewors in Pretoria, no debate. The credit system is so easy —
+                        just give
+                        them my REF and my balance is topped up. Love it."</div>
+                    <div class="testimonial-author">James K. · Silverton</div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="stars">⭐⭐⭐⭐⭐</div>
+                    <div class="testimonial-text">"Ordered lamb chops and T-bones last Friday. Quality was top notch and
+                        delivery
+                        was within 30 minutes. The Peoples is the real deal!"</div>
+                    <div class="testimonial-author">Sipho N. · Mamelodi</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Location & Hours -->
+    <section class="section-sm" id="contact" style="background:var(--bg-surface);border-top:1px solid var(--border)">
+        <div class="container">
+            <div style="text-align:center;margin-bottom:40px">
+                <div class="section-label">📍 Find Us</div>
+                <h2 class="heading-lg">Visit <span class="gradient-text">The Peoples Butchery</span></h2>
+            </div>
+            <div class="address-card">
+                <div>
+                    <div class="section-label" style="margin-bottom:20px">⏰ Trading Hours</div>
+                    <div class="hours-list">
+                        <div class="hours-row"><span>Monday – Friday</span><span class="hours-open">07:00 – 19:00</span>
+                        </div>
+                        <div class="hours-row"><span>Saturday</span><span class="hours-open">06:00 – 18:00</span></div>
+                        <div class="hours-row"><span>Sunday</span><span class="hours-open">08:00 – 15:00</span></div>
+                        <div class="hours-row"><span>Public Holidays</span><span style="color:var(--warning)">08:00 –
+                                14:00</span>
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="footer-info">
+                        <div class="footer-info-item"><span>📍</span><span>76 Meeu St, East Lynne, Pretoria, 0186</span>
+                        </div>
+                        <div class="footer-info-item"><span>📞</span><span>012 345 6789</span></div>
+                        <div class="footer-info-item"><span>📧</span><span>orders@thepeoplesbutchery.co.za</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="map-placeholder">
+                        <div style="font-size:3rem">🗺️</div>
+                        <div style="font-weight:600;color:var(--text-primary)">76 Meeu St, East Lynne</div>
+                        <div>Pretoria, Gauteng, 0186</div>
+                        <a href="https://www.google.com/maps/search/76+Meeu+St+East+Lynne+Pretoria" target="_blank"
+                            class="btn btn-outline btn-sm mt-3">Open in Maps →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section" style="background:linear-gradient(135deg, rgba(192,57,43,0.1), rgba(232,160,32,0.05))">
+        <div class="container" style="text-align:center">
+            <div class="section-label">🚀 Get Started</div>
+            <h2 class="heading-lg mt-4">Ready to Order? <span class="gradient-text">Join The Peoples</span></h2>
+            <p class="text-muted mt-4" style="max-width:400px;margin:16px auto 0;font-size:0.95rem">Register in minutes
+                and
+                enjoy premium butchery delivered to your door.</p>
+            <div class="flex-center gap-4 mt-6" style="flex-wrap:wrap">
+                <a href="register.html" class="btn btn-primary btn-lg">Create Free Account</a>
+                <a href="shop.html" class="btn btn-gold btn-lg">Browse Products</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Section -->
+    <section class="section animate-fade-in" style="background:var(--bg-card);border-top:1px solid var(--border)">
+        <div class="container" style="text-align:center">
+            <div class="badge-gold mb-3" style="display:inline-block">COMMUNITY FIRST</div>
+            <h2 class="title-lg mb-4">The Peoples Gives Back</h2>
+            <p style="max-width:700px;margin:0 auto 30px;color:var(--text-secondary)">
+                We believe in growing with our community. Whether it's supporting local sports, school events, or
+                community
+                feeding schemes, Neilo is always ready to lend a hand.
+            </p>
+            <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap">
+                <div class="card-glass p-6" style="flex:1;min-width:280px;max-width:350px">
+                    <div style="font-size:3rem;margin-bottom:15px">🤝</div>
+                    <h3 style="font-family:var(--font-head);font-weight:700;margin-bottom:10px">Apply for Sponsorship
+                    </h3>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px">Are you running a local
+                        initiative in
+                        East Lynne? We'd love to hear how we can support you.</p>
+                    <button class="btn btn-outline btn-full"
+                        onclick="document.getElementById('ai-chat-toggle').click(); setTimeout(() => { document.getElementById('chat-input').value = 'I want to apply for community sponsorship'; document.getElementById('chat-send').click(); }, 500)">Apply
+                        Now</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">
+                        <a href="index.html" class="navbar-brand-img" style="margin-bottom:12px">
+                            <!-- Logo SVG inline for footer -->
+                            <svg width="34" height="34" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"
+                                style="border-radius:7px">
+                                <defs>
+                                    <radialGradient id="fireBg2" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="#E8700A" />
+                                        <stop offset="60%" stop-color="#C0390A" />
+                                        <stop offset="100%" stop-color="#1a0500" />
+                                    </radialGradient>
+                                </defs>
+                                <rect width="38" height="38" rx="8" fill="url(#fireBg2)" />
+                                <line x1="8" y1="28" x2="30" y2="10" stroke="#d0d0d0" stroke-width="3"
+                                    stroke-linecap="round" />
+                                <line x1="30" y1="28" x2="8" y2="10" stroke="#d0d0d0" stroke-width="3"
+                                    stroke-linecap="round" />
+                                <circle cx="19" cy="17" r="7" fill="#1a0800" stroke="#d0d0d0" stroke-width="1" />
+                                <text x="19" y="21" text-anchor="middle" font-size="8" fill="white">🐄</text>
+                            </svg>
+                            <span class="brand-name">The Peoples <span>Butchery</span></span>
+                        </a>
+                    </div>
+                    <p class="footer-desc">East Lynne's premium butchery. Fresh raw cuts, traditional South African
+                        cooked meals
+                        with pap, and convenient home delivery.</p>
+                </div>
+                <div>
+                    <div class="footer-heading">Quick Links</div>
+                    <div class="footer-links">
+                        <a href="shop.html" class="footer-link">Shop Now</a>
+                        <a href="register.html" class="footer-link">Register</a>
+                        <a href="login.html" class="footer-link">Login</a>
+                        <a href="dashboard.html" class="footer-link">My Account</a>
+                    </div>
+                </div>
+                <div>
+                    <div class="footer-heading">Products</div>
+                    <div class="footer-links">
+                        <a href="shop.html?filter=raw" class="footer-link">Raw Cuts</a>
+                        <a href="shop.html?filter=cooked" class="footer-link">Cooked Meals</a>
+                        <a href="shop.html" class="footer-link">Boerewors</a>
+                        <a href="shop.html" class="footer-link">Braai Packs</a>
+                    </div>
+                </div>
+                <div>
+                    <div class="footer-heading">Find Us</div>
+                    <div class="footer-info">
+                        <div class="footer-info-item"><span>📍</span><span>76 Meeu St, East Lynne<br>Pretoria,
+                                0186</span></div>
+                        <div class="footer-info-item"><span>📞</span><span>012 345 6789</span></div>
+                        <div class="footer-info-item"><span>⏰</span><span>Mon–Fri: 07:00–19:00<br>Sat:
+                                06:00–18:00<br>Sun:
+                                08:00–15:00</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 The Peoples Butchery. All rights reserved.</p>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+                    <span style="font-size:0.7rem;color:var(--text-muted);letter-spacing:1.5px">TECHNOLOGY POWERED
+                        BY</span>
+                    <!-- yType Logo -->
+                    <a href="https://ytype.xyz" target="_blank" class="ytype-logo">
+                        <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="28" height="28" rx="6" fill="#0A0A0A" stroke="rgba(61,214,140,0.3)"
+                                stroke-width="1" />
+                            <!-- lightning bolt -->
+                            <polygon points="16,4 10,15 14,15 12,24 18,13 14,13" fill="#3DD68C" />
+                        </svg>
+                        <div class="ytype-wordmark">
+                            <span class="ytype-wordmark-main">yType</span>
+                            <span class="ytype-wordmark-sub">Automate iT</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="footer-bottom-links"></div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavbar();
+            if (Auth.isLoggedIn()) {
+                document.getElementById('nav-login-btn')?.classList.add('hidden');
+                document.getElementById('nav-dash-btn')?.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>
