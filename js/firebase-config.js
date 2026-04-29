@@ -1,17 +1,18 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
-// TODO: Replace the following with your app's Firebase project configuration
-// You can find these in your Firebase Console -> Project Settings
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD4IrpwEH7SSerMCIxXFdJhzqqZOBfMEWI",
+  authDomain: "the-peoples-butchery.firebaseapp.com",
+  projectId: "the-peoples-butchery",
+  storageBucket: "the-peoples-butchery.firebasestorage.app",
+  messagingSenderId: "963040282929",
+  appId: "1:963040282929:web:80f56e542f506d9d70c810",
+  measurementId: "G-D1E4NHKWGW"
 };
 
 // Initialize Firebase
@@ -20,3 +21,4 @@ const app = initializeApp(firebaseConfig);
 // Initialize Services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
