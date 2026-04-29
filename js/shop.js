@@ -4,6 +4,8 @@
 
 'use strict';
 
+import { saveOrderToFirebase } from './firebase-orders.js';
+
 // ── State ──────────────────────────────────────
 let cart = [];
 let apiProducts = [];
@@ -527,8 +529,12 @@ async function checkout() {
   }
 
   try {
-    await API.post('/orders', {
+    // Save order to Firebase
+    const orderId = await saveOrderToFirebase({
       items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
+      subtotal: subtotal,
+      deliveryFee: delivFee,
+      total: total,
       deliveryMethod,
       deliveryAddress: deliveryMethod === 'delivery'
         ? document.getElementById('delivery-addr-input')?.value
@@ -536,9 +542,24 @@ async function checkout() {
       deliveryCoordinates: deliveryCoords || null,
     });
 
+    // Also send to backend API if available (for legacy support)
+    try {
+      await API.post('/orders', {
+        firebaseId: orderId,
+        items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
+        deliveryMethod,
+        deliveryAddress: deliveryMethod === 'delivery'
+          ? document.getElementById('delivery-addr-input')?.value
+          : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
+        deliveryCoordinates: deliveryCoords || null,
+      });
+    } catch (apiErr) {
+      console.log('Backend API not available, order saved to Firebase only');
+    }
+
     clearCart();
     closeCart();
-    showToast('🎉 Order placed successfully!', 'success', 5000);
+    showToast('🎉 Order placed successfully! Order ID: ' + orderId, 'success', 5000);
     setTimeout(() => window.location.href = 'dashboard.html', 2000);
   } catch (err) {
     showToast('Order failed: ' + err.message, 'error', 6000);
