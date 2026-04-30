@@ -648,3 +648,9 @@ function updateNavAuth() {
   }
   logoutBtn?.addEventListener('click', () => Auth.logout());
 }
+
+// Expose functions to window for HTML inline event handlers
+window.addToCart = addToCart;
+window.updateQtyUI = updateQtyUI;
+window.toggleExtra = toggleExtra;
+window.removeItem = removeItem;
