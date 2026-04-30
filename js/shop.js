@@ -562,6 +562,25 @@ async function checkout() {
       deliveryCoordinates: deliveryCoords || null,
     });
 
+    // Save to local mock DB for the dashboards
+    DB.addOrder({
+      id: orderId,
+      userId: user.id,
+      name: user.name,
+      surname: user.surname,
+      email: user.email,
+      items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
+      subtotal: subtotal,
+      deliveryFee: delivFee,
+      total: total,
+      deliveryMethod,
+      deliveryAddress: deliveryMethod === 'delivery'
+        ? document.getElementById('delivery-addr-input')?.value
+        : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
+      status: 'pending',
+      created_at: new Date().toISOString()
+    });
+
     // Also send to backend API if available (for legacy support)
     try {
       await API.post('/orders', {
@@ -574,7 +593,7 @@ async function checkout() {
         deliveryCoordinates: deliveryCoords || null,
       });
     } catch (apiErr) {
-      console.log('Backend API not available, order saved to Firebase only');
+      console.log('Backend API not available, order saved to Firebase and Mock DB only');
     }
 
     clearCart();

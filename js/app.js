@@ -151,10 +151,105 @@ const Auth = {
   },
 };
 
-// ── API Helper ─────────────────────────────────
+// ── API Helper (Simulated Backend) ────────────────
 const API = {
   async request(path, options = {}) {
+    console.log(`[Mock API] ${options.method || 'GET'} ${path}`);
+    
+    // Simulate network delay
+    await new Promise(r => setTimeout(r, 300));
     const token = Auth.getToken();
+    const currentUser = Auth.getCurrentUser();
+    
+    // --- USERS ---
+    if (path === '/users/me' && options.method !== 'PUT') {
+      if (!currentUser) throw new Error('Not logged in');
+      return currentUser;
+    }
+    if (path === '/users/me' && options.method === 'PUT') {
+      const body = JSON.parse(options.body);
+      const updated = { ...currentUser, ...body };
+      DB.updateUser(updated);
+      Auth.login(updated, token);
+      return { user: updated };
+    }
+    if (path === '/users/me/transactions') {
+      if (!currentUser) throw new Error('Not logged in');
+      return DB.getUserTransactions(currentUser.id);
+    }
+    
+    // --- ADMIN ---
+    if (path === '/admin/stats') {
+      const orders = DB.getOrders();
+      return {
+        totalUsers: DB.getUsers().length,
+        totalOrders: orders.length,
+        totalRevenue: orders.reduce((sum, o) => sum + (o.total || 0), 0),
+        pendingOrders: orders.filter(o => o.status === 'pending').length
+      };
+    }
+    if (path === '/admin/orders') return DB.getOrders();
+    if (path === '/admin/users') return DB.getUsers();
+    if (path.match(/^\/admin\/orders\/([^/]+)\/status$/) && options.method === 'PUT') {
+      const id = path.split('/')[3];
+      const body = JSON.parse(options.body);
+      const order = DB.findOrderById(id);
+      if (order) {
+        order.status = body.status;
+        order.updatedAt = new Date().toISOString();
+        DB.updateOrder(order);
+      }
+      return { success: true };
+    }
+    if (path.match(/^\/admin\/users\/([^/]+)\/credit$/) && options.method === 'POST') {
+      const id = path.split('/')[3];
+      const body = JSON.parse(options.body);
+      const user = DB.findUserById(id);
+      if (!user) throw new Error('User not found');
+      user.credit_balance = (parseFloat(user.credit_balance) || 0) + parseFloat(body.amount);
+      DB.updateUser(user);
+      DB.addTransaction({
+        id: generateId('txn_'),
+        userId: user.id,
+        amount: body.amount,
+        type: 'credit',
+        notes: body.notes,
+        status: 'Completed',
+        created_at: new Date().toISOString()
+      });
+      return { user };
+    }
+    
+    // --- ORDERS ---
+    if (path === '/orders' && (!options.method || options.method === 'GET')) {
+      if (!currentUser) throw new Error('Not logged in');
+      return DB.getUserOrders(currentUser.id);
+    }
+    
+    // --- PRODUCTS ---
+    if (path === '/products' && (!options.method || options.method === 'GET')) {
+      return DB.getProducts();
+    }
+    if (path === '/products' && options.method === 'POST') {
+      const body = JSON.parse(options.body);
+      body.id = generateId('p_');
+      const products = DB.getProducts();
+      products.push(body);
+      DB.saveProducts(products);
+      return body;
+    }
+    if (path.startsWith('/products/') && options.method === 'PUT') {
+      const id = path.split('/')[2];
+      const body = JSON.parse(options.body);
+      const p = DB.findProductById(id);
+      if (p) {
+        Object.assign(p, body);
+        DB.updateProduct(p);
+      }
+      return p || {};
+    }
+
+    // Default fallback to real fetch if unhandled
     const res = await fetch(API_BASE_URL + path, {
       ...options,
       headers: {
