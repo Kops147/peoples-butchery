@@ -20,30 +20,35 @@ function findProduct(id) {
 }
 
 function mapApiProduct(p) {
+  const isCooked = p.category === 'Sides' || p.category === 'Other';
+  const cat = isCooked ? 'cooked' : 'raw';
+  const imgUrl = p.drive_id ? `https://drive.google.com/uc?id=${p.drive_id}` : 'assets/img/food/meat_on_braai.jpg';
+  const idStr = p.stock_code ? String(p.stock_code) : p.name.replace(/\s+/g, '-').toLowerCase();
+
   return {
-    id: String(p.id),
+    id: idStr,
     name: p.name,
-    category: p.category || 'raw',
+    category: cat,
     categoryLabel: p.category || 'Other',
-    description: p.description || p.name,
-    price: parseFloat(p.price),
+    description: '',
+    price: parseFloat(p.price) || 0,
     unit: p.unit || 'per kg',
-    braaiable: p.category === 'raw',
-    stockQty: p.available_qty,
-    image: p.image_url,
-    available: p.is_active,
+    braaiable: cat === 'raw',
+    stockQty: 100,
+    image: imgUrl,
+    available: true,
     isSpecial: false,
   };
 }
 
 async function loadProductsFromAPI() {
   try {
-    const res = await fetch(API_BASE_URL + '/products');
-    if (!res.ok) throw new Error('API error: ' + res.status);
+    const res = await fetch('assets/catalog.json');
+    if (!res.ok) throw new Error('Fetch error: ' + res.status);
     const data = await res.json();
     apiProducts = data.map(mapApiProduct);
   } catch (err) {
-    console.error('Failed to load products from API:', err);
+    console.error('Failed to load products from catalog:', err);
     apiProducts = [];
   }
 }

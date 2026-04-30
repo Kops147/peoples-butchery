@@ -438,12 +438,6 @@
       // Points button listener
       document.getElementById('use-points-btn')?.addEventListener('click', toggleUsePoints);
 
-      const all = DB.getProducts().filter(p => p.available);
-      document.getElementById('count-all').textContent = all.length;
-      document.getElementById('count-raw').textContent = all.filter(p => p.category === 'raw').length;
-      document.getElementById('count-cooked').textContent = all.filter(p => p.category === 'cooked').length;
-      document.getElementById('product-count-label').textContent = `${all.length} products available`;
-
       // URL filter param
       const params = new URLSearchParams(window.location.search);
       const filterParam = params.get('filter');
