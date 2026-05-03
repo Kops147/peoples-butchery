@@ -141,6 +141,19 @@
       <p class="register-subtitle">Join The Peoples Butchery and get fresh meat delivered to your door.</p>
     </div>
 
+    <!-- Google Sign-In -->
+    <div id="google-signin-section" style="margin-bottom:28px">
+      <button type="button" id="google-register-btn" class="btn btn-outline btn-full" style="gap:10px;font-size:0.95rem">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google">
+        Continue with Google
+      </button>
+      <div style="display:flex;align-items:center;gap:12px;margin:20px 0 4px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:0.8rem;color:var(--text-muted)">or register with email</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+    </div>
+
     <!-- Steps Indicator -->
     <div class="steps-indicator" id="steps-indicator">
       <div class="step-item active" id="step-item-1">
@@ -218,6 +231,10 @@
 
     <!-- Step 2: Address & Contact -->
     <div class="form-step step-content" id="step-2">
+      <div id="google-prefill-banner" style="display:none;background:rgba(66,133,244,0.08);border:1px solid rgba(66,133,244,0.25);border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:20px;font-size:0.88rem">
+        <span style="font-weight:600;color:#4285F4">✓ Signed in with Google</span>
+        <span style="color:var(--text-secondary)"> — phone verification is optional. Just add your address to continue.</span>
+      </div>
       <div class="form-group">
         <label class="form-label" for="r-phone">Phone Number *</label>
         <div class="input-group">
@@ -352,9 +369,54 @@
 
   <script src="js/app.js"></script>
   <script type="module">
-    import { createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { auth, db } from './js/firebase-config.js';
+
+    // ── Google Sign-In state ──────────────────────
+    let googleUser = null;
+
+    document.getElementById('google-register-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('google-register-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Connecting...';
+      try {
+        const result = await signInWithPopup(auth, new GoogleAuthProvider());
+        googleUser = result.user;
+        const token = await googleUser.getIdToken();
+
+        // If profile already exists → login directly
+        const snap = await getDoc(doc(db, 'users', googleUser.uid));
+        if (snap.exists()) {
+          const userData = snap.data();
+          Auth.login(userData, token);
+          showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
+          setTimeout(() => { window.location.href = userData.isAdmin ? 'admin.html' : 'dashboard.html'; }, 800);
+          return;
+        }
+
+        // New Google user — pre-fill Step 1 and jump to Step 2
+        const parts = (googleUser.displayName || '').split(' ');
+        document.getElementById('r-name').value = parts[0] || '';
+        document.getElementById('r-surname').value = parts.slice(1).join(' ') || '';
+        document.getElementById('r-email').value = googleUser.email || '';
+        document.getElementById('r-email').readOnly = true;
+        document.getElementById('r-password').closest('.form-group').style.display = 'none';
+        document.getElementById('r-confirm').closest('.form-group').style.display = 'none';
+        document.getElementById('google-signin-section').style.display = 'none';
+        document.getElementById('google-prefill-banner').style.display = 'block';
+
+        goToStep(2);
+        showToast('Google account connected! Now add your address details.', 'success');
+      } catch (err) {
+        googleUser = null;
+        if (err.code !== 'auth/popup-closed-by-user') {
+          showToast('Google sign-in failed: ' + err.message, 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
+      }
+    });
 
     // ── Phone verification state ──────────────────
     let phoneVerified = false;
@@ -509,7 +571,7 @@
       if (!suburb) { showError('err-suburb', 'Please enter your suburb'); valid = false; } else hideError('err-suburb');
       if (!address) { showError('err-address', 'Please enter your delivery address'); valid = false; } else hideError('err-address');
       if (!valid) return;
-      if (!phoneVerified) { showToast('⚠️ Please verify your phone number with the OTP first', 'warning', 5000); return; }
+      if (!googleUser && !phoneVerified) { showToast('⚠️ Please verify your phone number with the OTP first', 'warning', 5000); return; }
 
       // Populate review
       const rName = document.getElementById('r-name').value.trim();
@@ -556,9 +618,15 @@
       }
 
       try {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        const firebaseUser = userCred.user;
-        const token = await firebaseUser.getIdToken();
+        let firebaseUser, token;
+        if (googleUser) {
+          firebaseUser = googleUser;
+          token = await googleUser.getIdToken(true);
+        } else {
+          const userCred = await createUserWithEmailAndPassword(auth, email, password);
+          firebaseUser = userCred.user;
+          token = await firebaseUser.getIdToken();
+        }
 
         const newUser = {
           id: firebaseUser.uid,

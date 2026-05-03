@@ -115,6 +115,17 @@
           Sign In to My Account
         </button>
 
+        <div style="display:flex;align-items:center;gap:12px;margin:20px 0">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:0.8rem;color:var(--text-muted)">or</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+
+        <button type="button" id="google-signin-btn" class="btn btn-outline btn-full" style="gap:10px;font-size:0.95rem">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google">
+          Continue with Google
+        </button>
+
         <p style="text-align:center;margin-top:20px;font-size:0.88rem;color:var(--text-secondary)">
           Don't have an account? <a href="register.html" style="color:var(--primary);font-weight:600">Register here
             →</a>
@@ -178,9 +189,55 @@
 
   <script src="js/app.js"></script>
   <script type="module">
-    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { auth, db } from './js/firebase-config.js';
+
+    // ── Google Sign-In ────────────────────────────
+    document.getElementById('google-signin-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('google-signin-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Signing in...';
+      try {
+        const result = await signInWithPopup(auth, new GoogleAuthProvider());
+        const fbUser = result.user;
+        const token = await fbUser.getIdToken();
+
+        const snap = await getDoc(doc(db, 'users', fbUser.uid));
+        let userData;
+        if (snap.exists()) {
+          userData = snap.data();
+        } else {
+          const parts = (fbUser.displayName || '').split(' ');
+          userData = {
+            id: fbUser.uid,
+            name: parts[0] || '',
+            surname: parts.slice(1).join(' ') || '',
+            email: fbUser.email,
+            phone: fbUser.phoneNumber || '',
+            address: '', suburb: '',
+            creditBalance: 0, isAdmin: false,
+            phoneVerified: !!fbUser.phoneNumber,
+            refNumber: ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() + fbUser.uid.slice(-4).toUpperCase(),
+            createdAt: new Date().toISOString()
+          };
+          await setDoc(doc(db, 'users', fbUser.uid), userData);
+        }
+
+        Auth.login(userData, token);
+        showToast('Welcome, ' + (userData.name || 'there') + '! 🎉', 'success');
+        const params = new URLSearchParams(window.location.search);
+        setTimeout(() => {
+          window.location.href = userData.isAdmin ? 'admin.html' : (params.get('redirect') || 'dashboard.html');
+        }, 800);
+      } catch (err) {
+        if (err.code !== 'auth/popup-closed-by-user') {
+          showToast('Google sign-in failed: ' + err.message, 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
+      }
+    });
 
     // Redirect if already logged in
     if (Auth.isLoggedIn()) {
