@@ -23,10 +23,12 @@ function findProduct(id) {
 async function loadProductsFromAPI() {
   try {
     const { db } = await import('./firebase-config.js');
-    const { collection, getDocs, query, where } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-    const snap = await getDocs(query(collection(db, 'products'), where('is_active', '==', true)));
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+    const snap = await getDocs(collection(db, 'products'));
     if (snap.size > 0) {
-      apiProducts = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      apiProducts = snap.docs
+        .map(d => ({ ...d.data(), id: d.id }))
+        .filter(p => p.is_active !== false);
       return;
     }
   } catch (err) {
