@@ -19,6 +19,16 @@ async function getFirebase() {
   return _fb;
 }
 
+// ── Seed products to Firestore from catalog ───
+async function seedProductsToFirestore() {
+  const { LOCAL_CATALOG, mapToProduct } = await import('./catalog.js');
+  const { db, collection, doc, setDoc } = await getFirebase();
+  const products = LOCAL_CATALOG.map(mapToProduct);
+  await Promise.all(products.map(p => setDoc(doc(collection(db, 'products'), p.id), p)));
+  showToast('Products seeded to Firestore ✅', 'success');
+  return products;
+}
+
 // ── Image Compression (Canvas API) ────────────
 function compressImage(file, maxPx = 800, quality = 0.75) {
   return new Promise((resolve, reject) => {
@@ -112,8 +122,20 @@ async function loadAllAdminData() {
     console.error('Firebase init failed:', e);
   }
 
-  _products = DB.getProducts();
-  if (_products.length === 0) { seedProducts(); _products = DB.getProducts(); }
+  // Load products from Firestore, seed from catalog if empty
+  try {
+    const { db, collection, getDocs } = await getFirebase();
+    const snap = await getDocs(collection(db, 'products'));
+    if (snap.size > 0) {
+      _products = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    } else {
+      _products = await seedProductsToFirestore();
+    }
+  } catch (e) {
+    failures.push('products: ' + e.message);
+    _products = DB.getProducts();
+    if (_products.length === 0) { seedProducts(); _products = DB.getProducts(); }
+  }
 
   _stats = {
     totalUsers: _users.length,
@@ -356,7 +378,7 @@ function renderInventory() {
   }).join('');
 }
 
-window.handleUpdateStock = (id) => {
+window.handleUpdateStock = async (id) => {
   const input = document.getElementById(`add-stock-${id}`);
   const amount = parseFloat(input.value);
   if (isNaN(amount) || amount <= 0) return;
@@ -364,10 +386,14 @@ window.handleUpdateStock = (id) => {
   const p = _products.find(pr => pr.id == id);
   if (!p) return;
 
-  const current = parseFloat(p.available_qty ?? p.stockKg ?? 0);
-  p.available_qty = current + amount;
-  p.stockKg = current + amount;
-  DB.updateProduct(p);
+  const current = parseFloat(p.available_qty ?? p.stockQty ?? p.stockKg ?? 0);
+  const newQty = current + amount;
+  p.available_qty = newQty;
+  p.stockQty = newQty;
+  try {
+    const { db, doc, updateDoc } = await getFirebase();
+    await updateDoc(doc(db, 'products', id), { stockQty: newQty, available_qty: newQty });
+  } catch (e) { DB.updateProduct(p); }
   input.value = '';
   showToast(`Added ${amount} units to ${p.name}`, 'success');
   renderInventory();
@@ -461,21 +487,26 @@ function renderAdminProducts() {
   }).join('');
 }
 
-window.toggleAvailability = (productId) => {
+window.toggleAvailability = async (productId) => {
   const p = _products.find(pr => pr.id == productId);
   if (!p) return;
   const newState = !((p.is_active ?? p.available) !== false);
   p.is_active = newState;
   p.available = newState;
-  DB.updateProduct(p);
+  try {
+    const { db, doc, updateDoc } = await getFirebase();
+    await updateDoc(doc(db, 'products', productId), { is_active: newState, available: newState });
+  } catch (e) { DB.updateProduct(p); }
   renderAdminProducts();
   showToast(`${p.name} ${newState ? 'enabled' : 'disabled'}`, 'info');
 };
 
-window.deleteProduct = (productId) => {
+window.deleteProduct = async (productId) => {
   if (!confirm('Delete this product?')) return;
-  const p = _products.find(pr => pr.id == productId);
-  if (p) { p.is_active = false; p.available = false; DB.updateProduct(p); }
+  try {
+    const { db, doc, updateDoc } = await getFirebase();
+    await updateDoc(doc(db, 'products', productId), { is_active: false, available: false });
+  } catch (e) { /* fallback silent */ }
   _products = _products.filter(pr => pr.id != productId);
   renderAdminProducts();
   showToast('Product removed', 'warning');
@@ -550,8 +581,12 @@ function initProductForm() {
     });
   });
 
-  document.getElementById('product-form')?.addEventListener('submit', (e) => {
+  document.getElementById('product-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const submitBtn = e.target.querySelector('[type=submit]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
     const id = document.getElementById('prod-id').value;
     const imgVal = document.getElementById('prod-image').value.trim()
       || 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop';
@@ -567,18 +602,26 @@ function initProductForm() {
       available: true,
     };
 
-    if (id) {
-      const idx = _products.findIndex(p => p.id == id);
-      if (idx !== -1) { _products[idx] = { ..._products[idx], ...payload }; DB.updateProduct(_products[idx]); }
-      showToast('Product updated!', 'success');
-    } else {
-      const newProd = { ...payload, id: generateId('p_'), stockKg: 0, minStock: 5 };
-      _products.push(newProd);
-      const prods = DB.getProducts();
-      prods.push(newProd);
-      DB.saveProducts(prods);
-      showToast('Product added!', 'success');
+    try {
+      const { db, doc, setDoc, updateDoc, collection } = await getFirebase();
+      if (id) {
+        await updateDoc(doc(db, 'products', id), payload);
+        const idx = _products.findIndex(p => p.id == id);
+        if (idx !== -1) _products[idx] = { ..._products[idx], ...payload };
+        showToast('Product updated!', 'success');
+      } else {
+        const newId = generateId('p_');
+        const newProd = { ...payload, id: newId, stockQty: 0, createdAt: new Date().toISOString() };
+        await setDoc(doc(collection(db, 'products'), newId), newProd);
+        _products.push(newProd);
+        showToast('Product added!', 'success');
+      }
+    } catch (err) {
+      showToast('Save failed: ' + err.message, 'error');
     }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save Product';
     document.getElementById('product-modal').classList.remove('open');
     renderAdminProducts();
     renderInventory();
