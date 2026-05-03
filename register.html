@@ -338,7 +338,11 @@
   </p>
 
   <script src="js/app.js"></script>
-  <script>
+  <script type="module">
+    import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { auth, db } from './js/firebase-config.js';
+
     let currentStep = 1;
     let pendingRef = '';
     let pendingCoords = null;
@@ -476,32 +480,43 @@
       }
 
       try {
-        const res = await fetch(API_BASE_URL + '/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, surname, email, password, phone, address, suburb })
-        });
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCred.user;
+        const token = await firebaseUser.getIdToken();
 
-        const data = await res.json();
+        const newUser = {
+          id: firebaseUser.uid,
+          refNumber: pendingRef,
+          name, surname, email, phone, address, suburb,
+          coordinates: pendingCoords || null,
+          deliveryFee: pendingDeliveryFee,
+          creditBalance: 0,
+          isAdmin: false,
+          createdAt: new Date().toISOString()
+        };
 
-        if (!res.ok) {
-          btn.disabled = false;
-          btn.textContent = 'Create My Account';
-          showToast('❌ ' + (data.error || 'Registration failed. Please try again.'), 'error', 5000);
-          return;
-        }
+        await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
 
-        Auth.login(data.user, data.token);
+        const users = DB.getUsers();
+        users.push(newUser);
+        DB.saveUsers(users);
 
-        document.getElementById('success-ref').textContent = data.user.ref_number || pendingRef;
+        Auth.login(newUser, token);
+
+        document.getElementById('success-ref').textContent = pendingRef;
         document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
         document.getElementById('step-success').classList.add('active');
         document.querySelector('.steps-indicator').style.display = 'none';
 
       } catch (err) {
         btn.disabled = false;
-        btn.textContent = 'Create My Account';
-        showToast('❌ Cannot connect to server. Please try again.', 'error');
+        btn.textContent = '🎉 Create My Account';
+        const msg = err.code === 'auth/email-already-in-use'
+          ? 'This email is already registered. Please login instead.'
+          : err.code === 'auth/weak-password'
+          ? 'Password is too weak. Use at least 6 characters.'
+          : (err.message || 'Registration failed. Please try again.');
+        showToast('❌ ' + msg, 'error', 5000);
       }
     });
   </script>

@@ -177,7 +177,11 @@
   </div>
 
   <script src="js/app.js"></script>
-  <script>
+  <script type="module">
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { auth, db } from './js/firebase-config.js';
+
     // Redirect if already logged in
     if (Auth.isLoggedIn()) {
       window.location.href = Auth.isAdmin() ? 'admin.html' : 'dashboard.html';
@@ -212,34 +216,53 @@
       }
 
       try {
-        const res = await fetch(API_BASE_URL + '/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          errEl.textContent = '❌ ' + (data.error || 'Login failed. Please try again.');
-          errEl.style.display = 'flex';
-          btn.disabled = false;
-          btn.textContent = 'Sign In to My Account';
+        // Admin accounts are stored locally — check first
+        const localUser = DB.findUserByEmail(email);
+        if (localUser && localUser.isAdmin) {
+          const hash = await hashPassword(password);
+          if (hash !== localUser.passwordHash) {
+            errEl.textContent = '❌ Invalid email or password.';
+            errEl.style.display = 'flex';
+            btn.disabled = false;
+            btn.textContent = 'Sign In to My Account';
+            return;
+          }
+          Auth.login(localUser, null);
+          showToast('Welcome back, ' + localUser.name + '! 🎉', 'success');
+          setTimeout(() => { window.location.href = 'admin.html'; }, 800);
           return;
         }
 
-        const { user, token } = await res.json();
-        Auth.login(user, token);
-        showToast('Welcome back, ' + user.name + '! 🎉', 'success');
+        // Regular users: Firebase Auth
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCred.user;
+        const token = await firebaseUser.getIdToken();
+
+        const userSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
+        const userData = userSnap.exists()
+          ? userSnap.data()
+          : { id: firebaseUser.uid, email, name: email.split('@')[0] };
+
+        if (!DB.findUserByEmail(email)) {
+          const users = DB.getUsers();
+          users.push(userData);
+          DB.saveUsers(users);
+        }
+
+        Auth.login(userData, token);
+        showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
 
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
         setTimeout(() => {
-          if (user.is_admin || user.isAdmin) window.location.href = 'admin.html';
-          else window.location.href = redirect || 'dashboard.html';
+          window.location.href = redirect || 'dashboard.html';
         }, 800);
 
       } catch (err) {
-        errEl.textContent = '❌ Cannot connect to server. Please check your connection and try again.';
+        const msg = ['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(err.code)
+          ? 'Invalid email or password.'
+          : (err.message || 'Login failed. Please try again.');
+        errEl.textContent = '❌ ' + msg;
         errEl.style.display = 'flex';
         btn.disabled = false;
         btn.textContent = 'Sign In to My Account';
