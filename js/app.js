@@ -404,6 +404,56 @@ function initNavbar() {
   }
 }
 
+// ── Dynamic Navbar ────────────────────────────
+function renderNavbar({ active = '', showCart = false, showOrderNow = false } = {}) {
+  const placeholder = document.getElementById('app-navbar');
+  if (!placeholder) return;
+
+  const isLoggedIn = Auth.isLoggedIn();
+  const isAdmin = Auth.isAdmin();
+  const accountHref = isAdmin ? 'admin.html' : 'dashboard.html';
+
+  const homeOnlyLinks = active === 'home' ? `
+        <li><a href="#about" class="nav-link">About</a></li>
+        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>` : '';
+
+  const cartBtn = showCart
+    ? `<button class="btn btn-outline btn-sm btn-icon cart-btn" id="nav-cart-btn" aria-label="Cart">🛒<span class="cart-count" id="nav-cart-count" style="display:none">0</span></button>`
+    : '';
+
+  const orderNowBtn = showOrderNow ? `<a href="shop.html" class="btn btn-gold btn-sm">Order Now</a>` : '';
+
+  placeholder.outerHTML = `
+  <nav class="navbar" role="navigation">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="brand-logo">NB</div>
+        <span class="brand-name">The Peoples <span>Butchery</span></span>
+      </a>
+      <ul class="navbar-nav" id="nav-menu">
+        <li><a href="index.html" class="nav-link${active === 'home' ? ' active' : ''}">Home</a></li>
+        <li><a href="shop.html" class="nav-link${active === 'shop' ? ' active' : ''}">Shop</a></li>${homeOnlyLinks}
+        <li${isLoggedIn ? '' : ' class="hidden"'}><a href="${accountHref}" class="nav-link">My Account</a></li>
+      </ul>
+      <div class="navbar-actions">
+        <a href="login.html" class="btn btn-outline btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-login-btn">Login / Register</a>
+        <a href="${accountHref}" class="btn btn-primary btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-dash-btn">My Account</a>
+        ${orderNowBtn}${cartBtn}
+        <button class="btn btn-ghost btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-logout-btn">Logout</button>
+        <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </nav>`;
+
+  initNavbar();
+
+  document.getElementById('nav-logout-btn')?.addEventListener('click', () => {
+    Auth.logout();
+    window.location.href = 'index.html';
+  });
+}
+
 // ── Tabs ──────────────────────────────────────
 function initTabs(containerId, onChange) {
   const container = document.getElementById(containerId);

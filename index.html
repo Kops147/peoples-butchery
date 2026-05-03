@@ -320,30 +320,7 @@
     🔥 Standard AA rate delivery · Order online, we deliver to your door · 📍 76 Meeu St, Pretoria
   </div>
 
-  <!-- Navbar -->
-  <nav class="navbar" role="navigation">
-    <div class="navbar-inner">
-      <a href="index.html" class="navbar-brand">
-        <div class="brand-logo">NB</div>
-        <span class="brand-name">The Peoples <span>Butchery</span></span>
-      </a>
-      <ul class="navbar-nav" id="nav-menu">
-        <li><a href="index.html" class="nav-link active">Home</a></li>
-        <li><a href="shop.html" class="nav-link">Shop</a></li>
-        <li><a href="#about" class="nav-link">About</a></li>
-        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
-        <li><a href="#contact" class="nav-link">Contact</a></li>
-      </ul>
-      <div class="navbar-actions">
-        <a href="login.html" class="btn btn-outline btn-sm" id="nav-login-btn">Login / Register</a>
-        <a href="dashboard.html" class="btn btn-primary btn-sm hidden" id="nav-dash-btn">My Account</a>
-        <a href="shop.html" class="btn btn-gold btn-sm">Order Now</a>
-        <button class="hamburger" id="hamburger" aria-label="Menu">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
-    </div>
-  </nav>
+  <div id="app-navbar"></div>
 
   <!-- Hero -->
   <section class="hero">
@@ -701,11 +678,7 @@
   <script src="js/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      initNavbar();
-      if (Auth.isLoggedIn()) {
-        document.getElementById('nav-login-btn')?.classList.add('hidden');
-        document.getElementById('nav-dash-btn')?.classList.remove('hidden');
-      }
+      renderNavbar({ active: 'home', showOrderNow: true });
     });
   </script>
 </body>

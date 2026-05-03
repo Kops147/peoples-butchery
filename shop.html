@@ -228,30 +228,7 @@
 <body>
   <div id="toast-container"></div>
 
-  <!-- Navbar -->
-  <nav class="navbar" role="navigation">
-    <div class="navbar-inner">
-      <a href="index.html" class="navbar-brand">
-        <div class="brand-logo">NB</div>
-        <span class="brand-name">The Peoples <span>Butchery</span></span>
-      </a>
-      <ul class="navbar-nav" id="nav-menu">
-        <li><a href="index.html" class="nav-link">Home</a></li>
-        <li><a href="shop.html" class="nav-link active">Shop</a></li>
-        <li><a href="dashboard.html" class="nav-link hidden" id="nav-dash-btn">My Account</a></li>
-      </ul>
-      <div class="navbar-actions">
-        <a href="login.html" class="btn btn-outline btn-sm" id="nav-login-btn">Login</a>
-        <a href="register.html" class="btn btn-ghost btn-sm" id="nav-reg-btn">Register</a>
-        <button class="btn btn-outline btn-sm btn-icon cart-btn" id="nav-cart-btn" aria-label="Cart">
-          🛒
-          <span class="cart-count" id="nav-cart-count" style="display:none">0</span>
-        </button>
-        <button class="btn btn-ghost btn-sm hidden" id="nav-logout-btn">Logout</button>
-        <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
-      </div>
-    </div>
-  </nav>
+  <div id="app-navbar"></div>
 
   <!-- Cart Panel -->
   <div class="cart-overlay" id="cart-overlay"></div>
@@ -435,6 +412,8 @@
   <script>
     // Update product counts
     document.addEventListener('DOMContentLoaded', () => {
+      renderNavbar({ active: 'shop', showCart: true });
+
       // Points button listener
       document.getElementById('use-points-btn')?.addEventListener('click', toggleUsePoints);
 
@@ -452,7 +431,6 @@
       // Credit banner
       if (Auth.isLoggedIn()) {
         const user = Auth.getCurrentUser();
-        // Show points button if user has points
         const pointsBtn = document.getElementById('use-points-btn');
         if (pointsBtn && user.points > 10) {
           pointsBtn.style.display = 'block';
@@ -466,18 +444,12 @@
         document.getElementById('sidebar-account-loggedin').style.display = 'block';
         document.getElementById('sidebar-balance').textContent = formatCurrency(user.creditBalance);
         document.getElementById('sidebar-ref-display').textContent = 'REF: ' + user.refNumber;
-        document.getElementById('nav-login-btn').classList.add('hidden');
-        document.getElementById('nav-reg-btn').classList.add('hidden');
-        document.getElementById('nav-dash-btn').classList.remove('hidden');
-        document.getElementById('nav-logout-btn').classList.remove('hidden');
 
-        // Update delivery fee label
         if (user.coordinates) {
           const fee = calcDeliveryFee(user.coordinates);
           document.getElementById('delivery-fee-label').textContent = fee === 0 ? 'Free for you!' : `~R${fee.toFixed(2)} for you`;
         }
       }
-
     });
   </script>
 </body>
