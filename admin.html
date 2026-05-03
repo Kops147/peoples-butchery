@@ -99,9 +99,22 @@
             <textarea id="prod-desc" class="form-control" rows="2" placeholder="Brief product description"></textarea>
           </div>
           <div class="form-group">
-            <label class="form-label">Image URL</label>
-            <input type="url" id="prod-image" class="form-control" placeholder="https://...">
-            <div class="form-hint">Leave blank to use default image</div>
+            <label class="form-label">Product Image</label>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-lg)">
+              <img id="prod-image-preview" src="" alt="Preview"
+                style="width:72px;height:72px;object-fit:cover;border-radius:var(--radius-md);background:var(--bg-surface);display:none"
+                onerror="this.style.display='none'">
+              <div style="flex:1;min-width:0">
+                <button type="button" id="upload-image-btn" class="btn btn-outline btn-sm" style="margin-bottom:6px">
+                  📷 Upload Photo
+                </button>
+                <div id="upload-status" style="font-size:0.75rem;color:var(--text-muted)">
+                  Auto-compressed · max 800px · JPEG
+                </div>
+              </div>
+            </div>
+            <input type="file" id="prod-image-file" accept="image/*" style="display:none">
+            <input type="hidden" id="prod-image">
           </div>
           <div class="form-row">
             <div class="form-group" style="display:flex;align-items:center;gap:10px">

@@ -19,6 +19,53 @@ async function getFirebase() {
   return _fb;
 }
 
+// ── Image Compression (Canvas API) ────────────
+function compressImage(file, maxPx = 800, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxPx || height > maxPx) {
+          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+          else { width = Math.round(width * maxPx / height); height = maxPx; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compression failed')), 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadProductImage(file) {
+  const statusEl = document.getElementById('upload-status');
+  const originalKb = Math.round(file.size / 1024);
+  statusEl.textContent = `Compressing ${originalKb}KB...`;
+
+  const compressed = await compressImage(file);
+  const compressedKb = Math.round(compressed.size / 1024);
+
+  statusEl.textContent = `Uploading ${compressedKb}KB (was ${originalKb}KB)...`;
+
+  const { storage } = await import('./firebase-config.js');
+  const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js");
+
+  const filename = `products/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
+  const snapshot = await uploadBytes(ref(storage, filename), compressed, { contentType: 'image/jpeg' });
+  const url = await getDownloadURL(snapshot.ref);
+
+  statusEl.textContent = `✅ Uploaded · ${compressedKb}KB (was ${originalKb}KB)`;
+  return url;
+}
+
 function toDate(val) {
   if (!val) return null;
   if (typeof val?.toDate === 'function') return val.toDate();
@@ -434,6 +481,13 @@ window.deleteProduct = (productId) => {
   showToast('Product removed', 'warning');
 };
 
+function setImagePreview(url) {
+  const preview = document.getElementById('prod-image-preview');
+  if (!preview) return;
+  if (url) { preview.src = url; preview.style.display = 'block'; }
+  else { preview.src = ''; preview.style.display = 'none'; }
+}
+
 window.editProduct = (productId) => {
   const p = _products.find(pr => pr.id == productId);
   if (!p) return;
@@ -446,6 +500,8 @@ window.editProduct = (productId) => {
   document.getElementById('prod-image').value = p.image_url || p.image || '';
   document.getElementById('prod-is-special').checked = p.is_special || false;
   document.getElementById('prod-discount').value = p.discount_price || '';
+  document.getElementById('upload-status').textContent = 'Auto-compressed · max 800px · JPEG';
+  setImagePreview(p.image_url || p.image || '');
   document.getElementById('product-modal').classList.add('open');
   document.getElementById('product-modal-title').textContent = 'Edit Product';
 };
@@ -454,8 +510,38 @@ function initProductForm() {
   document.getElementById('add-product-btn')?.addEventListener('click', () => {
     document.getElementById('product-form')?.reset();
     document.getElementById('prod-id').value = '';
+    document.getElementById('prod-image').value = '';
+    document.getElementById('upload-status').textContent = 'Auto-compressed · max 800px · JPEG';
+    setImagePreview('');
     document.getElementById('product-modal-title').textContent = 'Add New Product';
     document.getElementById('product-modal').classList.add('open');
+  });
+
+  // Upload button triggers hidden file input
+  document.getElementById('upload-image-btn')?.addEventListener('click', () => {
+    document.getElementById('prod-image-file').click();
+  });
+
+  // File selected — compress and upload
+  document.getElementById('prod-image-file')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const btn = document.getElementById('upload-image-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Uploading...';
+    try {
+      const url = await uploadProductImage(file);
+      document.getElementById('prod-image').value = url;
+      setImagePreview(url);
+      showToast('Image uploaded!', 'success');
+    } catch (err) {
+      showToast('Upload failed: ' + err.message, 'error');
+      document.getElementById('upload-status').textContent = '❌ Upload failed — check Storage rules';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📷 Upload Photo';
+      e.target.value = '';
+    }
   });
 
   document.querySelectorAll('.modal-close').forEach(btn => {
