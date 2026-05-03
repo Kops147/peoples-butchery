@@ -1,15 +1,29 @@
 /* =============================================
    The Peoples Butchery — Admin Portal (admin.js)
-   Data sourced from live backend API
+   Data sourced from Firestore
    ============================================= */
 
 'use strict';
 
-// Cached API data
 let _users = [];
 let _orders = [];
 let _products = [];
 let _stats = {};
+let _fb = null;
+
+async function getFirebase() {
+  if (_fb) return _fb;
+  const { db } = await import('./firebase-config.js');
+  const fb = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+  _fb = { db, ...fb };
+  return _fb;
+}
+
+function toDate(val) {
+  if (!val) return null;
+  if (typeof val?.toDate === 'function') return val.toDate();
+  return new Date(val);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireAdmin()) return;
@@ -33,24 +47,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadAllAdminData() {
   const failures = [];
 
-  await API.get('/admin/stats')
-    .then(d => { _stats = d; })
-    .catch(e => { failures.push('stats: ' + e.message); console.error('Stats load failed:', e); });
+  try {
+    const { db, collection, getDocs, query, orderBy } = await getFirebase();
 
-  await API.get('/admin/orders')
-    .then(d => { _orders = Array.isArray(d) ? d : []; })
-    .catch(e => { failures.push('orders: ' + e.message); console.error('Orders load failed:', e); });
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      _users = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => !u.isAdmin);
+    } catch (e) { failures.push('users: ' + e.message); console.error('Users load failed:', e); }
 
-  await API.get('/admin/users')
-    .then(d => { _users = Array.isArray(d) ? d : []; })
-    .catch(e => { failures.push('users: ' + e.message); console.error('Users load failed:', e); });
+    try {
+      const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
+      _orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { failures.push('orders: ' + e.message); console.error('Orders load failed:', e); }
 
-  await API.get('/products')
-    .then(d => { _products = Array.isArray(d) ? d : []; })
-    .catch(e => { failures.push('products: ' + e.message); console.error('Products load failed:', e); });
+  } catch (e) {
+    failures.push('firebase: ' + e.message);
+    console.error('Firebase init failed:', e);
+  }
+
+  _products = DB.getProducts();
+  if (_products.length === 0) { seedProducts(); _products = DB.getProducts(); }
+
+  _stats = {
+    totalUsers: _users.length,
+    totalOrders: _orders.length,
+    totalRevenue: _orders.reduce((s, o) => s + (parseFloat(o.total) || 0), 0),
+    pendingOrders: _orders.filter(o => o.status === 'pending').length
+  };
 
   if (failures.length) {
-    showToast('⚠️ Some data failed: ' + failures.join(', '), 'error', 8000);
+    showToast('⚠️ Some data failed to load: ' + failures.join(', '), 'error', 8000);
   }
 
   renderAdminOverview();
@@ -79,7 +105,7 @@ function renderAdminUser() {
 // ── Overview Stats ─────────────────────────────
 function renderAdminOverview() {
   const today = new Date().toDateString();
-  const todayOrders = _orders.filter(o => new Date(o.created_at).toDateString() === today);
+  const todayOrders = _orders.filter(o => toDate(o.createdAt)?.toDateString() === today);
 
   setVal('stat-customers', _stats.totalUsers ?? _users.length);
   setVal('stat-orders', _stats.totalOrders ?? _orders.length);
@@ -87,30 +113,33 @@ function renderAdminOverview() {
   setVal('stat-pending', _stats.pendingOrders ?? _orders.filter(o => o.status === 'pending').length);
   setVal('stat-today', todayOrders.length);
 
-  // Recent orders table
   const recentEl = document.getElementById('admin-recent-orders');
   if (!recentEl) return;
 
-  const recent = [..._orders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+  const recent = [..._orders].slice(0, 8);
 
   if (recent.length === 0) {
     recentEl.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">No orders yet</td></tr>`;
     return;
   }
 
-  recentEl.innerHTML = recent.map(o => `<tr>
-    <td><span class="font-bold">#${(o.order_number || o.id).slice(-8)}</span></td>
-    <td>${o.name || ''} ${o.surname || ''}</td>
-    <td class="text-gold font-bold">${formatCurrency(o.total)}</td>
-    <td>${statusBadge(o.status)}</td>
-    <td>
-      <select class="form-control" style="padding:6px 10px;font-size:0.8rem" onchange="updateOrderStatus('${o.id}', this.value)">
-        ${['pending', 'processing', 'delivering', 'delivered', 'collected', 'cancelled'].map(s =>
-    `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
-  ).join('')}
-      </select>
-    </td>
-  </tr>`).join('');
+  recentEl.innerHTML = recent.map(o => {
+    const user = _users.find(u => u.id === o.userId);
+    const displayName = user ? `${user.name} ${user.surname}` : (o.userEmail || '—');
+    return `<tr>
+      <td><span class="font-bold">#${o.id.slice(-8)}</span></td>
+      <td>${displayName}</td>
+      <td class="text-gold font-bold">${formatCurrency(o.total)}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td>
+        <select class="form-control" style="padding:6px 10px;font-size:0.8rem" onchange="updateOrderStatus('${o.id}', this.value)">
+          ${['pending', 'processing', 'delivering', 'delivered', 'collected', 'cancelled'].map(s =>
+      `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+    ).join('')}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function setVal(id, val) {
@@ -129,7 +158,7 @@ function initCreditForm() {
       const ref = refInput.value.trim().toUpperCase();
       if (!ref) { showToast('Enter a REF number', 'warning'); return; }
 
-      const user = _users.find(u => (u.ref_number || '').toUpperCase() === ref);
+      const user = _users.find(u => (u.refNumber || '').toUpperCase() === ref);
       const infoEl = document.getElementById('credit-user-info');
 
       if (!user) {
@@ -138,11 +167,11 @@ function initCreditForm() {
       }
 
       infoEl.innerHTML = `<div class="card-glass p-4" style="display:flex;gap:16px;align-items:center;">
-        <div class="user-avatar" style="width:52px;height:52px;font-size:1.2rem">${user.name[0]}</div>
+        <div class="user-avatar" style="width:52px;height:52px;font-size:1.2rem">${(user.name || '?')[0]}</div>
         <div>
-          <div style="font-weight:700;font-size:1rem">${user.name} ${user.surname}</div>
-          <div style="color:var(--text-secondary);font-size:0.85rem">${user.email} · ${user.phone}</div>
-          <div style="margin-top:6px">Current Balance: <span class="text-gold font-bold">${formatCurrency(user.credit_balance)}</span></div>
+          <div style="font-weight:700;font-size:1rem">${user.name} ${user.surname || ''}</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem">${user.email} · ${user.phone || ''}</div>
+          <div style="margin-top:6px">Current Balance: <span class="text-gold font-bold">${formatCurrency(user.creditBalance || 0)}</span></div>
         </div>
       </div>`;
       document.getElementById('credit-user-id').value = user.id;
@@ -160,23 +189,23 @@ function initCreditForm() {
       if (!amount || amount <= 0) { showToast('Enter a valid amount', 'warning'); return; }
 
       try {
-        const result = await API.post(`/admin/users/${userId}/credit`, {
-          amount,
-          notes: note || 'Credit added by admin'
-        });
-
+        const { db, doc, updateDoc } = await getFirebase();
         const user = _users.find(u => u.id === userId);
+        const newBalance = (parseFloat(user?.creditBalance || 0) + amount);
+
+        await updateDoc(doc(db, 'users', userId), { creditBalance: newBalance });
+
+        const localUser = DB.findUserById(userId);
+        if (localUser) { localUser.creditBalance = newBalance; DB.updateUser(localUser); }
+
         const userName = user ? `${user.name} ${user.surname}` : 'Customer';
-        const newBalance = result.user?.credit_balance ?? (parseFloat(user?.credit_balance || 0) + amount);
+        if (user) user.creditBalance = newBalance;
 
         showToast(`✅ R${amount.toFixed(2)} credited to ${userName}!`, 'success', 5000);
         document.getElementById('credit-user-info').innerHTML = `
-          <div class="alert alert-success">✅ Success! New balance for <strong>${userName}</strong>: <strong>${formatCurrency(newBalance)}</strong></div>`;
+          <div class="alert alert-success">✅ New balance for <strong>${userName}</strong>: <strong>${formatCurrency(newBalance)}</strong></div>`;
         creditForm.reset();
         document.getElementById('credit-user-id').value = '';
-
-        // Refresh users cache
-        _users = await API.get('/admin/users');
         renderAdminCustomers();
       } catch (err) {
         showToast('Failed to add credit: ' + err.message, 'error');
@@ -192,24 +221,26 @@ function renderAdminOrders() {
   const tbody = document.getElementById('admin-orders-tbody');
   if (!tbody) return;
 
-  const sorted = [..._orders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-  if (sorted.length === 0) {
+  if (_orders.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">No orders yet</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = sorted.map(o => {
-    const icon = o.delivery_method === 'delivery' ? '🚗' : '🏪';
+  tbody.innerHTML = _orders.map(o => {
+    const user = _users.find(u => u.id === o.userId);
+    const displayName = user ? `${user.name} ${user.surname}` : '—';
+    const email = o.userEmail || user?.email || '';
+    const icon = o.deliveryMethod === 'delivery' ? '🚗' : '🏪';
+    const itemCount = Array.isArray(o.items) ? o.items.length : 0;
     return `<tr>
-      <td class="font-bold" style="font-size:0.82rem">#${(o.order_number || o.id).slice(-10)}</td>
+      <td class="font-bold" style="font-size:0.82rem">#${o.id.slice(-10)}</td>
       <td>
-        <div style="font-weight:600">${o.name || ''} ${o.surname || ''}</div>
-        <div style="font-size:0.78rem;color:var(--text-muted)">${o.email || ''}</div>
+        <div style="font-weight:600">${displayName}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted)">${email}</div>
       </td>
-      <td>${o.item_count || 0} item(s)</td>
+      <td>${itemCount} item(s)</td>
       <td class="text-gold font-bold">${formatCurrency(o.total)}</td>
-      <td>${icon} ${o.delivery_method === 'delivery' ? 'Deliver' : 'Collect'}</td>
+      <td>${icon} ${o.deliveryMethod === 'delivery' ? 'Deliver' : 'Collect'}</td>
       <td>${statusBadge(o.status)}</td>
       <td>
         <select class="form-control" style="padding:6px 10px;font-size:0.8rem;min-width:130px" onchange="updateOrderStatus('${o.id}', this.value)">
@@ -238,7 +269,8 @@ function filterOrders(status) {
 
 window.updateOrderStatus = async (orderId, newStatus) => {
   try {
-    await API.put(`/admin/orders/${orderId}/status`, { status: newStatus });
+    const { db, doc, updateDoc } = await getFirebase();
+    await updateDoc(doc(db, 'orders', orderId), { status: newStatus, updatedAt: new Date().toISOString() });
     const order = _orders.find(o => o.id === orderId);
     if (order) order.status = newStatus;
     showToast(`Order updated to: ${newStatus}`, 'success');
@@ -255,8 +287,8 @@ function renderInventory() {
   if (!tbody) return;
 
   tbody.innerHTML = _products.map(p => {
-    const stock = parseFloat(p.available_qty || 0);
-    const minStock = parseFloat(p.min_stock || 5);
+    const stock = parseFloat(p.available_qty ?? p.stockKg ?? 0);
+    const minStock = parseFloat(p.min_stock ?? p.minStock ?? 5);
     const isLow = stock <= minStock;
     const badge = isLow
       ? '<span class="badge badge-red">⚠️ Low Stock</span>'
@@ -277,7 +309,7 @@ function renderInventory() {
   }).join('');
 }
 
-window.handleUpdateStock = async (id) => {
+window.handleUpdateStock = (id) => {
   const input = document.getElementById(`add-stock-${id}`);
   const amount = parseFloat(input.value);
   if (isNaN(amount) || amount <= 0) return;
@@ -285,26 +317,22 @@ window.handleUpdateStock = async (id) => {
   const p = _products.find(pr => pr.id == id);
   if (!p) return;
 
-  const newQty = parseFloat(p.available_qty || 0) + amount;
-  try {
-    await API.put(`/products/${id}`, { availableQty: newQty });
-    p.available_qty = newQty;
-    input.value = '';
-    showToast(`Added ${amount} units to ${p.name}`, 'success');
-    renderInventory();
-    renderReports();
-  } catch (err) {
-    showToast('Failed to update stock: ' + err.message, 'error');
-  }
+  const current = parseFloat(p.available_qty ?? p.stockKg ?? 0);
+  p.available_qty = current + amount;
+  p.stockKg = current + amount;
+  DB.updateProduct(p);
+  input.value = '';
+  showToast(`Added ${amount} units to ${p.name}`, 'success');
+  renderInventory();
+  renderReports();
 };
 
 // ── Reports Tab ──────────────────────────────
 let revenueChart, inventoryChart;
 
 function renderReports() {
-  const revenue = parseFloat(_stats.totalRevenue || 0) || 5000;
-  const projectedIncome = revenue * 1.15;
-  document.getElementById('rep-projected-income').textContent = formatCurrency(projectedIncome);
+  const revenue = parseFloat(_stats.totalRevenue || 0);
+  document.getElementById('rep-projected-income').textContent = formatCurrency(revenue * 1.15);
 
   const revCtx = document.getElementById('chart-revenue')?.getContext('2d');
   if (revCtx) {
@@ -336,9 +364,9 @@ function renderReports() {
         labels: top6.map(p => p.name),
         datasets: [{
           label: 'Stock (qty)',
-          data: top6.map(p => parseFloat(p.available_qty || 0)),
+          data: top6.map(p => parseFloat(p.available_qty ?? p.stockKg ?? 0)),
           backgroundColor: top6.map(p =>
-            parseFloat(p.available_qty || 0) < parseFloat(p.min_stock || 5) ? '#e74c3c' : '#e8a020'
+            parseFloat(p.available_qty ?? p.stockKg ?? 0) < parseFloat(p.min_stock ?? p.minStock ?? 5) ? '#e74c3c' : '#e8a020'
           )
         }]
       },
@@ -352,10 +380,12 @@ function renderAdminProducts() {
   const container = document.getElementById('admin-products-list');
   if (!container) return;
 
-  container.innerHTML = _products.map(p => `
+  container.innerHTML = _products.map(p => {
+    const isActive = (p.is_active ?? p.available) !== false;
+    return `
     <div class="product-admin-card mb-4" id="prod-admin-${p.id}">
       <div class="product-admin-img">
-        <img src="${p.image_url || ''}" alt="${p.name}"
+        <img src="${p.image_url || p.image || ''}" alt="${p.name}"
           onerror="this.src='https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop'">
       </div>
       <div class="product-admin-info">
@@ -364,50 +394,44 @@ function renderAdminProducts() {
         <div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap">
           <span class="text-gold font-bold">
             ${p.is_special
-      ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:0.8rem">R${p.price}</span> ${formatCurrency(p.discount_price)}`
-      : formatCurrency(p.price)}
+        ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:0.8rem">R${p.price}</span> ${formatCurrency(p.discount_price)}`
+        : formatCurrency(p.price)}
             <span style="font-weight:400;color:var(--text-muted);font-size:0.8rem">${p.unit || ''}</span>
           </span>
           <span class="badge ${p.category === 'raw' ? 'badge-red' : 'badge-gold'}">${p.category === 'raw' ? '🥩 Raw' : '🍽️ Cooked'}</span>
-          <span class="badge ${p.is_active !== false ? 'badge-green' : 'badge-gray'}">${p.is_active !== false ? '✅ Available' : '❌ Unavailable'}</span>
+          <span class="badge ${isActive ? 'badge-green' : 'badge-gray'}">${isActive ? '✅ Available' : '❌ Unavailable'}</span>
           ${p.is_special ? '<span class="badge badge-gold">🔥 Special</span>' : ''}
         </div>
       </div>
       <div class="product-admin-actions">
         <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">✏️ Edit</button>
-        <button class="btn ${p.is_active !== false ? 'btn-outline' : 'btn-success'} btn-sm" onclick="toggleAvailability('${p.id}')">
-          ${p.is_active !== false ? '⛔ Disable' : '✅ Enable'}
+        <button class="btn ${isActive ? 'btn-outline' : 'btn-success'} btn-sm" onclick="toggleAvailability('${p.id}')">
+          ${isActive ? '⛔ Disable' : '✅ Enable'}
         </button>
         <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">🗑️ Delete</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
-window.toggleAvailability = async (productId) => {
+window.toggleAvailability = (productId) => {
   const p = _products.find(pr => pr.id == productId);
   if (!p) return;
-  const newState = !(p.is_active !== false);
-  try {
-    await API.put(`/products/${productId}`, { isActive: newState });
-    p.is_active = newState;
-    renderAdminProducts();
-    showToast(`${p.name} ${newState ? 'enabled' : 'disabled'}`, 'info');
-  } catch (err) {
-    showToast('Failed to update product: ' + err.message, 'error');
-  }
+  const newState = !((p.is_active ?? p.available) !== false);
+  p.is_active = newState;
+  p.available = newState;
+  DB.updateProduct(p);
+  renderAdminProducts();
+  showToast(`${p.name} ${newState ? 'enabled' : 'disabled'}`, 'info');
 };
 
-window.deleteProduct = async (productId) => {
+window.deleteProduct = (productId) => {
   if (!confirm('Delete this product?')) return;
-  try {
-    await API.put(`/products/${productId}`, { isActive: false });
-    _products = _products.filter(p => p.id != productId);
-    renderAdminProducts();
-    showToast('Product removed', 'warning');
-  } catch (err) {
-    showToast('Failed to delete product: ' + err.message, 'error');
-  }
+  const p = _products.find(pr => pr.id == productId);
+  if (p) { p.is_active = false; p.available = false; DB.updateProduct(p); }
+  _products = _products.filter(pr => pr.id != productId);
+  renderAdminProducts();
+  showToast('Product removed', 'warning');
 };
 
 window.editProduct = (productId) => {
@@ -419,7 +443,7 @@ window.editProduct = (productId) => {
   document.getElementById('prod-price').value = p.price;
   document.getElementById('prod-unit').value = p.unit || '';
   document.getElementById('prod-desc').value = p.description || '';
-  document.getElementById('prod-image').value = p.image_url || '';
+  document.getElementById('prod-image').value = p.image_url || p.image || '';
   document.getElementById('prod-is-special').checked = p.is_special || false;
   document.getElementById('prod-discount').value = p.discount_price || '';
   document.getElementById('product-modal').classList.add('open');
@@ -440,36 +464,38 @@ function initProductForm() {
     });
   });
 
-  document.getElementById('product-form')?.addEventListener('submit', async (e) => {
+  document.getElementById('product-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const id = document.getElementById('prod-id').value;
+    const imgVal = document.getElementById('prod-image').value.trim()
+      || 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop';
     const payload = {
       name: document.getElementById('prod-name').value.trim(),
       category: document.getElementById('prod-category').value,
       price: parseFloat(document.getElementById('prod-price').value),
       unit: document.getElementById('prod-unit').value.trim(),
       description: document.getElementById('prod-desc').value.trim(),
-      imageUrl: document.getElementById('prod-image').value.trim() || 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop',
-      isActive: true,
+      image: imgVal,
+      image_url: imgVal,
+      is_active: true,
+      available: true,
     };
 
-    try {
-      if (id) {
-        const updated = await API.put(`/products/${id}`, payload);
-        const idx = _products.findIndex(p => p.id == id);
-        if (idx !== -1) _products[idx] = updated;
-        showToast('Product updated!', 'success');
-      } else {
-        const created = await API.post('/products', payload);
-        _products.push(created);
-        showToast('Product added!', 'success');
-      }
-      document.getElementById('product-modal').classList.remove('open');
-      renderAdminProducts();
-      renderInventory();
-    } catch (err) {
-      showToast('Failed to save product: ' + err.message, 'error');
+    if (id) {
+      const idx = _products.findIndex(p => p.id == id);
+      if (idx !== -1) { _products[idx] = { ..._products[idx], ...payload }; DB.updateProduct(_products[idx]); }
+      showToast('Product updated!', 'success');
+    } else {
+      const newProd = { ...payload, id: generateId('p_'), stockKg: 0, minStock: 5 };
+      _products.push(newProd);
+      const prods = DB.getProducts();
+      prods.push(newProd);
+      DB.saveProducts(prods);
+      showToast('Product added!', 'success');
     }
+    document.getElementById('product-modal').classList.remove('open');
+    renderAdminProducts();
+    renderInventory();
   });
 }
 
@@ -484,29 +510,30 @@ function renderAdminCustomers() {
   }
 
   tbody.innerHTML = [..._users]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .sort((a, b) => (toDate(b.createdAt) || 0) - (toDate(a.createdAt) || 0))
     .map(u => {
-      const orderCount = _orders.filter(o => o.user_id === u.id).length;
+      const orderCount = _orders.filter(o => o.userId === u.id).length;
       return `<tr>
         <td>
           <div style="display:flex;align-items:center;gap:10px">
             <div class="user-avatar" style="width:32px;height:32px;font-size:0.85rem">${(u.name || '?')[0]}</div>
             <div>
-              <div style="font-weight:600">${u.name} ${u.surname}</div>
+              <div style="font-weight:600">${u.name} ${u.surname || ''}</div>
               <div style="font-size:0.78rem;color:var(--text-muted)">${u.email}</div>
             </div>
           </div>
         </td>
-        <td><span class="ref-number" style="font-size:1rem;letter-spacing:2px">${u.ref_number || ''}</span></td>
+        <td><span class="ref-number" style="font-size:1rem;letter-spacing:2px">${u.refNumber || ''}</span></td>
         <td>${u.phone || ''}</td>
-        <td class="text-gold font-bold">${formatCurrency(u.credit_balance)}</td>
+        <td class="text-gold font-bold">${formatCurrency(u.creditBalance || 0)}</td>
         <td>${orderCount}</td>
-        <td style="font-size:0.8rem;color:var(--text-muted)">${formatDateShort(u.created_at)}</td>
+        <td style="font-size:0.8rem;color:var(--text-muted)">${formatDateShort(toDate(u.createdAt))}</td>
       </tr>`;
     }).join('');
 
   const searchEl = document.getElementById('customer-search');
-  if (searchEl) {
+  if (searchEl && !searchEl._searchBound) {
+    searchEl._searchBound = true;
     searchEl.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
       tbody.querySelectorAll('tr').forEach(row => {

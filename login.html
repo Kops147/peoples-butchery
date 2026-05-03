@@ -216,7 +216,8 @@
       }
 
       try {
-        // Admin accounts are stored locally — check first
+        // Ensure admin accounts are seeded before checking
+        await seedAdmin();
         const localUser = DB.findUserByEmail(email);
         if (localUser && localUser.isAdmin) {
           const hash = await hashPassword(password);
