@@ -6,96 +6,339 @@
   <title>Butcher Station — The Peoples Butchery</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { background: #0A0A0A; color: #E0E0E0; }
-    .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 20px; }
-    .ticket-card { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 20px; border-left: 4px solid #ff4d4d; }
-    .order-num { font-family: var(--font-head); font-weight: 800; font-size: 1.2rem; color: #ff4d4d; }
-    .item-list { list-style: none; padding: 0; margin-bottom: 20px; }
-    .item-list li { padding: 8px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
-    .item-qty { font-weight: 700; color: #ff4d4d; margin-right: 10px; }
-    .badge-dept { background: #1A1A1A; color: #888; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; }
+    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 16px; }
+    .stn-title { display: flex; align-items: center; gap: 12px; }
+    .stn-title h1 { font-family: var(--font-head); font-size: 1.25rem; margin: 0; color: #fff; }
+    .stn-badge { background: rgba(255,77,77,.12); border: 1px solid rgba(255,77,77,.3); color: #ff6b6b; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    .stn-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stn-nav a { color: #555; text-decoration: none; font-size: .73rem; padding: 5px 10px; border: 1px solid #222; border-radius: 6px; transition: all .2s; white-space: nowrap; }
+    .stn-nav a:hover { color: #aaa; border-color: #444; }
+    .stn-nav a.active { color: #ff6b6b; border-color: rgba(255,107,107,.4); background: rgba(255,77,77,.05); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff6b6b; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
+    @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
+    .stn-clock { font-size: .8rem; color: #444; white-space: nowrap; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 0; height: calc(100vh - 65px); overflow: hidden; }
+    @media(max-width:900px){ .main-grid { grid-template-columns: 1fr; height:auto; overflow:auto; } }
+
+    /* LEFT — Stock */
+    .panel-left { border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow: hidden; }
+    .panel-header { padding: 16px 20px 12px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
+    .panel-title { font-family: var(--font-head); font-weight: 700; font-size: .95rem; color: #ccc; }
+    .panel-scroll { overflow-y: auto; flex: 1; }
+
+    .stock-table { width: 100%; border-collapse: collapse; }
+    .stock-table th { padding: 8px 20px; font-size: .68rem; text-transform: uppercase; letter-spacing: 1.5px; color: #3a3a3a; font-weight: 700; text-align: left; border-bottom: 1px solid #1a1a1a; position: sticky; top: 0; background: #0A0A0A; }
+    .stock-table td { padding: 12px 20px; border-bottom: 1px solid #141414; font-size: .88rem; }
+    .stock-table tr:hover td { background: #111; }
+    .stock-table tr:last-child td { border-bottom: none; }
+
+    .qty-cell { font-family: var(--font-head); font-weight: 800; font-size: 1.05rem; }
+    .qty-green { color: #3DD68C; }
+    .qty-yellow { color: #f0a000; }
+    .qty-red    { color: #ff4d4d; }
+
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: .7rem; font-weight: 700; }
+    .pill-green  { background: rgba(61,214,140,.1); color: #3DD68C; border: 1px solid rgba(61,214,140,.2); }
+    .pill-yellow { background: rgba(240,160,0,.1);  color: #f0a000;  border: 1px solid rgba(240,160,0,.2); }
+    .pill-red    { background: rgba(255,77,77,.1);  color: #ff4d4d;  border: 1px solid rgba(255,77,77,.2); }
+
+    .restock-btn { background: transparent; border: 1px solid #2a2a2a; color: #555; padding: 4px 10px; border-radius: 6px; font-size: .72rem; cursor: pointer; transition: all .2s; }
+    .restock-btn:hover { border-color: #3DD68C; color: #3DD68C; }
+
+    /* RIGHT — Alerts + Schedule */
+    .panel-right { display: flex; flex-direction: column; overflow: hidden; }
+    .right-section { border-bottom: 1px solid #1a1a1a; flex-shrink: 0; }
+    .right-section:last-child { border-bottom: none; flex: 1; overflow-y: auto; }
+    .rsec-head { padding: 14px 18px 10px; display: flex; justify-content: space-between; align-items: center; }
+    .rsec-title { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: #bbb; }
+
+    .alert-card { margin: 0 16px 12px; background: rgba(255,77,77,.05); border: 1px solid rgba(255,77,77,.15); border-radius: 10px; padding: 12px 14px; }
+    .alert-product { font-weight: 700; font-size: .9rem; color: #ff6b6b; margin-bottom: 4px; }
+    .alert-detail  { font-size: .78rem; color: #888; margin-bottom: 8px; }
+    .alert-tip { font-size: .75rem; color: #f0a000; background: rgba(240,160,0,.08); border: 1px solid rgba(240,160,0,.2); border-radius: 6px; padding: 6px 10px; }
+
+    .schedule-row { padding: 12px 18px; border-bottom: 1px solid #141414; display: flex; justify-content: space-between; align-items: center; }
+    .schedule-row:last-child { border-bottom: none; }
+    .sched-time { font-size: .75rem; color: #555; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .sched-item { font-size: .88rem; color: #ccc; }
+    .sched-qty  { font-family: var(--font-head); font-weight: 700; color: #f0a000; }
+
+    .empty-panel { text-align: center; padding: 32px 16px; color: #2a2a2a; }
+    .empty-panel .ei { font-size: 2rem; margin-bottom: 8px; }
+    .empty-panel p { font-size: .8rem; }
+
+    /* Restock modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: #141414; border: 1px solid #2a2a2a; border-radius: 14px; padding: 28px; width: 360px; max-width: 90vw; }
+    .modal-title { font-family: var(--font-head); font-weight: 800; font-size: 1.1rem; margin-bottom: 4px; }
+    .modal-sub { font-size: .82rem; color: #666; margin-bottom: 20px; }
+    .modal-label { font-size: .78rem; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .modal-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #E0E0E0; padding: 10px 14px; border-radius: 8px; font-size: .95rem; box-sizing: border-box; }
+    .modal-input:focus { outline: none; border-color: #3DD68C; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
   <div id="toast-container"></div>
-  
-  <header style="padding: 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: baseline; gap: 15px;">
-      <h1 style="font-size: 1.5rem; margin: 0;">Butcher Station</h1>
-      <span class="badge-dept">Live Feed — Raw Meat Sorting</span>
+
+  <header class="stn-header">
+    <div class="stn-title">
+      <span style="font-size:1.4rem">🥩</span>
+      <h1>Butcher Station</h1>
+      <span class="stn-badge">Inventory &amp; Cutting</span>
     </div>
-    <div class="sponsor-brand">
-      <svg width="120" height="34" viewBox="0 0 160 44">
-        <rect width="160" height="44" rx="6" fill="#000"/>
-        <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
-        <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
-      </svg>
+    <nav class="stn-nav">
+      <a href="cashier.html">💰 Cashier</a>
+      <a href="kitchen.html">🍳 Kitchen</a>
+      <a href="butcher.html" class="active">🥩 Butcher</a>
+      <a href="dispatch.html">🚚 Dispatch</a>
+      <a href="admin.html">⚙️ Admin</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="live-dot"></span>
+      <span class="stn-clock" id="clock">—</span>
     </div>
   </header>
 
-  <main class="ticket-grid" id="ticket-container">
-    <div style="grid-column: 1/-1; text-align: center; padding: 100px; color: #444;">
-      <div style="font-size: 3rem; margin-bottom: 20px;">🥩</div>
-      <h3>No raw meat orders pending.</h3>
-      <p>New orders requiring cutting/packaging will appear here.</p>
+  <div class="main-grid">
+    <!-- LEFT: Stock -->
+    <div class="panel-left">
+      <div class="panel-header">
+        <span class="panel-title">📦 Live Stock Status</span>
+        <button class="btn btn-outline btn-sm" onclick="load()" style="font-size:.75rem">↻ Refresh</button>
+      </div>
+      <div class="panel-scroll">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>In Stock</th>
+              <th>Unit</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="stock-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:#333">Loading stock...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </main>
+
+    <!-- RIGHT: Alerts + Schedule -->
+    <div class="panel-right">
+      <!-- Spoilage / Low Stock Alerts -->
+      <div class="right-section" style="max-height:45%">
+        <div class="rsec-head">
+          <span class="rsec-title">⚠️ Low Stock Alerts</span>
+          <span id="alert-count" style="font-size:.72rem;color:#ff6b6b;font-weight:700"></span>
+        </div>
+        <div id="alerts-container">
+          <div class="empty-panel"><div class="ei">✅</div><p>All stock levels healthy</p></div>
+        </div>
+      </div>
+
+      <!-- Cutting Schedule -->
+      <div class="right-section">
+        <div class="rsec-head">
+          <span class="rsec-title">📊 Cutting Schedule</span>
+          <span style="font-size:.72rem;color:#555">Based on pending orders</span>
+        </div>
+        <div id="schedule-container">
+          <div class="empty-panel"><div class="ei">📋</div><p>No pending orders to schedule</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Restock Modal -->
+  <div class="modal-overlay" id="restock-modal">
+    <div class="modal-box">
+      <div class="modal-title">+ Log Restock</div>
+      <div class="modal-sub" id="restock-product-name">Product</div>
+      <div class="modal-label">Current Stock</div>
+      <div style="font-family:var(--font-head);font-weight:800;font-size:1.5rem;margin-bottom:16px" id="restock-current">—</div>
+      <div class="modal-label">Add Quantity</div>
+      <input class="modal-input" type="number" id="restock-qty" placeholder="e.g. 20" min="1" style="margin-bottom:12px">
+      <div class="modal-label">New Total Will Be</div>
+      <div style="font-family:var(--font-head);font-weight:700;font-size:1.1rem;color:#3DD68C;margin-bottom:4px" id="restock-new-total">—</div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeRestock()" style="flex:1">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmRestock()" style="flex:2" id="restock-confirm-btn">✅ Confirm Restock</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/app.js"></script>
   <script>
-    const DEPT = 'butcher';
-    
-    async function fetchTickets() {
+    // Clock
+    function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    setInterval(tick, 1000); tick();
+
+    let _fb = null;
+    async function fb(){
+      if(_fb) return _fb;
+      const [cfg, fs] = await Promise.all([import('./js/firebase-config.js'), import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')]);
+      _fb = { db: cfg.db, ...fs };
+      return _fb;
+    }
+
+    let _products = [];
+    let _restockTarget = null;
+
+    function stockStatus(qty, unit) {
+      const isEach = unit === 'each';
+      const low = isEach ? 5 : 3, med = isEach ? 20 : 10;
+      if (qty <= low)  return { cls: 'qty-red',    pill: 'pill-red',    label: '🔴 LOW', text: 'LOW' };
+      if (qty <= med)  return { cls: 'qty-yellow',  pill: 'pill-yellow', label: '🟡 Medium', text: 'MEDIUM' };
+      return              { cls: 'qty-green',   pill: 'pill-green',  label: '🟢 Good', text: 'GOOD' };
+    }
+
+    async function load(){
       try {
-        const res = await fetch(`${API_BASE_URL}/tickets?department=${DEPT}`);
-        const tickets = await res.json();
-        renderTickets(Array.isArray(tickets) ? tickets : []);
-      } catch (err) {
-        console.error('Failed to fetch tickets:', err);
-        document.getElementById('ticket-container').innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Could not connect to server</p>';
+        const { db, collection, getDocs, query, where } = await fb();
+        const [prodSnap, ordSnap] = await Promise.all([
+          getDocs(collection(db, 'products')),
+          getDocs(query(collection(db, 'orders'), where('status', 'in', ['pending','braai'])))
+        ]);
+
+        _products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const pendingOrders = ordSnap.docs.map(d => d.data());
+
+        renderStock(_products);
+        renderAlerts(_products);
+        renderSchedule(_products, pendingOrders);
+      } catch(e) {
+        document.getElementById('stock-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#ff4d4d">⚠ ${e.message}</td></tr>`;
       }
     }
 
-    function renderTickets(tickets) {
-      const container = document.getElementById('ticket-container');
-      if (tickets.length === 0) return;
-      
-      container.innerHTML = tickets.map(t => `
-        <div class="ticket-card">
-          <div class="ticket-header" style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <div>
-              <div class="order-num">#${t.order_number.slice(-6)}</div>
-              <div style="font-size: 0.75rem; color: #666;">ID: ${t.id}</div>
-            </div>
-          </div>
-          <ul class="item-list">
-            ${(t.items || []).map(item => `
-              <li>
-                <span><span class="item-qty">${item.qty}${item.unit || 'kg'}</span> ${item.name}</span>
-              </li>
-            `).join('')}
-          </ul>
-          <button class="btn btn-primary btn-full" onclick="updateTicket('${t.id}', 'done')">Packed & Ready</button>
-        </div>
-      `).join('');
+    function renderStock(products) {
+      const sorted = [...products].sort((a,b) => {
+        const sa = stockStatus(a.stockQty||0, a.unit);
+        const sb = stockStatus(b.stockQty||0, b.unit);
+        const order = { 'LOW':0, 'MEDIUM':1, 'GOOD':2 };
+        return (order[sa.text]||0) - (order[sb.text]||0);
+      });
+
+      document.getElementById('stock-tbody').innerHTML = sorted.map(p => {
+        const qty = p.stockQty || 0;
+        const s = stockStatus(qty, p.unit);
+        return `
+        <tr>
+          <td><strong>${p.name}</strong></td>
+          <td><span style="font-size:.75rem;color:#555">${p.categoryLabel||p.category||'—'}</span></td>
+          <td class="qty-cell ${s.cls}">${qty}</td>
+          <td style="font-size:.78rem;color:#555">${p.unit||'per kg'}</td>
+          <td><span class="status-pill ${s.pill}">${s.label}</span></td>
+          <td><button class="restock-btn" onclick="openRestock('${p.id}')">+ Restock</button></td>
+        </tr>`;
+      }).join('');
     }
 
-    async function updateTicket(id, status) {
-      try {
-        await fetch(`${API_BASE_URL}/tickets/${id}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status })
+    function renderAlerts(products) {
+      const alerts = products.filter(p => {
+        const qty = p.stockQty || 0;
+        const s = stockStatus(qty, p.unit);
+        return s.text === 'LOW' || s.text === 'MEDIUM';
+      }).sort((a,b) => (a.stockQty||0) - (b.stockQty||0));
+
+      const cnt = document.getElementById('alert-count');
+      cnt.textContent = alerts.length ? alerts.length + ' alert' + (alerts.length > 1 ? 's' : '') : '';
+
+      if (!alerts.length) {
+        document.getElementById('alerts-container').innerHTML = `<div class="empty-panel"><div class="ei">✅</div><p>All stock levels healthy</p></div>`;
+        return;
+      }
+
+      document.getElementById('alerts-container').innerHTML = alerts.slice(0, 5).map(p => {
+        const qty = p.stockQty || 0;
+        const isCritical = qty <= (p.unit === 'each' ? 5 : 3);
+        return `
+        <div class="alert-card">
+          <div class="alert-product">${isCritical ? '🔴' : '🟡'} ${p.name} — ${qty} ${p.unit||'kg'} remaining</div>
+          <div class="alert-detail">Last price: R${parseFloat(p.price||0).toFixed(2)} ${p.unit||'per kg'}</div>
+          ${isCritical ? `<div class="alert-tip">💡 Consider running a special to clear remaining stock or restock urgently.</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    function renderSchedule(products, pendingOrders) {
+      // Aggregate pending order items
+      const needed = {};
+      pendingOrders.forEach(o => {
+        (o.items||[]).forEach(it => {
+          const key = it.name;
+          needed[key] = (needed[key] || 0) + parseFloat(it.qty||1);
         });
-        showToast('Ticket updated!', 'success');
-      } catch (err) {
-        showToast('Failed to update ticket', 'error');
+      });
+
+      const entries = Object.entries(needed).sort((a,b) => b[1]-a[1]);
+      if (!entries.length) {
+        document.getElementById('schedule-container').innerHTML = `<div class="empty-panel"><div class="ei">📋</div><p>No pending orders to schedule</p></div>`;
+        return;
       }
-      setTimeout(fetchTickets, 500);
+
+      const shifts = [
+        { label: 'Morning', icon: '🌅', items: entries.slice(0, Math.ceil(entries.length/3)) },
+        { label: 'Midday',  icon: '☀️', items: entries.slice(Math.ceil(entries.length/3), Math.ceil(entries.length*2/3)) },
+        { label: 'Evening', icon: '🌙', items: entries.slice(Math.ceil(entries.length*2/3)) },
+      ].filter(s => s.items.length);
+
+      document.getElementById('schedule-container').innerHTML = shifts.map(sh =>
+        sh.items.map((e, i) => `
+        <div class="schedule-row">
+          <div>
+            ${i === 0 ? `<div class="sched-time">${sh.icon} ${sh.label}</div>` : '<div style="height:18px"></div>'}
+            <div class="sched-item">${e[0]}</div>
+          </div>
+          <div class="sched-qty">${e[1].toFixed(1)} kg</div>
+        </div>`).join('')
+      ).join('');
     }
 
-    setInterval(fetchTickets, 5000);
-    fetchTickets();
+    // Restock modal
+    function openRestock(productId) {
+      const p = _products.find(x => x.id === productId);
+      if (!p) return;
+      _restockTarget = p;
+      document.getElementById('restock-product-name').textContent = p.name;
+      document.getElementById('restock-current').textContent = (p.stockQty||0) + ' ' + (p.unit||'kg');
+      document.getElementById('restock-qty').value = '';
+      document.getElementById('restock-new-total').textContent = '—';
+      document.getElementById('restock-modal').classList.add('open');
+    }
+
+    document.getElementById('restock-qty').addEventListener('input', function(){
+      const add = parseFloat(this.value)||0;
+      const cur = parseFloat(_restockTarget?.stockQty||0);
+      document.getElementById('restock-new-total').textContent = (cur + add).toFixed(1) + ' ' + (_restockTarget?.unit||'kg');
+    });
+
+    function closeRestock() { document.getElementById('restock-modal').classList.remove('open'); }
+
+    async function confirmRestock() {
+      const add = parseFloat(document.getElementById('restock-qty').value)||0;
+      if (add <= 0 || !_restockTarget) return;
+      const btn = document.getElementById('restock-confirm-btn');
+      btn.disabled = true; btn.textContent = 'Saving...';
+      try {
+        const { db, doc, updateDoc } = await fb();
+        const newQty = (parseFloat(_restockTarget.stockQty||0) + add);
+        await updateDoc(doc(db, 'products', _restockTarget.id), { stockQty: newQty, available_qty: newQty, available: true, is_active: true });
+        showToast(`✅ ${_restockTarget.name} restocked to ${newQty} ${_restockTarget.unit||'kg'}`, 'success');
+        closeRestock();
+        await load();
+      } catch(e) { showToast('Error: ' + e.message, 'error'); }
+      btn.disabled = false; btn.textContent = '✅ Confirm Restock';
+    }
+
+    load();
+    setInterval(load, 60000);
   </script>
 </body>
 </html>

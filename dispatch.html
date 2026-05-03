@@ -6,101 +6,313 @@
   <title>Dispatch Control — The Peoples Butchery</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { background: #0A0A0A; color: #E0E0E0; }
-    .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; padding: 20px; }
-    .ticket-card { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 20px; border-left: 4px solid #3498db; }
-    .order-num { font-family: var(--font-head); font-weight: 800; font-size: 1.2rem; color: #3498db; }
-    .badge-dept { background: #1A1A1A; color: #888; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
-    .dispatch-info { margin: 15px 0; font-size: 0.85rem; color: #aaa; }
-    .driver-selector { margin-top: 10px; background: #000; color: #fff; border: 1px solid #333; padding: 10px; width: 100%; border-radius: 6px; }
+    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; }
+    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 16px; }
+    .stn-title { display: flex; align-items: center; gap: 12px; }
+    .stn-title h1 { font-family: var(--font-head); font-size: 1.25rem; margin: 0; color: #fff; }
+    .stn-badge { background: rgba(52,152,219,.12); border: 1px solid rgba(52,152,219,.3); color: #3498db; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    .stn-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stn-nav a { color: #555; text-decoration: none; font-size: .73rem; padding: 5px 10px; border: 1px solid #222; border-radius: 6px; transition: all .2s; white-space: nowrap; }
+    .stn-nav a:hover { color: #aaa; border-color: #444; }
+    .stn-nav a.active { color: #3498db; border-color: rgba(52,152,219,.4); background: rgba(52,152,219,.05); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #3498db; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
+    @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
+    .stn-clock { font-size: .8rem; color: #444; white-space: nowrap; }
+
+    /* Stats */
+    .stats-bar { background: #0D0D0D; border-bottom: 1px solid #1a1a1a; padding: 12px 24px; display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+    .stat-chip { display: flex; align-items: center; gap: 8px; }
+    .stat-num { font-family: var(--font-head); font-weight: 800; font-size: 1.3rem; }
+    .stat-lbl { font-size: .73rem; color: #555; }
+    .stat-div { width: 1px; height: 28px; background: #1e1e1e; }
+
+    /* Layout */
+    .dispatch-grid { display: grid; grid-template-columns: 1fr 1fr; height: calc(100vh - 120px); overflow: hidden; }
+    @media(max-width:800px){ .dispatch-grid { grid-template-columns: 1fr; height:auto; overflow:auto; } }
+
+    /* Panel */
+    .dpanel { border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow: hidden; }
+    .dpanel:last-child { border-right: none; }
+    .dpanel-head { padding: 14px 20px 12px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .dpanel-title { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: #bbb; }
+    .dpanel-scroll { overflow-y: auto; flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Dispatch Card */
+    .dcard { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; }
+    .dcard.delivery { border-left: 4px solid #3498db; }
+    .dcard.collect  { border-left: 4px solid #e8a020; }
+    .dcard.active   { border-left: 4px solid #3DD68C; }
+
+    .dcard-head { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .dcard-id { font-family: var(--font-head); font-weight: 800; font-size: 1rem; }
+    .delivery .dcard-id { color: #3498db; }
+    .collect  .dcard-id { color: #e8a020; }
+    .active   .dcard-id { color: #3DD68C; }
+
+    .dcard-total { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: #e8a020; }
+
+    .dcard-info { padding: 0 16px 10px; }
+    .dcard-addr { font-size: .85rem; color: #999; margin-bottom: 4px; }
+    .dcard-customer { font-size: .78rem; color: #666; }
+
+    .dcard-tags { padding: 0 16px 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .dtag { font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid; }
+    .dtag-delivery { color: #3498db; border-color: rgba(52,152,219,.3); background: rgba(52,152,219,.08); }
+    .dtag-collect  { color: #e8a020; border-color: rgba(232,160,32,.3); background: rgba(232,160,32,.08); }
+    .dtag-ready    { color: #3DD68C; border-color: rgba(61,214,140,.3); background: rgba(61,214,140,.08); }
+    .dtag-active   { color: #9b59b6; border-color: rgba(155,89,182,.3); background: rgba(155,89,182,.08); }
+    .dtag-time     { color: #555; border-color: #2a2a2a; background: transparent; }
+
+    .dcard-items { border-top: 1px solid #1a1a1a; padding: 8px 16px; }
+    .dcard-items-list { list-style: none; margin: 0; padding: 0; }
+    .dcard-items-list li { font-size: .8rem; color: #777; padding: 3px 0; }
+
+    .dcard-driver { padding: 8px 16px 0; }
+    .driver-select { width: 100%; background: #0f0f0f; border: 1px solid #2a2a2a; color: #999; padding: 7px 10px; border-radius: 7px; font-size: .82rem; }
+    .driver-select:focus { outline: none; border-color: #3498db; }
+
+    .dcard-actions { padding: 10px 16px 14px; display: flex; gap: 8px; }
+    .btn-dispatch-go { background: rgba(52,152,219,.12); color: #3498db; border: 1px solid rgba(52,152,219,.4); border-radius: 8px; padding: 9px 14px; font-weight: 700; font-size: .82rem; cursor: pointer; flex: 1; transition: background .2s; }
+    .btn-dispatch-go:hover { background: rgba(52,152,219,.22); }
+    .btn-collected { background: rgba(232,160,32,.12); color: #e8a020; border: 1px solid rgba(232,160,32,.4); border-radius: 8px; padding: 9px 14px; font-weight: 700; font-size: .82rem; cursor: pointer; flex: 1; transition: background .2s; }
+    .btn-collected:hover { background: rgba(232,160,32,.22); }
+    .btn-delivered { background: rgba(61,214,140,.12); color: #3DD68C; border: 1px solid rgba(61,214,140,.4); border-radius: 8px; padding: 9px 14px; font-weight: 700; font-size: .82rem; cursor: pointer; flex: 1; transition: background .2s; }
+    .btn-delivered:hover { background: rgba(61,214,140,.22); }
+
+    .empty-panel { text-align: center; padding: 60px 16px; color: #2a2a2a; }
+    .empty-panel .ei { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-panel p { font-size: .8rem; }
+
+    /* Route suggestion */
+    .route-box { margin: 0 12px 10px; background: rgba(155,89,182,.08); border: 1px solid rgba(155,89,182,.2); border-radius: 10px; padding: 12px 14px; }
+    .route-title { font-size: .75rem; font-weight: 700; color: #9b59b6; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .route-tip { font-size: .8rem; color: #888; }
   </style>
 </head>
 <body>
   <div id="toast-container"></div>
-  
-  <header style="padding: 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: baseline; gap: 15px;">
-      <h1 style="font-size: 1.5rem; margin: 0;">Dispatch Control</h1>
-      <span class="badge-dept">Fleet Management — Ready to Ship</span>
+
+  <header class="stn-header">
+    <div class="stn-title">
+      <span style="font-size:1.4rem">🚚</span>
+      <h1>Dispatch Control</h1>
+      <span class="stn-badge">Fleet Management</span>
     </div>
-    <div class="sponsor-brand">
-       <svg width="120" height="34" viewBox="0 0 160 44">
-        <rect width="160" height="44" rx="6" fill="#000"/>
-        <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
-        <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
-      </svg>
+    <nav class="stn-nav">
+      <a href="cashier.html">💰 Cashier</a>
+      <a href="kitchen.html">🍳 Kitchen</a>
+      <a href="butcher.html">🥩 Butcher</a>
+      <a href="dispatch.html" class="active">🚚 Dispatch</a>
+      <a href="admin.html">⚙️ Admin</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="live-dot"></span>
+      <span class="stn-clock" id="clock">—</span>
     </div>
   </header>
 
-  <main class="ticket-grid" id="ticket-container">
-    <div style="grid-column: 1/-1; text-align: center; padding: 100px; color: #444;">
-      <div style="font-size: 3rem; margin-bottom: 20px;">🚚</div>
-      <h3>All quiet in Dispatch.</h3>
-      <p>Orders ready for delivery or collection will appear here.</p>
+  <div class="stats-bar">
+    <div class="stat-chip">
+      <span class="stat-num" style="color:#e8a020" id="s-ready">—</span>
+      <span class="stat-lbl">Ready to Dispatch</span>
     </div>
-  </main>
+    <div class="stat-div"></div>
+    <div class="stat-chip">
+      <span class="stat-num" style="color:#3498db" id="s-active">—</span>
+      <span class="stat-lbl">En Route</span>
+    </div>
+    <div class="stat-div"></div>
+    <div class="stat-chip">
+      <span class="stat-num" style="color:#3DD68C" id="s-delivered">—</span>
+      <span class="stat-lbl">Delivered Today</span>
+    </div>
+    <div style="margin-left:auto;font-size:.72rem;color:#333" id="refresh-lbl">Loading...</div>
+  </div>
+
+  <div class="dispatch-grid">
+    <!-- LEFT: Ready to Dispatch -->
+    <div class="dpanel">
+      <div class="dpanel-head">
+        <span class="dpanel-title">📦 Ready for Dispatch / Collection</span>
+        <span id="ready-count" style="font-size:.75rem;color:#e8a020;font-weight:700"></span>
+      </div>
+      <div class="dpanel-scroll" id="ready-list">
+        <div class="empty-panel"><div class="ei">📦</div><p>No orders ready yet.</p></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Active Deliveries -->
+    <div class="dpanel">
+      <div class="dpanel-head">
+        <span class="dpanel-title">🛵 Active Deliveries</span>
+        <span id="active-count" style="font-size:.75rem;color:#3498db;font-weight:700"></span>
+      </div>
+      <div class="dpanel-scroll" id="active-list">
+        <div class="empty-panel"><div class="ei">🛵</div><p>No active deliveries.</p></div>
+      </div>
+    </div>
+  </div>
 
   <script src="js/app.js"></script>
   <script>
-    const DEPT = 'dispatch';
-    
-    async function fetchTickets() {
+    function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    setInterval(tick,1000); tick();
+
+    let _fb = null;
+    async function fb(){
+      if(_fb) return _fb;
+      const [cfg, fs] = await Promise.all([import('./js/firebase-config.js'), import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')]);
+      _fb = { db: cfg.db, ...fs };
+      return _fb;
+    }
+
+    function toDate(v){ return v?.toDate ? v.toDate() : v ? new Date(v) : null; }
+    function fmtTime(d){ return d ? d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}) : ''; }
+    function minsAgo(d){ return d ? Math.floor((Date.now()-d.getTime())/60000) : 0; }
+
+    async function load(){
       try {
-        const res = await fetch(`${API_BASE_URL}/tickets?department=${DEPT}`);
-        const tickets = await res.json();
-        renderTickets(Array.isArray(tickets) ? tickets : []);
-      } catch (err) {
-        console.error('Failed to fetch tickets:', err);
-        document.getElementById('ticket-container').innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Could not connect to server</p>';
+        const { db, collection, getDocs, query, where } = await fb();
+        const [readySnap, activeSnap, doneSnap] = await Promise.all([
+          getDocs(query(collection(db,'orders'), where('status','in',['packaging']))),
+          getDocs(query(collection(db,'orders'), where('status','==','dispatched'))),
+          getDocs(query(collection(db,'orders'), where('status','in',['delivered','collected'])))
+        ]);
+
+        const ready = readySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const active = activeSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        document.getElementById('s-ready').textContent = ready.length;
+        document.getElementById('s-active').textContent = active.length;
+        document.getElementById('s-delivered').textContent = doneSnap.size;
+        document.getElementById('ready-count').textContent = ready.length ? ready.length + ' order' + (ready.length>1?'s':'') + ' waiting' : '';
+        document.getElementById('active-count').textContent = active.length ? active.length + ' en route' : '';
+
+        renderReady(ready);
+        renderActive(active);
+        document.getElementById('refresh-lbl').textContent = '↻ Updated ' + new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+
+        // Route suggestion
+        const deliveries = ready.filter(o => o.deliveryMethod==='delivery');
+        if (deliveries.length >= 2) {
+          const routeEl = document.getElementById('route-suggestion');
+          if (!routeEl) {
+            const box = document.createElement('div');
+            box.id = 'route-suggestion';
+            box.className = 'route-box';
+            box.innerHTML = `<div class="route-title">🗺️ Route Suggestion</div><div class="route-tip">💡 ${deliveries.length} deliveries pending — consider grouping nearby orders into one trip to save time and fuel.</div>`;
+            document.getElementById('ready-list').prepend(box);
+          }
+        }
+      } catch(e) {
+        document.getElementById('refresh-lbl').textContent = '⚠ ' + e.message;
       }
     }
 
-    function renderTickets(tickets) {
-      const container = document.getElementById('ticket-container');
-      if (tickets.length === 0) return;
-      
-      container.innerHTML = tickets.map(t => `
-        <div class="ticket-card">
-          <div class="ticket-header" style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <div class="order-num">#${t.order_number.slice(-6)}</div>
-            <div class="badge ${t.method === 'delivery' ? 'badge-blue' : 'badge-gold'}">${t.method.toUpperCase()}</div>
-          </div>
-          <div class="dispatch-info">
-            <div>📍 ${t.address || 'Collect at Store'}</div>
-            ${t.distance ? `<div style="margin-top:5px;">📏 Distance: <strong>${t.distance}</strong></div>` : ''}
-          </div>
-          
-          ${t.method === 'delivery' ? `
-            <select class="driver-selector">
-              <option>Assign Driver...</option>
-              <option>Thabo (Bike 1)</option>
-              <option>Sipho (Bike 2)</option>
-              <option>Lerato (Car 1)</option>
-            </select>
-            <button class="btn btn-primary btn-full mt-4" onclick="updateTicket('${t.id}', 'dispatched')">Dispatch Order</button>
-          ` : `
-            <button class="btn btn-success btn-full" onclick="updateTicket('${t.id}', 'collected')">Handed to Customer</button>
-          `}
-        </div>
-      `).join('');
-    }
-
-    async function updateTicket(id, status) {
-      try {
-        await fetch(`${API_BASE_URL}/tickets/${id}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status })
-        });
-        showToast(`Order ${status}!`, 'success');
-      } catch (err) {
-        showToast('Failed to update ticket', 'error');
+    function renderReady(orders){
+      if (!orders.length){
+        document.getElementById('ready-list').innerHTML = `<div class="empty-panel"><div class="ei">📦</div><p>No orders ready yet.<br>Kitchen will send them here.</p></div>`;
+        return;
       }
-      setTimeout(fetchTickets, 500);
+      document.getElementById('ready-list').innerHTML = orders.map(o => {
+        const isDelivery = o.deliveryMethod === 'delivery';
+        const created = toDate(o.createdAt);
+        const items = (o.items||[]).slice(0,3).map(it => `<li>• ${it.qty}${it.unit&&it.unit!=='each'?it.unit:'×'} ${it.name}</li>`).join('') +
+          (o.items?.length > 3 ? `<li style="color:#555">+${o.items.length-3} more...</li>` : '');
+
+        const actionBtn = isDelivery
+          ? `<div class="dcard-driver"><select class="driver-select" id="driver-${o.id}">
+               <option value="">— Assign driver —</option>
+               <option>Thabo (Bike 1)</option>
+               <option>Sipho (Bike 2)</option>
+               <option>Lerato (Car 1)</option>
+             </select></div>
+             <div class="dcard-actions"><button class="btn-dispatch-go" onclick="dispatch('${o.id}')">🛵 Dispatch Now</button></div>`
+          : `<div class="dcard-actions"><button class="btn-collected" onclick="markCollected('${o.id}')">🏪 Customer Collected</button></div>`;
+
+        return `
+        <div class="dcard ${isDelivery?'delivery':'collect'}">
+          <div class="dcard-head">
+            <div class="dcard-id">#${o.id.slice(-5).toUpperCase()}</div>
+            <div class="dcard-total">R${parseFloat(o.total||0).toFixed(2)}</div>
+          </div>
+          <div class="dcard-tags">
+            <span class="dtag ${isDelivery?'dtag-delivery':'dtag-collect'}">${isDelivery?'🚴 Delivery':'🏪 Collect'}</span>
+            <span class="dtag dtag-ready">📦 Ready</span>
+            <span class="dtag dtag-time">⏱ ${fmtTime(created)}</span>
+          </div>
+          <div class="dcard-info">
+            <div class="dcard-addr">📍 ${isDelivery ? (o.deliveryAddress||'Address not set') : '76 Meeu St, East Lynne'}</div>
+            <div class="dcard-customer">👤 ${o.userName||o.userEmail||'Walk-in'}</div>
+          </div>
+          <div class="dcard-items"><ul class="dcard-items-list">${items}</ul></div>
+          ${actionBtn}
+        </div>`;
+      }).join('');
     }
 
-    setInterval(fetchTickets, 5000);
-    fetchTickets();
+    function renderActive(orders){
+      if (!orders.length){
+        document.getElementById('active-list').innerHTML = `<div class="empty-panel"><div class="ei">🛵</div><p>No active deliveries.</p></div>`;
+        return;
+      }
+      document.getElementById('active-list').innerHTML = orders.map(o => {
+        const dispatched = toDate(o.updatedAt||o.createdAt);
+        const elapsed = minsAgo(dispatched);
+        const items = (o.items||[]).slice(0,3).map(it => `<li>• ${it.qty}${it.unit&&it.unit!=='each'?it.unit:'×'} ${it.name}</li>`).join('');
+
+        return `
+        <div class="dcard active">
+          <div class="dcard-head">
+            <div class="dcard-id">#${o.id.slice(-5).toUpperCase()}</div>
+            <div class="dcard-total">R${parseFloat(o.total||0).toFixed(2)}</div>
+          </div>
+          <div class="dcard-tags">
+            <span class="dtag dtag-active">🛵 En Route</span>
+            <span class="dtag dtag-time">⏱ ${elapsed}m ago</span>
+          </div>
+          <div class="dcard-info">
+            <div class="dcard-addr">📍 ${o.deliveryAddress||'Address not set'}</div>
+            <div class="dcard-customer">👤 ${o.userName||o.userEmail||'—'}</div>
+          </div>
+          <div class="dcard-items"><ul class="dcard-items-list">${items}</ul></div>
+          <div class="dcard-actions">
+            <button class="btn-delivered" onclick="markDelivered('${o.id}')">✅ Delivered</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function dispatch(orderId){
+      const driver = document.getElementById('driver-' + orderId)?.value || 'Unassigned';
+      try {
+        const { db, doc, updateDoc, serverTimestamp } = await fb();
+        await updateDoc(doc(db,'orders',orderId), { status:'dispatched', assignedDriver: driver, updatedAt: serverTimestamp() });
+        showToast('🛵 Order dispatched' + (driver !== 'Unassigned' ? ' — ' + driver : ''), 'success');
+        await load();
+      } catch(e){ showToast('Error: '+e.message,'error'); }
+    }
+
+    async function markCollected(orderId){
+      try {
+        const { db, doc, updateDoc, serverTimestamp } = await fb();
+        await updateDoc(doc(db,'orders',orderId), { status:'collected', updatedAt: serverTimestamp() });
+        showToast('✅ Customer collected order', 'success');
+        await load();
+      } catch(e){ showToast('Error: '+e.message,'error'); }
+    }
+
+    async function markDelivered(orderId){
+      try {
+        const { db, doc, updateDoc, serverTimestamp } = await fb();
+        await updateDoc(doc(db,'orders',orderId), { status:'delivered', updatedAt: serverTimestamp() });
+        showToast('✅ Delivery confirmed', 'success');
+        await load();
+      } catch(e){ showToast('Error: '+e.message,'error'); }
+    }
+
+    load();
+    setInterval(load, 30000);
   </script>
 </body>
 </html>

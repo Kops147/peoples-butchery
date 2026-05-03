@@ -6,121 +6,252 @@
   <title>Kitchen Dashboard — The Peoples Butchery</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { background: #0A0A0A; color: #E0E0E0; }
-    .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 20px; }
-    .ticket-card { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
-    .ticket-card.priority-high { border-left: 4px solid #ff4d4d; }
-    .ticket-card.priority-normal { border-left: 4px solid #3DD68C; }
-    .ticket-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-    .order-num { font-family: var(--font-head); font-weight: 800; font-size: 1.2rem; color: #3DD68C; }
-    .sla-timer { font-size: 0.85rem; color: #888; display: flex; align-items: center; gap: 5px; }
-    .sla-critical { color: #ff4d4d; font-weight: 700; animation: blink 1s infinite; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    .item-list { list-style: none; padding: 0; margin-bottom: 20px; }
-    .item-list li { padding: 8px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
-    .item-qty { font-weight: 700; color: #3DD68C; margin-right: 10px; }
-    .btn-group { display: flex; gap: 10px; }
-    .badge-dept { background: #1A1A1A; color: #888; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; }
+    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 16px; }
+    .stn-title { display: flex; align-items: center; gap: 12px; }
+    .stn-title h1 { font-family: var(--font-head); font-size: 1.25rem; margin: 0; color: #fff; }
+    .stn-badge { background: rgba(61,214,140,0.12); border: 1px solid rgba(61,214,140,0.3); color: #3DD68C; padding: 3px 10px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    .stn-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stn-nav a { color: #555; text-decoration: none; font-size: 0.73rem; padding: 5px 10px; border: 1px solid #222; border-radius: 6px; transition: all .2s; white-space: nowrap; }
+    .stn-nav a:hover { color: #aaa; border-color: #444; }
+    .stn-nav a.active { color: #3DD68C; border-color: rgba(61,214,140,0.4); background: rgba(61,214,140,0.05); }
+    .stn-clock { font-size: 0.8rem; color: #444; white-space: nowrap; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #3DD68C; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
+    @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
+
+    .stats-bar { background: #0D0D0D; border-bottom: 1px solid #1a1a1a; padding: 12px 24px; display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+    .stat-chip { display: flex; align-items: center; gap: 8px; }
+    .stat-num { font-family: var(--font-head); font-weight: 800; font-size: 1.3rem; }
+    .stat-lbl { font-size: 0.73rem; color: #555; }
+    .stat-divider { width: 1px; height: 28px; background: #1e1e1e; }
+
+    .queue-wrap { padding: 20px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; align-content: start; }
+    .sec-label { grid-column: 1/-1; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #3a3a3a; padding-bottom: 8px; border-bottom: 1px solid #1a1a1a; margin-top: 8px; }
+    .sec-label:first-child { margin-top: 0; }
+
+    .ocard { background: #141414; border: 1px solid #202020; border-radius: 12px; overflow: hidden; transition: transform .15s; }
+    .ocard:hover { transform: translateY(-1px); }
+    .ocard.urgent { border-left: 4px solid #ff4d4d; }
+    .ocard.inprog  { border-left: 4px solid #f0a000; }
+    .ocard.ready   { border-left: 4px solid #3DD68C; }
+    .ocard.neworder{ border-left: 4px solid #3498db; }
+
+    .ocard-head { padding: 14px 16px 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .ocard-num { font-family: var(--font-head); font-weight: 800; font-size: 1.05rem; }
+    .urgent .ocard-num { color: #ff4d4d; }
+    .inprog .ocard-num  { color: #f0a000; }
+    .ready  .ocard-num  { color: #3DD68C; }
+    .neworder .ocard-num{ color: #3498db; }
+
+    .pbadge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; padding: 3px 8px; border-radius: 4px; }
+    .urgent .pbadge { background: rgba(255,77,77,.15); color: #ff4d4d; }
+    .inprog .pbadge  { background: rgba(240,160,0,.15); color: #f0a000; }
+    .ready  .pbadge  { background: rgba(61,214,140,.15); color: #3DD68C; }
+    .neworder .pbadge{ background: rgba(52,152,219,.15); color: #3498db; }
+
+    .ocard-meta { padding: 0 16px 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .tag { font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; border: 1px solid; }
+    .tag-delivery { color: #3498db; border-color: rgba(52,152,219,.3); background: rgba(52,152,219,.08); }
+    .tag-collect  { color: #e8a020; border-color: rgba(232,160,32,.3); background: rgba(232,160,32,.08); }
+    .tag-timer { color: #666; border-color: #222; background: transparent; }
+    .tag-timer.late { color: #ff4d4d; border-color: rgba(255,77,77,.3); animation: blink 1s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .ocard-customer { padding: 0 16px 10px; font-size: 0.8rem; color: #666; }
+    .ilist { list-style: none; padding: 0; margin: 0; border-top: 1px solid #1a1a1a; }
+    .ilist li { padding: 8px 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+    .ilist li:last-child { border-bottom: none; }
+    .iqty { font-weight: 700; font-size: 0.75rem; background: #1e1e1e; padding: 2px 7px; border-radius: 4px; margin-right: 8px; }
+    .urgent .iqty { color: #ff4d4d; }
+    .inprog .iqty  { color: #f0a000; }
+    .ready  .iqty  { color: #3DD68C; }
+    .neworder .iqty{ color: #3498db; }
+
+    .ocard-foot { padding: 12px 16px; }
+    .empty-state { grid-column: 1/-1; text-align: center; padding: 80px 20px; color: #2a2a2a; }
+    .empty-state .ei { font-size: 3.5rem; margin-bottom: 16px; }
+    .empty-state h3 { color: #333; margin-bottom: 8px; }
+    .empty-state p  { color: #2a2a2a; font-size: .85rem; }
+
+    .btn-start  { background: #1a3a2a; color: #3DD68C; border: 1px solid rgba(61,214,140,.3); border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: .85rem; cursor: pointer; width: 100%; transition: background .2s; }
+    .btn-start:hover { background: #1f4a35; }
+    .btn-ready  { background: rgba(61,214,140,.12); color: #3DD68C; border: 1px solid rgba(61,214,140,.4); border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: .85rem; cursor: pointer; width: 100%; transition: background .2s; }
+    .btn-ready:hover { background: rgba(61,214,140,.2); }
+    .btn-dispatch { background: rgba(52,152,219,.12); color: #3498db; border: 1px solid rgba(52,152,219,.4); border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: .85rem; cursor: pointer; width: 100%; transition: background .2s; }
+    .btn-dispatch:hover { background: rgba(52,152,219,.2); }
   </style>
 </head>
 <body>
   <div id="toast-container"></div>
-  
-  <header style="padding: 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: baseline; gap: 15px;">
-      <h1 style="font-size: 1.5rem; margin: 0;">Kitchen Dashboard</h1>
-      <span class="badge-dept">Live Feed — Station 1</span>
+
+  <header class="stn-header">
+    <div class="stn-title">
+      <span style="font-size:1.4rem">🍳</span>
+      <h1>Kitchen Dashboard</h1>
+      <span class="stn-badge">Prep &amp; Packaging</span>
     </div>
-    <div class="sponsor-brand" style="display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 0.6rem; color: #666; letter-spacing: 1px;">POWERED BY</span>
-      <svg width="120" height="34" viewBox="0 0 160 44">
-        <rect width="160" height="44" rx="6" fill="#000"/>
-        <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
-        <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
-      </svg>
+    <nav class="stn-nav">
+      <a href="cashier.html">💰 Cashier</a>
+      <a href="kitchen.html" class="active">🍳 Kitchen</a>
+      <a href="butcher.html">🥩 Butcher</a>
+      <a href="dispatch.html">🚚 Dispatch</a>
+      <a href="admin.html">⚙️ Admin</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="live-dot"></span>
+      <span class="stn-clock" id="clock">—</span>
     </div>
   </header>
 
-  <main class="ticket-grid" id="ticket-container">
-    <!-- Tickets will be injected here -->
-    <div style="grid-column: 1/-1; text-align: center; padding: 100px; color: #444;">
-      <div style="font-size: 3rem; margin-bottom: 20px;">🍳</div>
-      <h3>No orders in the kitchen yet.</h3>
-      <p>New cooked meals will appear here automatically.</p>
+  <div class="stats-bar">
+    <div class="stat-chip">
+      <span class="stat-num" style="color:#ff4d4d" id="s-pending">—</span>
+      <span class="stat-lbl">Waiting</span>
     </div>
-  </main>
+    <div class="stat-divider"></div>
+    <div class="stat-chip">
+      <span class="stat-num" style="color:#f0a000" id="s-inprog">—</span>
+      <span class="stat-lbl">In Progress</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-chip">
+      <span class="stat-num" style="color:#3DD68C" id="s-done">—</span>
+      <span class="stat-lbl">Done Today</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-chip">
+      <span class="stat-num" style="color:#3498db" id="s-delivery">—</span>
+      <span class="stat-lbl">For Delivery</span>
+    </div>
+    <div style="margin-left:auto;font-size:.72rem;color:#3a3a3a" id="refresh-lbl">Loading...</div>
+  </div>
+
+  <main class="queue-wrap" id="queue-wrap"></main>
 
   <script src="js/app.js"></script>
   <script>
-    const DEPT = 'kitchen';
-    
-    async function fetchTickets() {
+    // Clock
+    function tick() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    setInterval(tick, 1000); tick();
+
+    // Firebase cache
+    let _fb = null;
+    async function fb() {
+      if (_fb) return _fb;
+      const [cfg, fs] = await Promise.all([
+        import('./js/firebase-config.js'),
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')
+      ]);
+      _fb = { db: cfg.db, ...fs };
+      return _fb;
+    }
+
+    function toDate(v) { return v?.toDate ? v.toDate() : v ? new Date(v) : null; }
+    function minsAgo(d) { return d ? Math.floor((Date.now() - d.getTime()) / 60000) : 0; }
+    function fmtWait(d) {
+      if (!d) return '';
+      const m = minsAgo(d);
+      if (m < 1) return 'Just now';
+      if (m === 1) return '1 min ago';
+      return m + ' mins ago';
+    }
+
+    async function load() {
       try {
-        const res = await fetch(`${API_BASE_URL}/tickets?department=${DEPT}`);
-        const tickets = await res.json();
-        renderTickets(Array.isArray(tickets) ? tickets : []);
-      } catch (err) {
-        console.error('Failed to fetch tickets:', err);
-        document.getElementById('ticket-container').innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Could not connect to server</p>';
+        const { db, collection, getDocs, query, where } = await fb();
+        const snap = await getDocs(query(collection(db, 'orders'), where('status', 'in', ['pending','braai','packaging'])));
+        const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (toDate(a.createdAt)||0) - (toDate(b.createdAt)||0));
+
+        // Stats
+        document.getElementById('s-pending').textContent = orders.filter(o => o.status === 'pending').length;
+        document.getElementById('s-inprog').textContent = orders.filter(o => o.status === 'braai').length;
+        document.getElementById('s-delivery').textContent = orders.filter(o => o.deliveryMethod === 'delivery').length;
+
+        // Done today
+        const doneSnap = await getDocs(query(collection(db, 'orders'), where('status', 'in', ['dispatched','delivered','collected'])));
+        document.getElementById('s-done').textContent = doneSnap.size;
+
+        renderQueue(orders);
+        document.getElementById('refresh-lbl').textContent = '↻ Updated ' + new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+      } catch (e) {
+        document.getElementById('refresh-lbl').textContent = '⚠ ' + e.message;
       }
     }
 
-    function renderTickets(tickets) {
-      const container = document.getElementById('ticket-container');
-      if (tickets.length === 0) return;
-      
-      container.innerHTML = tickets.map(t => `
-        <div class="ticket-card priority-${t.priority}">
-          <div class="ticket-header">
-            <div>
-              <div class="order-num">#${t.order_number.slice(-6)}</div>
-              <div style="font-size: 0.75rem; color: #666;">ID: ${t.id}</div>
-            </div>
-            <div class="sla-timer" id="timer-${t.id}">
-              ⏱️ ${formatSLA(t.sla_deadline)}
-            </div>
-          </div>
-          <ul class="item-list">
-            ${(t.items || []).map(item => `
-              <li>
-                <span><span class="item-qty">${item.qty}x</span> ${item.name}</span>
-              </li>
-            `).join('')}
-          </ul>
-          <div class="btn-group">
-            ${t.status === 'open' 
-              ? `<button class="btn btn-primary btn-full" onclick="updateTicket('${t.id}', 'processing')">Start Prep</button>`
-              : `<button class="btn btn-success btn-full" onclick="updateTicket('${t.id}', 'done')">Mark Ready</button>`
-            }
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function formatSLA(deadline) {
-      const remaining = new Date(deadline) - new Date();
-      if (remaining < 0) return '<span class="sla-critical">LATE</span>';
-      const mins = Math.floor(remaining / 60000);
-      const secs = Math.floor((remaining % 60000) / 1000);
-      return `${mins}m ${secs}s`;
-    }
-
-    async function updateTicket(id, status) {
-      try {
-        await fetch(`${API_BASE_URL}/tickets/${id}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status })
-        });
-        showToast(`Ticket marked as ${status}`, 'success');
-      } catch (err) {
-        showToast('Failed to update ticket', 'error');
+    function renderQueue(orders) {
+      const w = document.getElementById('queue-wrap');
+      if (!orders.length) {
+        w.innerHTML = `<div class="empty-state"><div class="ei">🍳</div><h3>All clear — kitchen is empty.</h3><p>New orders appear here automatically every 30 seconds.</p></div>`;
+        return;
       }
-      setTimeout(fetchTickets, 500);
+
+      const sections = [
+        { key: 'urgent', label: '🔴 URGENT — Waiting over 20 mins', cls: 'urgent', badge: '⚡ URGENT',
+          filter: o => o.status === 'pending' && minsAgo(toDate(o.createdAt)) >= 20 },
+        { key: 'inprog', label: '🟡 IN PROGRESS — Being Prepped', cls: 'inprog', badge: '🔪 PREPPING',
+          filter: o => o.status === 'braai' },
+        { key: 'packaging', label: '🟢 PACKAGING — Almost Ready', cls: 'ready', badge: '📦 PACKAGING',
+          filter: o => o.status === 'packaging' },
+        { key: 'new', label: '🔵 NEW — Just Received', cls: 'neworder', badge: '🆕 NEW',
+          filter: o => o.status === 'pending' && minsAgo(toDate(o.createdAt)) < 20 },
+      ];
+
+      let html = '';
+      for (const sec of sections) {
+        const group = orders.filter(sec.filter);
+        if (!group.length) continue;
+        html += `<div class="sec-label">${sec.label}</div>`;
+        for (const o of group) {
+          const created = toDate(o.createdAt);
+          const mins = minsAgo(created);
+          const late = mins > 30;
+          const isDelivery = o.deliveryMethod === 'delivery';
+
+          const items = (o.items || []).map(it =>
+            `<li><span><span class="iqty">${it.qty}${it.unit && it.unit !== 'each' ? it.unit : '×'}</span>${it.name}</span><span style="color:#555;font-size:.78rem">R${((it.price||0)*(it.qty||1)).toFixed(2)}</span></li>`
+          ).join('');
+
+          const actionBtn = o.status === 'pending'
+            ? `<button class="btn-start" onclick="setStatus('${o.id}','braai')">🔪 Start Prepping</button>`
+            : o.status === 'braai'
+            ? `<button class="btn-ready" onclick="setStatus('${o.id}','packaging')">✅ Mark Ready</button>`
+            : `<button class="btn-dispatch" onclick="setStatus('${o.id}','dispatched')">🚚 Send to Dispatch</button>`;
+
+          html += `
+          <div class="ocard ${sec.cls}">
+            <div class="ocard-head">
+              <div>
+                <div class="ocard-num">#${o.id.slice(-5).toUpperCase()}</div>
+                <div style="margin-top:4px;font-size:.8rem;color:#555">R${parseFloat(o.total||0).toFixed(2)}</div>
+              </div>
+              <span class="pbadge">${sec.badge}</span>
+            </div>
+            <div class="ocard-meta">
+              <span class="tag ${isDelivery?'tag-delivery':'tag-collect'}">${isDelivery?'🚴 Delivery':'🏪 Collect'}</span>
+              <span class="tag tag-timer ${late?'late':''}">⏱ ${fmtWait(created)}${late?' — LATE':''}</span>
+            </div>
+            <div class="ocard-customer">👤 ${o.userName||o.userEmail||'Walk-in'}${o.deliveryAddress ? ' · ' + o.deliveryAddress.split(',')[0] : ''}</div>
+            <ul class="ilist">${items}</ul>
+            <div class="ocard-foot">${actionBtn}</div>
+          </div>`;
+        }
+      }
+      w.innerHTML = html;
     }
 
-    setInterval(fetchTickets, 5000);
-    fetchTickets();
+    async function setStatus(id, status) {
+      try {
+        const { db, doc, updateDoc, serverTimestamp } = await fb();
+        await updateDoc(doc(db, 'orders', id), { status, updatedAt: serverTimestamp() });
+        const msgs = { braai: '🔪 Prepping started', packaging: '✅ Order marked ready', dispatched: '🚚 Sent to dispatch' };
+        showToast(msgs[status] || 'Updated', 'success');
+        await load();
+      } catch (e) { showToast('Error: ' + e.message, 'error'); }
+    }
+
+    load();
+    setInterval(load, 30000);
   </script>
 </body>
 </html>
