@@ -32,9 +32,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // Fetch live orders from Supabase
+  // Fetch live orders from Supabase (falls back to email match if user_id is null)
   try {
-    userOrders = await getUserOrdersFromSupabase(sess.id);
+    const supaOrders = await getUserOrdersFromSupabase(sess.id, sess.email);
+    const localOrders = DB.getUserOrders(sess.id);
+    // Merge: include any local orders not yet reflected in Supabase
+    const supaIds = new Set(supaOrders.map(o => String(o.id)));
+    const extraLocal = localOrders.filter(o => !supaIds.has(String(o.id)));
+    userOrders = [...supaOrders, ...extraLocal].sort((a, b) =>
+      new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt)
+    );
   } catch (err) {
     console.warn('Orders load failed, using local fallback:', err);
     userOrders = DB.getUserOrders(sess.id);

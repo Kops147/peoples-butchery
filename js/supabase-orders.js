@@ -16,14 +16,27 @@ export async function saveOrderToSupabase({ userId, userEmail, items, subtotal, 
   return data.id
 }
 
-export async function getUserOrdersFromSupabase(userId) {
+export async function getUserOrdersFromSupabase(userId, userEmail) {
   const { data, error } = await supabase
     .from('orders')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data || []).map(mapOrder)
+
+  if (data && data.length > 0) return data.map(mapOrder)
+
+  // Fallback: user_id may be null on older orders — try matching by email
+  if (userEmail) {
+    const { data: emailData, error: emailError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_email', userEmail)
+      .order('created_at', { ascending: false })
+    if (!emailError && emailData) return emailData.map(mapOrder)
+  }
+
+  return []
 }
 
 function mapOrder(o) {
