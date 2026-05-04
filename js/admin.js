@@ -54,18 +54,31 @@ async function openPhotoPicker() {
 
   const modal = document.createElement('div');
   modal.style.cssText = 'background:var(--card-bg,#1a1a1a);border-radius:12px;padding:20px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:12px';
+
+  const shimmerStyle = `
+    <style>
+      @keyframes _pkshimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      .picker-thumb { cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color 0.15s; }
+      .picker-thumb:hover { border-color:var(--gold,#e8a020); }
+      .picker-skel { width:100%;height:90px;background:linear-gradient(90deg,#2a2a2a 25%,#383838 50%,#2a2a2a 75%);background-size:200% 100%;animation:_pkshimmer 1.4s infinite; }
+      .picker-img { width:100%;height:90px;object-fit:cover;display:block;opacity:0;transition:opacity 0.25s; }
+      .picker-img.loaded { opacity:1; }
+      .picker-label { font-size:0.62rem;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted,#aaa); }
+    </style>`;
+
   modal.innerHTML = `
+    ${shimmerStyle}
     <div style="display:flex;justify-content:space-between;align-items:center">
       <h3 style="margin:0;font-size:1.1rem">Choose a Photo</h3>
       <button id="picker-close" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer">✕</button>
     </div>
     <div id="picker-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;overflow-y:auto;max-height:55vh;padding:4px">
       ${images.map(name => `
-        <div class="picker-thumb" data-name="${name}" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color 0.15s">
-          <img src="assets/img/food/${encodeURIComponent(name)}" alt="${name}"
-            style="width:100%;height:90px;object-fit:cover;display:block"
-            onerror="this.parentElement.style.display='none'">
-          <div style="font-size:0.65rem;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted,#aaa)">${name}</div>
+        <div class="picker-thumb" data-name="${name}">
+          <div class="picker-skel" id="skel-${CSS.escape(name)}"></div>
+          <img class="picker-img" data-src="assets/img/food/${encodeURIComponent(name)}" alt="${name}"
+            style="display:none" onerror="this.style.display='none';document.getElementById('skel-${CSS.escape(name)}')?.remove()">
+          <div class="picker-label">${name}</div>
         </div>`).join('')}
     </div>`;
 
@@ -73,9 +86,26 @@ async function openPhotoPicker() {
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   modal.querySelector('#picker-close').addEventListener('click', () => overlay.remove());
+
+  // Lazy-load images as they scroll into view
+  const grid = modal.querySelector('#picker-grid');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      img.src = img.dataset.src;
+      img.style.display = 'block';
+      img.addEventListener('load', () => {
+        img.classList.add('loaded');
+        document.getElementById('skel-' + CSS.escape(img.alt))?.remove();
+      }, { once: true });
+      observer.unobserve(img);
+    });
+  }, { root: grid, rootMargin: '120px' });
+
+  modal.querySelectorAll('.picker-img').forEach(img => observer.observe(img));
+
   modal.querySelectorAll('.picker-thumb').forEach(thumb => {
-    thumb.addEventListener('mouseenter', () => thumb.style.borderColor = 'var(--gold,#e8a020)');
-    thumb.addEventListener('mouseleave', () => thumb.style.borderColor = 'transparent');
     thumb.addEventListener('click', () => {
       const url = `assets/img/food/${thumb.dataset.name}`;
       document.getElementById('prod-image').value = url;
