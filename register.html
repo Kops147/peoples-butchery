@@ -356,50 +356,19 @@
 
   <script src="js/app.js"></script>
   <script type="module">
-    import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { auth, db } from './js/firebase-config.js';
-
-    // ── Google Sign-In state ──────────────────────
-    let googleUser = null;
+    import { supabase } from './js/supabase-config.js';
 
     document.getElementById('google-register-btn').addEventListener('click', async () => {
       const btn = document.getElementById('google-register-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Connecting...';
       try {
-        const result = await signInWithPopup(auth, new GoogleAuthProvider());
-        googleUser = result.user;
-        const token = await googleUser.getIdToken();
-
-        // If profile already exists → login directly
-        const snap = await getDoc(doc(db, 'users', googleUser.uid));
-        if (snap.exists()) {
-          const userData = snap.data();
-          Auth.login(userData, token);
-          showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
-          setTimeout(() => { window.location.href = userData.isAdmin ? 'admin.html' : 'dashboard.html'; }, 800);
-          return;
-        }
-
-        // New Google user — pre-fill Step 1 and jump to Step 2
-        const parts = (googleUser.displayName || '').split(' ');
-        document.getElementById('r-name').value = parts[0] || '';
-        document.getElementById('r-surname').value = parts.slice(1).join(' ') || '';
-        document.getElementById('r-email').value = googleUser.email || '';
-        document.getElementById('r-email').readOnly = true;
-        document.getElementById('r-password').closest('.form-group').style.display = 'none';
-        document.getElementById('r-confirm').closest('.form-group').style.display = 'none';
-        document.getElementById('google-signin-section').style.display = 'none';
-        document.getElementById('google-prefill-banner').style.display = 'block';
-
-        goToStep(2);
-        showToast('Google account connected! Now add your address details.', 'success');
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin + '/dashboard.html' }
+        });
       } catch (err) {
-        googleUser = null;
-        if (err.code !== 'auth/popup-closed-by-user') {
-          showToast('Google sign-in failed: ' + err.message, 'error');
-        }
+        showToast('Google sign-in failed: ' + err.message, 'error');
         btn.disabled = false;
         btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
       }
@@ -542,34 +511,26 @@
       }
 
       try {
-        let firebaseUser, token;
-        if (googleUser) {
-          firebaseUser = googleUser;
-          token = await googleUser.getIdToken(true);
-        } else {
-          const userCred = await createUserWithEmailAndPassword(auth, email, password);
-          firebaseUser = userCred.user;
-          token = await firebaseUser.getIdToken();
-        }
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
 
         const newUser = {
-          id: firebaseUser.uid,
-          refNumber: pendingRef,
-          name, surname, email, phone, address, suburb,
-          coordinates: pendingCoords || null,
-          deliveryFee: pendingDeliveryFee,
-          creditBalance: 0,
-          isAdmin: false,
-          createdAt: new Date().toISOString()
+          id: data.user.id,
+          email, name, surname, phone, suburb, address,
+          ref_number: pendingRef,
+          credit_balance: 0,
+          is_admin: false
         };
 
-        await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+        const { error: insertError } = await supabase.from('users').insert(newUser);
+        if (insertError && !insertError.message.includes('duplicate')) throw insertError;
 
+        const sessionUser = { ...newUser, refNumber: pendingRef, creditBalance: 0, isAdmin: false };
         const users = DB.getUsers();
-        users.push(newUser);
+        users.push(sessionUser);
         DB.saveUsers(users);
 
-        Auth.login(newUser, token);
+        Auth.login(sessionUser, data.session?.access_token);
 
         document.getElementById('success-ref').textContent = pendingRef;
         document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
@@ -579,10 +540,8 @@
       } catch (err) {
         btn.disabled = false;
         btn.textContent = '🎉 Create My Account';
-        const msg = err.code === 'auth/email-already-in-use'
+        const msg = err.message?.includes('already registered') || err.message?.includes('duplicate')
           ? 'This email is already registered. Please login instead.'
-          : err.code === 'auth/weak-password'
-          ? 'Password is too weak. Use at least 6 characters.'
           : (err.message || 'Registration failed. Please try again.');
         showToast('❌ ' + msg, 'error', 5000);
       }

@@ -4,7 +4,8 @@
 
 'use strict';
 
-import { saveOrderToFirebase } from './firebase-orders.js';
+import { supabase } from './supabase-config.js';
+import { saveOrderToSupabase } from './supabase-orders.js';
 import { LOCAL_CATALOG, mapToProduct } from './catalog.js';
 
 // ── State ──────────────────────────────────────
@@ -22,17 +23,13 @@ function findProduct(id) {
 
 async function loadProductsFromAPI() {
   try {
-    const { db } = await import('./firebase-config.js');
-    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-    const snap = await getDocs(collection(db, 'products'));
-    if (snap.size > 0) {
-      apiProducts = snap.docs
-        .map(d => ({ ...d.data(), id: d.id }))
-        .filter(p => p.is_active !== false);
+    const { data, error } = await supabase.from('products').select('*').eq('is_active', true);
+    if (!error && data && data.length > 0) {
+      apiProducts = data.map(p => ({ ...p, image_url: p.image, categoryLabel: p.category_label }));
       return;
     }
   } catch (err) {
-    console.warn('Firestore products unavailable, using local catalog:', err);
+    console.warn('Supabase products unavailable, using local catalog:', err);
   }
   apiProducts = LOCAL_CATALOG.map(mapToProduct);
 }
@@ -572,10 +569,13 @@ async function checkout() {
     return;
   }
 
-  // Fetch live credit balance before placing order
+  // Fetch live credit balance from Supabase
+  const session = Auth.getSession();
   let user;
   try {
-    user = await API.get('/users/me');
+    const { data, error } = await supabase.from('users').select('*').eq('id', session.id).single();
+    if (error || !data) throw new Error('Could not verify account');
+    user = { ...data, creditBalance: parseFloat(data.credit_balance) || 0 };
   } catch (err) {
     showToast('Could not verify your account. Please log in again.', 'error');
     setTimeout(() => window.location.href = 'login.html', 1500);
@@ -586,63 +586,45 @@ async function checkout() {
   const delivFee = deliveryMethod === 'collect' ? 0 : Math.max(10, Math.round(haversineKm(STORE_COORDS, deliveryCoords) * 5));
   const total = subtotal + delivFee;
 
-  if (parseFloat(user.credit_balance) < total) {
-    showToast(`Insufficient credit. Balance: ${formatCurrency(user.credit_balance)}, Required: ${formatCurrency(total)}`, 'error', 6000);
+  if (user.creditBalance < total) {
+    showToast(`Insufficient credit. Balance: ${formatCurrency(user.creditBalance)}, Required: ${formatCurrency(total)}`, 'error', 6000);
     setTimeout(() => window.location.href = 'dashboard.html#credits', 2000);
     return;
   }
 
+  const deliveryAddress = deliveryMethod === 'delivery'
+    ? document.getElementById('delivery-addr-input')?.value
+    : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne';
+
   try {
-    // Save order to Firebase
-    const orderId = await saveOrderToFirebase({
+    const orderId = await saveOrderToSupabase({
+      userId: user.id,
+      userEmail: user.email,
       items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
-      subtotal: subtotal,
+      subtotal,
       deliveryFee: delivFee,
-      total: total,
+      total,
       deliveryMethod,
-      deliveryAddress: deliveryMethod === 'delivery'
-        ? document.getElementById('delivery-addr-input')?.value
-        : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
-      deliveryCoordinates: deliveryCoords || null,
+      deliveryAddress,
     });
 
-    // Save to local mock DB for the dashboards
+    // Deduct credit in Supabase
+    await supabase.from('users').update({ credit_balance: user.creditBalance - total }).eq('id', user.id);
+
+    // Mirror to local DB for dashboard display on same device
     DB.addOrder({
       id: orderId,
       userId: user.id,
-      name: user.name,
-      surname: user.surname,
-      email: user.email,
+      name: user.name, surname: user.surname, email: user.email,
       items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
-      subtotal: subtotal,
-      deliveryFee: delivFee,
-      total: total,
-      deliveryMethod,
-      deliveryAddress: deliveryMethod === 'delivery'
-        ? document.getElementById('delivery-addr-input')?.value
-        : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
+      subtotal, deliveryFee: delivFee, total, deliveryMethod, deliveryAddress,
       status: 'pending',
       created_at: new Date().toISOString()
     });
 
-    // Also send to backend API if available (for legacy support)
-    try {
-      await API.post('/orders', {
-        firebaseId: orderId,
-        items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
-        deliveryMethod,
-        deliveryAddress: deliveryMethod === 'delivery'
-          ? document.getElementById('delivery-addr-input')?.value
-          : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
-        deliveryCoordinates: deliveryCoords || null,
-      });
-    } catch (apiErr) {
-      console.log('Backend API not available, order saved to Firebase and Mock DB only');
-    }
-
     clearCart();
     closeCart();
-    showToast('🎉 Order placed successfully! Order ID: ' + orderId, 'success', 5000);
+    showToast('🎉 Order placed! Order ID: ' + orderId, 'success', 5000);
     setTimeout(() => window.location.href = 'dashboard.html', 2000);
   } catch (err) {
     showToast('Order failed: ' + err.message, 'error', 6000);

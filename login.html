@@ -189,57 +189,8 @@
 
   <script src="js/app.js"></script>
   <script type="module">
-    import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { auth, db } from './js/firebase-config.js';
+    import { supabase } from './js/supabase-config.js';
 
-    // ── Google Sign-In ────────────────────────────
-    document.getElementById('google-signin-btn').addEventListener('click', async () => {
-      const btn = document.getElementById('google-signin-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Signing in...';
-      try {
-        const result = await signInWithPopup(auth, new GoogleAuthProvider());
-        const fbUser = result.user;
-        const token = await fbUser.getIdToken();
-
-        const snap = await getDoc(doc(db, 'users', fbUser.uid));
-        let userData;
-        if (snap.exists()) {
-          userData = snap.data();
-        } else {
-          const parts = (fbUser.displayName || '').split(' ');
-          userData = {
-            id: fbUser.uid,
-            name: parts[0] || '',
-            surname: parts.slice(1).join(' ') || '',
-            email: fbUser.email,
-            phone: fbUser.phoneNumber || '',
-            address: '', suburb: '',
-            creditBalance: 0, isAdmin: false,
-            phoneVerified: !!fbUser.phoneNumber,
-            refNumber: ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() + fbUser.uid.slice(-4).toUpperCase(),
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(doc(db, 'users', fbUser.uid), userData);
-        }
-
-        Auth.login(userData, token);
-        showToast('Welcome, ' + (userData.name || 'there') + '! 🎉', 'success');
-        const params = new URLSearchParams(window.location.search);
-        setTimeout(() => {
-          window.location.href = userData.isAdmin ? 'admin.html' : (params.get('redirect') || 'dashboard.html');
-        }, 800);
-      } catch (err) {
-        if (err.code !== 'auth/popup-closed-by-user') {
-          showToast('Google sign-in failed: ' + err.message, 'error');
-        }
-        btn.disabled = false;
-        btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
-      }
-    });
-
-    // Redirect if already logged in
     if (Auth.isLoggedIn()) {
       window.location.href = Auth.isAdmin() ? 'admin.html' : 'dashboard.html';
     }
@@ -251,13 +202,29 @@
       this.textContent = pw.type === 'password' ? '👁️' : '🙈';
     });
 
+    // Google Sign-In
+    document.getElementById('google-signin-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('google-signin-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Connecting...';
+      try {
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin + '/dashboard.html' }
+        });
+      } catch (err) {
+        showToast('Google sign-in failed: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
+      }
+    });
+
     // Login form
-    document.getElementById('login-form').addEventListener('submit', async function (e) {
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('login-btn');
       const errEl = document.getElementById('login-error');
       errEl.style.display = 'none';
-
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Signing in...';
 
@@ -273,53 +240,34 @@
       }
 
       try {
-        // Ensure admin accounts are seeded before checking
+        // Admin check (PIN-based local auth)
         await seedAdmin();
         const localUser = DB.findUserByEmail(email);
         if (localUser && localUser.isAdmin) {
           const hash = await hashPassword(password);
-          if (hash !== localUser.passwordHash) {
-            errEl.textContent = '❌ Invalid email or password.';
-            errEl.style.display = 'flex';
-            btn.disabled = false;
-            btn.textContent = 'Sign In to My Account';
-            return;
-          }
+          if (hash !== localUser.passwordHash) throw new Error('Invalid email or password.');
           Auth.login(localUser, null);
           showToast('Welcome back, ' + localUser.name + '! 🎉', 'success');
           setTimeout(() => { window.location.href = 'admin.html'; }, 800);
           return;
         }
 
-        // Regular users: Firebase Auth
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        const firebaseUser = userCred.user;
-        const token = await firebaseUser.getIdToken();
+        // Customer: Supabase auth
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
 
-        const userSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
-        const userData = userSnap.exists()
-          ? userSnap.data()
-          : { id: firebaseUser.uid, email, name: email.split('@')[0] };
+        const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+        const userData = profile
+          ? { ...profile, isAdmin: profile.is_admin, creditBalance: profile.credit_balance, refNumber: profile.ref_number }
+          : { id: data.user.id, email, name: email.split('@')[0], isAdmin: false };
 
-        if (!DB.findUserByEmail(email)) {
-          const users = DB.getUsers();
-          users.push(userData);
-          DB.saveUsers(users);
-        }
-
-        Auth.login(userData, token);
+        Auth.login(userData, data.session?.access_token);
         showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
-
         const params = new URLSearchParams(window.location.search);
-        const redirect = params.get('redirect');
-        setTimeout(() => {
-          window.location.href = redirect || 'dashboard.html';
-        }, 800);
+        setTimeout(() => { window.location.href = params.get('redirect') || 'dashboard.html'; }, 800);
 
       } catch (err) {
-        const msg = ['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(err.code)
-          ? 'Invalid email or password.'
-          : (err.message || 'Login failed. Please try again.');
+        const msg = err.message?.includes('Invalid login') ? 'Invalid email or password.' : (err.message || 'Login failed. Please try again.');
         errEl.textContent = '❌ ' + msg;
         errEl.style.display = 'flex';
         btn.disabled = false;
