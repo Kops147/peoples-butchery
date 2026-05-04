@@ -18,7 +18,7 @@ export const LOCAL_CATALOG = [
   { stock_code: "130",  name: "Black Lentils",          price:  10.00, unit: "per 200g",  category: "Other",    image: "assets/img/food/meat_on_braai.jpg" },
   { stock_code: "124",  name: "Pink Lentils",           price:  15.00, unit: "per 200g",  category: "Other",    image: "assets/img/food/meat_on_braai.jpg" },
   { stock_code: "1206", name: "Boerewors",             price:  95.99, unit: "per kg",    category: "Sausages", image: "assets/img/food/1206.jpg" },
-  { stock_code: "1112", name: "Chilli Bites",          price: 350.00, unit: "each",      category: "Sides",    image: "assets/img/food/meat_on_braai.jpg" },
+  { stock_code: "1112", name: "Chilli Bites",          price: 350.00, unit: "each",      category: "Sides",    image: "assets/img/food/ChilliBytes.jpg" },
   { stock_code: "atchar",         name: "Atchar",        price:   6.00, unit: "each",      category: "Sides",    image: "assets/img/food/meat_on_braai.jpg" },
   { stock_code: "curry-chillies", name: "Curry Chillies",price:  10.00, unit: "each",      category: "Sides",    image: "assets/img/food/meat_on_braai.jpg" },
 ];
