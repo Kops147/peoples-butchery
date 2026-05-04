@@ -29,54 +29,60 @@ async function seedProductsToFirestore() {
   return products;
 }
 
-// ── Image Compression (Canvas API) ────────────
-function compressImage(file, maxPx = 800, quality = 0.75) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = reject;
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxPx || height > maxPx) {
-          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
-          else { width = Math.round(width * maxPx / height); height = maxPx; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compression failed')), 'image/jpeg', quality);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+// ── Local Photo Picker ─────────────────────────
+async function openPhotoPicker() {
+  let images;
+  try {
+    const res = await fetch('assets/img/food/manifest.json');
+    images = await res.json();
+  } catch {
+    showToast('Could not load photo library', 'error');
+    return;
+  }
+
+  // Remove existing picker if present
+  document.getElementById('photo-picker-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'photo-picker-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:var(--card-bg,#1a1a1a);border-radius:12px;padding:20px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:12px';
+
+  modal.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0;font-size:1.1rem">Choose a Photo</h3>
+      <button id="picker-close" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer">✕</button>
+    </div>
+    <div id="picker-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;overflow-y:auto;max-height:55vh;padding:4px">
+      ${images.map(name => `
+        <div class="picker-thumb" data-name="${name}" style="cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color 0.15s">
+          <img src="assets/img/food/${encodeURIComponent(name)}" alt="${name}"
+            style="width:100%;height:90px;object-fit:cover;display:block"
+            onerror="this.parentElement.style.display='none'">
+          <div style="font-size:0.65rem;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted,#aaa)">${name}</div>
+        </div>`).join('')}
+    </div>`;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  modal.querySelector('#picker-close').addEventListener('click', () => overlay.remove());
+
+  modal.querySelectorAll('.picker-thumb').forEach(thumb => {
+    thumb.addEventListener('mouseenter', () => thumb.style.borderColor = 'var(--gold,#e8a020)');
+    thumb.addEventListener('mouseleave', () => thumb.style.borderColor = 'transparent');
+    thumb.addEventListener('click', () => {
+      const url = `assets/img/food/${thumb.dataset.name}`;
+      document.getElementById('prod-image').value = url;
+      setImagePreview(url);
+      document.getElementById('upload-status').textContent = `✅ Selected: ${thumb.dataset.name}`;
+      overlay.remove();
+    });
   });
 }
-
-async function uploadProductImage(file) {
-  const statusEl = document.getElementById('upload-status');
-  const originalKb = Math.round(file.size / 1024);
-  statusEl.textContent = `Compressing ${originalKb}KB...`;
-
-  const compressed = await compressImage(file);
-  const compressedKb = Math.round(compressed.size / 1024);
-
-  statusEl.textContent = `Uploading ${compressedKb}KB (was ${originalKb}KB)...`;
-
-  const { storage } = await import('./firebase-config.js');
-  const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js");
-
-  const filename = `products/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Upload timed out — check Firebase Storage rules allow writes to /products/')), 15000)
-  );
-  const snapshot = await Promise.race([
-    uploadBytes(ref(storage, filename), compressed, { contentType: 'image/jpeg' }),
-    timeout
-  ]);
-  const url = await getDownloadURL(snapshot.ref);
 
   statusEl.textContent = `✅ Uploaded · ${compressedKb}KB (was ${originalKb}KB)`;
   return url;
@@ -537,7 +543,7 @@ window.editProduct = (productId) => {
   document.getElementById('prod-image').value = p.image_url || p.image || '';
   document.getElementById('prod-is-special').checked = p.is_special || false;
   document.getElementById('prod-discount').value = p.discount_price || '';
-  document.getElementById('upload-status').textContent = 'Auto-compressed · max 800px · JPEG';
+  document.getElementById('upload-status').textContent = 'Click Browse to pick a photo from the library';
   setImagePreview(p.image_url || p.image || '');
   document.getElementById('product-modal').classList.add('open');
   document.getElementById('product-modal-title').textContent = 'Edit Product';
@@ -548,38 +554,14 @@ function initProductForm() {
     document.getElementById('product-form')?.reset();
     document.getElementById('prod-id').value = '';
     document.getElementById('prod-image').value = '';
-    document.getElementById('upload-status').textContent = 'Auto-compressed · max 800px · JPEG';
+    document.getElementById('upload-status').textContent = 'Click Browse to pick a photo from the library';
     setImagePreview('');
     document.getElementById('product-modal-title').textContent = 'Add New Product';
     document.getElementById('product-modal').classList.add('open');
   });
 
-  // Upload button triggers hidden file input
-  document.getElementById('upload-image-btn')?.addEventListener('click', () => {
-    document.getElementById('prod-image-file').click();
-  });
-
-  // File selected — compress and upload
-  document.getElementById('prod-image-file')?.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const btn = document.getElementById('upload-image-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Uploading...';
-    try {
-      const url = await uploadProductImage(file);
-      document.getElementById('prod-image').value = url;
-      setImagePreview(url);
-      showToast('Image uploaded!', 'success');
-    } catch (err) {
-      showToast('Upload failed: ' + err.message, 'error');
-      document.getElementById('upload-status').textContent = '❌ Upload failed — check Storage rules';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '📷 Upload Photo';
-      e.target.value = '';
-    }
-  });
+  // Browse button opens local photo picker
+  document.getElementById('upload-image-btn')?.addEventListener('click', () => openPhotoPicker());
 
   document.querySelectorAll('.modal-close').forEach(btn => {
     btn.addEventListener('click', () => {
