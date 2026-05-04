@@ -69,7 +69,13 @@ async function uploadProductImage(file) {
   const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js");
 
   const filename = `products/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
-  const snapshot = await uploadBytes(ref(storage, filename), compressed, { contentType: 'image/jpeg' });
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Upload timed out — check Firebase Storage rules allow writes to /products/')), 15000)
+  );
+  const snapshot = await Promise.race([
+    uploadBytes(ref(storage, filename), compressed, { contentType: 'image/jpeg' }),
+    timeout
+  ]);
   const url = await getDownloadURL(snapshot.ref);
 
   statusEl.textContent = `✅ Uploaded · ${compressedKb}KB (was ${originalKb}KB)`;
