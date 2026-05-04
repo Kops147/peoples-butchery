@@ -48,9 +48,12 @@ function saveCart(fullRender = true) {
   else renderCartPanel();
 }
 
-// ── Weight helper ──────────────────────────────
+// ── Unit helpers ───────────────────────────────
 function isWeightBased(product) {
   return /kg/i.test(product.unit || '');
+}
+function isQtyBased(product) {
+  return /each/i.test(product.unit || '');
 }
 
 // ── Cart Operations ────────────────────────────
@@ -125,8 +128,48 @@ window.commitWeight = (productId) => {
   const item = cart.find(c => c.productId === productId);
   if (item) {
     item.qty = parseFloat(kg.toFixed(3));
-    saveCart(false); // cart panel only, no product grid re-render
+    saveCart(false);
   }
+};
+
+// ── Qty-based (each) cart helpers ─────────────
+window.addQtyToCart = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const qty = parseInt(qtyInput?.value || 1);
+  if (isNaN(qty) || qty < 1) { showToast('Minimum order is 1', 'warning'); return; }
+  const product = findProduct(productId);
+  if (!product || !product.available) return;
+  const existing = cart.find(c => c.productId === productId);
+  if (existing) { existing.qty = qty; } else { cart.push({ productId, qty }); }
+  saveCart();
+  showToast(`${qty}× ${product.name} added!`, 'success');
+};
+
+window.syncFromQty = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const totalInput = document.getElementById('ti-' + productId);
+  const p = findProduct(productId);
+  if (!qtyInput || !totalInput || !p) return;
+  const qty = parseInt(qtyInput.value) || 0;
+  totalInput.value = qty > 0 ? (qty * p.price).toFixed(2) : '';
+};
+
+window.syncFromTotal = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const totalInput = document.getElementById('ti-' + productId);
+  const p = findProduct(productId);
+  if (!qtyInput || !totalInput || !p || !p.price) return;
+  const rand = parseFloat(totalInput.value) || 0;
+  const qty = rand > 0 ? Math.max(1, Math.round(rand / p.price)) : 0;
+  qtyInput.value = qty > 0 ? qty : '';
+};
+
+window.commitQty = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const qty = parseInt(qtyInput?.value) || 0;
+  if (qty < 1) return;
+  const item = cart.find(c => c.productId === productId);
+  if (item) { item.qty = qty; saveCart(false); }
 };
 
 function removeFromCart(productId) {
@@ -204,6 +247,8 @@ function renderProducts() {
       ? '<span class="badge badge-gold">🍽️ Cooked Meal</span>'
       : `<span class="badge badge-red">🥩 ${p.categoryLabel}</span>`;
 
+    const qtyBased = isQtyBased(p);
+
     let cartControl;
     if (weighted) {
       const currentKg = cartItem ? cartItem.qty : 0.5;
@@ -233,6 +278,34 @@ function renderProducts() {
             : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addWeightToCart('${p.id}')">Add to Cart</button>`
           }
         </div>`;
+    } else if (qtyBased) {
+      const currentQty = cartItem ? cartItem.qty : 1;
+      const currentTotal = parseFloat((currentQty * basePrice).toFixed(2));
+      const inCart = !!cartItem;
+      cartControl = `
+        <div class="weight-ctrl${inCart ? ' in-cart' : ''}">
+          <div class="weight-dual-row">
+            <div class="weight-field">
+              <input type="number" class="weight-inp" id="qi-${p.id}"
+                value="${currentQty}" min="1" max="100" step="1"
+                oninput="syncFromQty('${p.id}')"
+                onblur="commitQty('${p.id}')">
+              <span class="weight-lbl">each</span>
+            </div>
+            <span class="weight-sep">↔</span>
+            <div class="weight-field">
+              <span class="weight-lbl">R</span>
+              <input type="number" class="weight-inp" id="ti-${p.id}"
+                value="${currentTotal.toFixed(2)}" min="0" step="1"
+                oninput="syncFromTotal('${p.id}')"
+                onblur="commitQty('${p.id}')">
+            </div>
+          </div>
+          ${inCart
+            ? `<button class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);width:100%" onclick="removeItem('${p.id}')">✓ In Cart — Remove</button>`
+            : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addQtyToCart('${p.id}')">Add to Cart</button>`
+          }
+        </div>`;
     } else {
       const qty = cartItem ? cartItem.qty : 0;
       cartControl = qty === 0
@@ -243,6 +316,8 @@ function renderProducts() {
              <button class="qty-btn" onclick="updateQtyUI('${p.id}',1)">+</button>
            </div>`;
     }
+
+    const usesInputCtrl = weighted || qtyBased;
 
     return `<div class="product-card" id="pc-${p.id}">
         <div class="product-img">
@@ -265,9 +340,9 @@ function renderProducts() {
               <div class="product-price">${formatCurrency(basePrice)}</div>
               <div class="product-unit">${p.unit}</div>
             </div>
-            ${weighted ? '' : cartControl}
+            ${usesInputCtrl ? '' : cartControl}
           </div>
-          ${weighted ? `<div class="weight-ctrl-wrap">${cartControl}</div>` : ''}
+          ${usesInputCtrl ? `<div class="weight-ctrl-wrap">${cartControl}</div>` : ''}
         </div>
       </div>`;
   }).join('\n');
