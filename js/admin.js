@@ -84,9 +84,6 @@ async function openPhotoPicker() {
   });
 }
 
-  statusEl.textContent = `✅ Uploaded · ${compressedKb}KB (was ${originalKb}KB)`;
-  return url;
-}
 
 function toDate(val) {
   if (!val) return null;
