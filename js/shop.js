@@ -456,7 +456,7 @@ function initDeliveryLocation() {
     debounceTimer = setTimeout(async () => {
       suggestionsEl.innerHTML = '<div class="delivery-suggestion-item" style="opacity:0.5">Searching...</div>';
       try {
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${STORE_COORDS.lat}&lon=${STORE_COORDS.lng}&limit=5&lang=en`;
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${STORE_COORDS.lat}&lon=${STORE_COORDS.lng}&limit=5&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
         const res = await fetch(url);
         const data = await res.json();
         const results = (data.features || []).filter(f => {

@@ -243,20 +243,22 @@
         </div>
         <div class="form-error hidden" id="err-phone">Please enter your phone number</div>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="position:relative">
         <label class="form-label" for="r-suburb">Suburb / Area *</label>
         <div class="input-group">
           <span class="input-icon">🏘️</span>
           <input type="text" id="r-suburb" class="form-control" placeholder="e.g. Silverton, Mamelodi, East Lynne"
-            autocomplete="address-level2">
+            autocomplete="off">
         </div>
-        <div class="form-hint">Used to calculate your delivery fee</div>
+        <div id="reg-suburb-suggestions" class="delivery-suggestions" style="position:absolute;width:100%;z-index:100;top:100%"></div>
+        <div class="form-hint">Start typing your suburb — suggestions will appear</div>
         <div class="form-error hidden" id="err-suburb">Please enter your suburb</div>
       </div>
       <div class="form-group">
         <label class="form-label" for="r-address">Full Street Address *</label>
         <textarea id="r-address" class="form-control" rows="3" placeholder="e.g. 15 Main St, Silverton, Pretoria, 0184"
           autocomplete="street-address"></textarea>
+        <div class="form-hint">Auto-filled when you pick a suburb above, or type it manually</div>
         <div class="form-error hidden" id="err-address">Please enter your delivery address</div>
       </div>
 
@@ -430,6 +432,60 @@
     });
 
     document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
+
+    // Suburb autocomplete (Photon, Pretoria area)
+    (function () {
+      const suburbInput = document.getElementById('r-suburb');
+      const suggestionsEl = document.getElementById('reg-suburb-suggestions');
+      let timer;
+
+      suburbInput.addEventListener('input', () => {
+        clearTimeout(timer);
+        suggestionsEl.innerHTML = '';
+        const q = suburbInput.value.trim();
+        if (q.length < 3) return;
+
+        timer = setTimeout(async () => {
+          try {
+            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-25.7219&lon=28.3412&limit=6&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
+            const res = await fetch(url);
+            const json = await res.json();
+            const results = (json.features || []).filter(f => !f.properties.country_code || f.properties.country_code === 'za');
+            suggestionsEl.innerHTML = '';
+            results.slice(0, 5).forEach(r => {
+              const p = r.properties;
+              const suburb = p.suburb || p.district || p.neighbourhood || p.name || '';
+              const street = p.housenumber ? `${p.housenumber} ${p.street || ''}`.trim() : (p.street || '');
+              const city = p.city || p.town || p.county || 'Pretoria';
+              const fullAddress = [street, suburb, city].filter(Boolean).join(', ');
+              const label = suburb || p.name || city;
+              const [lng, lat] = r.geometry.coordinates;
+
+              const item = document.createElement('div');
+              item.className = 'delivery-suggestion-item';
+              item.textContent = label + (city && city !== label ? `, ${city}` : '');
+              item.addEventListener('click', () => {
+                suburbInput.value = label;
+                const addrEl = document.getElementById('r-address');
+                if (!addrEl.value.trim()) addrEl.value = fullAddress;
+                pendingCoords = { lat, lng };
+                suggestionsEl.innerHTML = '';
+                hideError('err-suburb');
+              });
+              suggestionsEl.appendChild(item);
+            });
+          } catch {
+            // silent — user can type manually
+          }
+        }, 500);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!suburbInput.contains(e.target) && !suggestionsEl.contains(e.target)) {
+          suggestionsEl.innerHTML = '';
+        }
+      });
+    })();
 
     // Delivery fee calculation
     document.getElementById('calc-delivery-btn').addEventListener('click', async () => {
