@@ -459,7 +459,7 @@ function renderAdminProducts() {
     <div class="product-admin-card mb-4" id="prod-admin-${p.id}">
       <div class="product-admin-img">
         <img src="${p.image_url || p.image || ''}" alt="${p.name}"
-          onerror="this.src='https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop'">
+          onerror="this.src='assets/img/food/meat_on_braai.jpg'">
       </div>
       <div class="product-admin-info">
         <div style="font-family:var(--font-head);font-weight:700">${p.name}</div>
@@ -589,7 +589,7 @@ function initProductForm() {
 
     const id = document.getElementById('prod-id').value;
     const imgVal = document.getElementById('prod-image').value.trim()
-      || 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop';
+      || 'assets/img/food/meat_on_braai.jpg';
     const payload = {
       name: document.getElementById('prod-name').value.trim(),
       category: document.getElementById('prod-category').value,
