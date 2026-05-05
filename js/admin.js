@@ -289,6 +289,16 @@ function initCreditForm() {
         const { error } = await supabase.from('users').update({ credit_balance: newBalance }).eq('id', userId);
         if (error) throw error;
 
+        // Log to transactions table (non-critical — don't block if table doesn't exist yet)
+        supabase.from('transactions').insert({
+          user_id: userId,
+          user_email: user?.email || '',
+          amount,
+          type: 'credit',
+          notes: 'Credit added by admin',
+          status: 'completed'
+        }).then(({ error: txErr }) => { if (txErr) console.warn('Transaction log failed:', txErr.message); });
+
         const localUser = DB.findUserById(userId);
         if (localUser) { localUser.creditBalance = newBalance; DB.updateUser(localUser); }
         if (user) user.creditBalance = newBalance;

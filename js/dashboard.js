@@ -10,6 +10,7 @@ import { getUserOrdersFromSupabase } from './supabase-orders.js';
 
 let currentUser = null;
 let userOrders = [];
+let allProducts = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireLogin()) return;
@@ -46,6 +47,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('Orders load failed, using local fallback:', err);
     userOrders = DB.getUserOrders(sess.id);
   }
+
+  // Fetch products for order item name resolution
+  try {
+    const { data } = await supabase.from('products').select('id, name, unit');
+    if (data) allProducts = data;
+  } catch {}
 
   renderSidebarUser();
   renderOverview();
@@ -134,7 +141,15 @@ function renderOrderCard(order, detailed = false) {
   const { icon, label, badgeClass } = statusMap[status] || { icon: '❓', label: status, badgeClass: 'badge-gray' };
 
   const items = Array.isArray(order.items) ? order.items : [];
-  const itemCount = items.length || order.total_items || '?';
+  const itemLines = items.map(i => {
+    const p = allProducts.find(p => p.id === i.productId || p.id === i.product_id);
+    const name = p ? p.name : (i.name || `Item`);
+    const qty = i.quantity || i.qty || 1;
+    return `${qty} × ${name}`;
+  });
+  const itemSummary = itemLines.length > 0
+    ? itemLines.join(' · ')
+    : `${order.total_items || items.length || '?'} item(s)`;
 
   const statuses = ['pending', 'braai', 'packaging', 'dispatched', 'delivered'];
   const currentIdx = statuses.indexOf(status);
@@ -164,7 +179,7 @@ function renderOrderCard(order, detailed = false) {
         </div>
       </div>
       <div class="order-card-body">
-        <div class="order-items-summary">${itemCount} item(s)</div>
+        <div class="order-items-summary">${itemSummary}</div>
         ${trackingHtml}
         <div class="flex-between mt-4">
           <div class="order-foot-info">📍 ${order.delivery_address || (order.delivery_method === 'collect' ? 'Collect at store' : '')}</div>
@@ -179,22 +194,44 @@ async function renderTransactions() {
   const tbody = document.getElementById('txn-tbody');
   if (!tbody) return;
 
+  tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</td></tr>`;
+
   try {
-    const txns = DB.getUserTransactions(currentUser.id);
-    if (!txns || txns.length === 0) {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .or(`user_id.eq.${currentUser.id},user_email.eq.${currentUser.email}`)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const txns = data || [];
+    if (txns.length === 0) {
       tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">No credit transactions yet</td></tr>`;
       return;
     }
     tbody.innerHTML = txns.map(t => `<tr>
       <td>${formatDate(t.created_at)}</td>
       <td class="${t.type === 'purchase' ? 'text-red' : 'text-gold'} font-bold">
-        ${t.type === 'purchase' ? '-' : '+'}${formatCurrency(t.amount)}
+        ${t.type === 'purchase' ? '−' : '+'}${formatCurrency(t.amount)}
       </td>
       <td>${t.notes || t.type}</td>
       <td><span class="badge badge-green">✅ ${t.status || 'Completed'}</span></td>
     </tr>`).join('');
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">Could not load transactions</td></tr>`;
+  } catch {
+    // Table may not exist yet — fall back to localStorage
+    const txns = DB.getUserTransactions(currentUser.id) || [];
+    if (txns.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">No credit transactions yet</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = txns.map(t => `<tr>
+      <td>${formatDate(t.created_at)}</td>
+      <td class="${t.type === 'purchase' ? 'text-red' : 'text-gold'} font-bold">
+        ${t.type === 'purchase' ? '−' : '+'}${formatCurrency(t.amount)}
+      </td>
+      <td>${t.notes || t.type}</td>
+      <td><span class="badge badge-green">✅ ${t.status || 'Completed'}</span></td>
+    </tr>`).join('');
   }
 }
 

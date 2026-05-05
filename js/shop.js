@@ -611,6 +611,16 @@ async function checkout() {
     // Deduct credit in Supabase
     await supabase.from('users').update({ credit_balance: user.creditBalance - total }).eq('id', user.id);
 
+    // Log purchase transaction (non-critical)
+    supabase.from('transactions').insert({
+      user_id: user.id,
+      user_email: user.email,
+      amount: total,
+      type: 'purchase',
+      notes: `Order #${orderId}`,
+      status: 'completed'
+    }).then(({ error: txErr }) => { if (txErr) console.warn('Transaction log failed:', txErr.message); });
+
     // Mirror to local DB for dashboard display on same device
     DB.addOrder({
       id: orderId,
