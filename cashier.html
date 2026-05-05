@@ -31,6 +31,8 @@
     .stn-clock { font-size: .8rem; color: #444; white-space: nowrap; }
     .refresh-btn { background: transparent; border: 1px solid #2a2a2a; color: #555; padding: 5px 12px; border-radius: 6px; font-size: .75rem; cursor: pointer; transition: all .2s; }
     .refresh-btn:hover { color: #e8a020; border-color: rgba(232,160,32,.4); }
+    .cash-btn { background: #22c55e; color: #000; padding: 6px 14px; border-radius: 8px; font-size: .78rem; font-weight: 800; border: none; cursor: pointer; white-space: nowrap; transition: background .15s; }
+    .cash-btn:hover { background: #16a34a; }
 
     /* Stats bar */
     .stats-bar { background: #0D0D0D; border-bottom: 1px solid #1a1a1a; padding: 10px 20px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
@@ -40,6 +42,7 @@
     .stat-num.amber { color: #f0a000; }
     .stat-num.green { color: #3DD68C; }
     .stat-num.blue { color: #3498db; }
+    .stat-num.purple { color: #8b5cf6; }
     .stat-lbl { font-size: .72rem; color: #555; }
 
     /* Columns */
@@ -75,12 +78,13 @@
 
     .ocard-body { padding: 0 14px 8px; }
     .ocard-customer { font-size: .88rem; font-weight: 600; color: #ccc; margin-bottom: 3px; }
-    .ocard-phone { font-size: .78rem; color: #555; margin-bottom: 6px; }
+    .ocard-phone { font-size: .78rem; color: #e8a020; margin-bottom: 6px; font-weight: 600; }
     .ocard-items { font-size: .8rem; color: #888; line-height: 1.5; margin-bottom: 6px; }
-    .item-line { display: flex; align-items: center; gap: 6px; }
+    .item-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .item-braai { background: rgba(249,115,22,.15); color: #f97316; font-size: .68rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
     .item-pap { background: rgba(61,214,140,.12); color: #3DD68C; font-size: .68rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
     .ocard-delivery { font-size: .78rem; color: #444; margin-bottom: 4px; }
+    .ocard-address { background: #1a1a1a; border-radius: 6px; padding: 6px 10px; font-size: .8rem; color: #aaa; margin-bottom: 6px; }
     .ocard-total { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1.05rem; color: #e8a020; }
 
     .ocard-actions { padding: 10px 14px 12px; display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid #1a1a1a; }
@@ -91,10 +95,47 @@
     .btn-kitchen { background: #f97316; color: #fff; }
     .btn-ready { background: #3DD68C; color: #000; }
     .btn-dispatch { background: #3498db; color: #fff; }
+    .btn-collected { background: #3DD68C; color: #000; font-size: .85rem; padding: 10px 14px; flex: 1; }
+    .btn-delivered { background: #3498db; color: #fff; font-size: .85rem; padding: 10px 14px; flex: 1; }
     .btn-cancel { background: #2a2a2a; color: #888; }
 
     .empty-col { text-align: center; padding: 60px 20px; color: #333; }
     .empty-col .ei { font-size: 2.5rem; margin-bottom: 10px; }
+
+    /* Wait timer badges */
+    .wait-badge { font-size: .7rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+    .wait-ok   { background: rgba(61,214,140,.12); color: #3DD68C; }
+    .wait-warn { background: rgba(240,160,0,.15); color: #f0a000; }
+    .wait-over { background: rgba(255,77,77,.2); color: #ff4d4d; animation: pulse-over 1.5s infinite; }
+    @keyframes pulse-over { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .ocard.overdue { box-shadow: 0 0 0 1px rgba(255,77,77,.35); }
+    .overdue-banner { background: rgba(255,77,77,.12); border-top: 1px solid rgba(255,77,77,.2); padding: 5px 14px; font-size: .72rem; color: #ff4d4d; font-weight: 700; }
+    .section-alert { background: rgba(255,77,77,.08); border: 1px solid rgba(255,77,77,.2); border-radius: 8px; padding: 8px 14px; font-size: .78rem; color: #ff4d4d; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    /* ── Cash Credit Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #141414; border: 1px solid #2a2a2a; border-radius: 16px; width: 440px; max-width: calc(100vw - 32px); padding: 28px; }
+    .modal h2 { font-family: var(--font-head, sans-serif); font-size: 1.2rem; margin: 0 0 4px; color: #fff; }
+    .modal p { font-size: .82rem; color: #555; margin: 0 0 20px; }
+    .modal-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #555; margin-bottom: 6px; }
+    .modal-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #e0e0e0; padding: 10px 14px; border-radius: 8px; font-size: .95rem; box-sizing: border-box; outline: none; transition: border-color .15s; }
+    .modal-input:focus { border-color: #e8a020; }
+    .search-results { background: #0A0A0A; border: 1px solid #222; border-radius: 8px; margin-top: 6px; max-height: 160px; overflow-y: auto; display: none; }
+    .search-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #1a1a1a; transition: background .1s; }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: #1a1a1a; }
+    .sri-name { font-weight: 700; font-size: .9rem; color: #ddd; }
+    .sri-sub { font-size: .75rem; color: #555; }
+    .selected-customer { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; display: none; }
+    .sc-name { font-weight: 700; color: #fff; font-size: .95rem; }
+    .sc-balance { font-size: .82rem; color: #3DD68C; font-weight: 600; margin-top: 2px; }
+    .sc-ref { font-size: .75rem; color: #555; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-confirm { flex: 1; padding: 12px; border-radius: 8px; background: #22c55e; color: #000; font-weight: 800; font-size: .95rem; border: none; cursor: pointer; transition: background .15s; }
+    .modal-confirm:hover { background: #16a34a; }
+    .modal-confirm:disabled { background: #1a1a1a; color: #555; cursor: default; }
+    .modal-cancel { padding: 12px 18px; border-radius: 8px; background: #2a2a2a; color: #888; font-weight: 700; border: none; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -113,6 +154,36 @@
   </div>
 </div>
 
+<!-- Cash Credit Modal -->
+<div class="modal-overlay" id="credit-modal">
+  <div class="modal">
+    <h2>💵 Cash Deposit — Add Credit</h2>
+    <p>Search for the customer, enter the cash amount received.</p>
+
+    <div style="margin-bottom:14px">
+      <div class="modal-label">Search Customer</div>
+      <input type="text" id="cust-search" class="modal-input" placeholder="Name, phone, email or ref number…" autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <div class="selected-customer" id="selected-customer">
+      <div class="sc-name" id="sc-name"></div>
+      <div class="sc-balance" id="sc-balance"></div>
+      <div class="sc-ref" id="sc-ref"></div>
+    </div>
+
+    <div style="margin-bottom:4px">
+      <div class="modal-label">Cash Amount Received (R)</div>
+      <input type="number" id="credit-amount" class="modal-input" placeholder="0.00" min="1" step="0.01">
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" id="credit-confirm-btn" onclick="applyCredit()" disabled>✓ Add Credit</button>
+    </div>
+  </div>
+</div>
+
 <!-- Main Screen -->
 <div id="main-screen" style="display:none">
   <header class="stn-header">
@@ -125,10 +196,10 @@
       <a href="cashier.html" class="active">🧾 Cashier</a>
       <a href="butcher.html">🔪 Butcher</a>
       <a href="kitchen.html">🔥 Kitchen</a>
-      <a href="dispatch.html">🚗 Driver</a>
       <a href="admin.html">⚙️ Admin</a>
     </nav>
     <div style="display:flex;align-items:center;gap:10px">
+      <button class="cash-btn" onclick="openModal()">💵 Cash Deposit</button>
       <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
       <span class="stn-clock" id="clock"></span>
     </div>
@@ -144,14 +215,20 @@
       <div class="stat-lbl">In Progress</div>
     </div>
     <div class="stat-chip">
-      <div class="stat-num blue" id="cnt-dispatch">0</div>
-      <div class="stat-lbl">Awaiting Dispatch</div>
+      <div class="stat-num purple" id="cnt-pack">0</div>
+      <div class="stat-lbl">Packaging</div>
     </div>
     <div class="stat-chip">
-      <div class="stat-num green" id="cnt-done">0</div>
-      <div class="stat-lbl">Done Today</div>
+      <div class="stat-num green" id="cnt-collect">0</div>
+      <div class="stat-lbl">Ready to Collect</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num blue" id="cnt-dispatch">0</div>
+      <div class="stat-lbl">Out for Delivery</div>
     </div>
   </div>
+
+  <div id="overdue-alert" style="display:none;padding:8px 16px;background:#0A0A0A;border-bottom:1px solid #1a1a1a"></div>
 
   <div class="cashier-cols">
     <!-- Left: New Orders -->
@@ -165,7 +242,7 @@
       </div>
     </div>
 
-    <!-- Right: In Progress + Awaiting Dispatch -->
+    <!-- Right: In Progress + Dispatch + Collection -->
     <div class="col">
       <div class="col-head">
         <h2>⚙️ In Progress &amp; Dispatch</h2>
@@ -185,11 +262,11 @@
   const SUPER_PIN = 'yType_Dev_2026';
 
   let _orders = [], _users = [], _products = [];
+  let _selectedUser = null;
 
   // Clock
   function tick() {
-    const now = new Date();
-    document.getElementById('clock').textContent = now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
   tick(); setInterval(tick, 1000);
 
@@ -207,12 +284,12 @@
   };
   document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') window.checkPin(); });
 
-  // Load
+  // ── Data ────────────────────────────────────────
   window.loadData = async function() {
     try {
       const [ordRes, usrRes, proRes] = await Promise.all([
         supabase.from('orders').select('*').not('status', 'in', '("delivered","collected","cancelled")').order('created_at', { ascending: false }),
-        supabase.from('users').select('id,name,surname,phone,email'),
+        supabase.from('users').select('id,name,surname,phone,email,credit_balance,ref_number'),
         supabase.from('products').select('id,name,unit')
       ]);
       if (!ordRes.error) _orders = ordRes.data || [];
@@ -232,10 +309,30 @@
     return p ? p.name : `#${id}`;
   }
   function fmtTime(ts) {
-    if (!ts) return '';
-    return new Date(ts).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+    return ts ? new Date(ts).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '';
   }
 
+  // Thresholds (minutes) per status before "overdue"
+  const OVERDUE_MINS = { pending: 5, butchering: 20, braai: 20, packaging: 10, ready: 30, dispatched: 45 };
+
+  function elapsedMins(o) {
+    const ts = o.updated_at || o.created_at;
+    return Math.floor((Date.now() - new Date(ts)) / 60000);
+  }
+
+  function waitBadge(o) {
+    const mins = elapsedMins(o);
+    const threshold = OVERDUE_MINS[o.status] || 15;
+    let cls, label;
+    if (mins < 1) { cls = 'wait-ok'; label = 'Just now'; }
+    else if (mins < 60) { label = `${mins}m`; cls = mins >= threshold ? 'wait-over' : mins >= threshold * 0.6 ? 'wait-warn' : 'wait-ok'; }
+    else { const h = Math.floor(mins/60); label = `${h}h ${mins%60}m`; cls = 'wait-over'; }
+    return `<span class="wait-badge ${cls}">⏱ ${label}</span>`;
+  }
+
+  function isOverdue(o) {
+    return elapsedMins(o) >= (OVERDUE_MINS[o.status] || 15);
+  }
   function itemsHtml(items) {
     if (!Array.isArray(items) || !items.length) return '<span style="color:#333">—</span>';
     return items.map(i => {
@@ -247,43 +344,40 @@
       return `<div class="item-line">${qty}× <strong>${name}</strong>${tags}</div>`;
     }).join('');
   }
-
   function statusBadge(s) {
-    const map = {
-      pending: 'st-pending', butchering: 'st-butchering', braai: 'st-braai',
-      packaging: 'st-packaging', ready: 'st-ready', dispatched: 'st-dispatched'
-    };
+    const map = { pending:'st-pending', butchering:'st-butchering', braai:'st-braai', packaging:'st-packaging', ready:'st-ready', dispatched:'st-dispatched' };
     return `<span class="ocard-status ${map[s]||'st-pending'}">${s}</span>`;
   }
-
   function cardClass(s) {
     const m = { pending:'new-order', butchering:'butchering', braai:'braai', packaging:'packaging', ready:'ready', dispatched:'dispatched' };
     return m[s] || '';
   }
 
+  // ── Card builders ───────────────────────────────
   function newOrderCard(o) {
     const u = getUser(o);
-    const hasBraai = (o.items||[]).some(i => i.braai);
     const isDeliv = o.delivery_method === 'delivery';
-    return `<div class="ocard ${cardClass(o.status)}" id="oc-${o.id}">
+    const over = isOverdue(o);
+    return `<div class="ocard ${cardClass(o.status)}${over ? ' overdue' : ''}" id="oc-${o.id}">
       <div class="ocard-head">
         <div>
           <div class="ocard-id">#${o.id.slice(-8).toUpperCase()}</div>
           <div class="ocard-time">${fmtTime(o.created_at)}</div>
         </div>
-        ${statusBadge(o.status)}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${statusBadge(o.status)}${waitBadge(o)}</div>
       </div>
+      ${over ? `<div class="overdue-banner">⚠️ Waiting ${elapsedMins(o)}m — needs attention</div>` : ''}
       <div class="ocard-body">
         <div class="ocard-customer">${u.name || ''} ${u.surname || ''}</div>
         <div class="ocard-phone">${u.phone || o.user_email || ''}</div>
         <div class="ocard-items">${itemsHtml(o.items)}</div>
-        <div class="ocard-delivery">${isDeliv ? '🚗 Delivery — ' + (o.delivery_address||'') : '🏪 Collection'}</div>
+        <div class="ocard-delivery">${isDeliv ? '🚗 Delivery — ' + (o.delivery_address||'No address') : '🏪 Collection'}</div>
         <div class="ocard-total">${formatCurrency(o.total)}</div>
       </div>
       <div class="ocard-actions">
-        <button class="act-btn btn-butcher" onclick="allocate('${o.id}','butchering')">🔪 Butcher</button>
-        ${hasBraai || true ? `<button class="act-btn btn-kitchen" onclick="allocate('${o.id}','braai')">🔥 Kitchen</button>` : ''}
-        <button class="act-btn btn-cancel" onclick="allocate('${o.id}','cancelled')">✕ Cancel</button>
+        <button class="act-btn btn-butcher" onclick="allocate('${o.id}','butchering',this)">🔪 Butcher</button>
+        <button class="act-btn btn-kitchen" onclick="allocate('${o.id}','braai',this)">🔥 Kitchen</button>
+        <button class="act-btn btn-cancel" onclick="allocate('${o.id}','cancelled',this)">✕ Cancel</button>
       </div>
     </div>`;
   }
@@ -291,64 +385,84 @@
   function progressCard(o) {
     const u = getUser(o);
     const isDeliv = o.delivery_method === 'delivery';
-    const isPackaging = o.status === 'packaging';
-    return `<div class="ocard ${cardClass(o.status)}">
+    const over = isOverdue(o);
+    let actions = '';
+    if (o.status === 'packaging') {
+      actions = isDeliv
+        ? `<button class="act-btn btn-dispatch" onclick="allocate('${o.id}','dispatched',this)">🚗 Send to Driver</button>`
+        : `<button class="act-btn btn-ready" onclick="allocate('${o.id}','ready',this)">✅ Mark Ready</button>`;
+    } else if (o.status === 'ready') {
+      actions = `<button class="act-btn btn-collected" onclick="finalise('${o.id}','collected',this)">✓ COLLECTED — Customer Picked Up</button>`;
+    } else if (o.status === 'dispatched') {
+      actions = `<button class="act-btn btn-delivered" onclick="finalise('${o.id}','delivered',this)">✓ DELIVERED — Driver Returned</button>`;
+    }
+    return `<div class="ocard ${cardClass(o.status)}${over ? ' overdue' : ''}">
       <div class="ocard-head">
         <div>
           <div class="ocard-id">#${o.id.slice(-8).toUpperCase()}</div>
           <div class="ocard-time">${fmtTime(o.created_at)}</div>
         </div>
-        ${statusBadge(o.status)}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${statusBadge(o.status)}${waitBadge(o)}</div>
       </div>
+      ${over ? `<div class="overdue-banner">⚠️ ${elapsedMins(o)}m in ${o.status}</div>` : ''}
       <div class="ocard-body">
         <div class="ocard-customer">${u.name || ''} ${u.surname || ''}</div>
         <div class="ocard-phone">${u.phone || o.user_email || ''}</div>
         <div class="ocard-items">${itemsHtml(o.items)}</div>
-        <div class="ocard-delivery">${isDeliv ? '🚗 Delivery — ' + (o.delivery_address||'') : '🏪 Collection'}</div>
+        ${(o.status === 'dispatched' && o.delivery_address) ? `<div class="ocard-address">📍 ${o.delivery_address}</div>` : ''}
         <div class="ocard-total">${formatCurrency(o.total)}</div>
       </div>
-      ${isPackaging ? `<div class="ocard-actions">
-        ${isDeliv
-          ? `<button class="act-btn btn-dispatch" onclick="allocate('${o.id}','dispatched')">🚗 Send to Driver</button>`
-          : `<button class="act-btn btn-ready" onclick="allocate('${o.id}','ready')">✅ Mark Ready</button>`
-        }
-      </div>` : ''}
+      ${actions ? `<div class="ocard-actions">${actions}</div>` : ''}
     </div>`;
   }
 
+  // ── Render ──────────────────────────────────────
   function render() {
     const newOrders = _orders.filter(o => o.status === 'pending');
-    const inProg = _orders.filter(o => ['butchering','braai','packaging'].includes(o.status));
-    const awaiting = _orders.filter(o => ['ready','dispatched','delivering'].includes(o.status));
-    const today = new Date().toDateString();
-    // Count done today (need separate query or from the already-loaded but filtered data — approximate from what we have)
+    const inProg    = _orders.filter(o => ['butchering','braai'].includes(o.status));
+    const packaging = _orders.filter(o => o.status === 'packaging');
+    const collecting = _orders.filter(o => o.status === 'ready');
+    const delivering = _orders.filter(o => o.status === 'dispatched');
 
     document.getElementById('cnt-new').textContent = newOrders.length;
     document.getElementById('cnt-prog').textContent = inProg.length;
-    document.getElementById('cnt-dispatch').textContent = awaiting.length;
+    document.getElementById('cnt-pack').textContent = packaging.length;
+    document.getElementById('cnt-collect').textContent = collecting.length;
+    document.getElementById('cnt-dispatch').textContent = delivering.length;
 
     const badgeNew = document.getElementById('badge-new');
     badgeNew.textContent = newOrders.length;
     badgeNew.className = 'col-cnt' + (newOrders.length ? ' has-items' : '');
 
+    const progAll = [...inProg, ...packaging, ...collecting, ...delivering];
     const badgeProg = document.getElementById('badge-prog');
-    badgeProg.textContent = inProg.length + awaiting.length;
-    badgeProg.className = 'col-cnt' + ((inProg.length + awaiting.length) ? ' has-items' : '');
+    badgeProg.textContent = progAll.length;
+    badgeProg.className = 'col-cnt' + (progAll.length ? ' has-items' : '');
 
-    const newEl = document.getElementById('new-orders');
-    newEl.innerHTML = newOrders.length
+    // Overdue alert bar
+    const allOverdue = _orders.filter(o => !['delivered','collected','cancelled'].includes(o.status) && isOverdue(o));
+    const alertBar = document.getElementById('overdue-alert');
+    if (allOverdue.length) {
+      alertBar.innerHTML = `<div class="section-alert">⚠️ ${allOverdue.length} order${allOverdue.length>1?'s':''} overdue — check highlighted cards</div>`;
+      alertBar.style.display = 'block';
+    } else {
+      alertBar.style.display = 'none';
+    }
+
+    document.getElementById('new-orders').innerHTML = newOrders.length
       ? newOrders.map(newOrderCard).join('')
       : '<div class="empty-col"><div class="ei">🎉</div>No new orders</div>';
 
-    const progEl = document.getElementById('progress-orders');
-    const progAll = [...inProg, ...awaiting];
-    progEl.innerHTML = progAll.length
+    document.getElementById('progress-orders').innerHTML = progAll.length
       ? progAll.map(progressCard).join('')
       : '<div class="empty-col"><div class="ei">✅</div>All clear</div>';
   }
 
-  window.allocate = async function(orderId, newStatus) {
-    const btn = event.target;
+  // Re-render timers every 30s without a network call
+  setInterval(() => { if (_orders.length) render(); }, 30000);
+
+  // ── Actions ─────────────────────────────────────
+  window.allocate = async function(orderId, newStatus, btn) {
     btn.disabled = true;
     try {
       const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
@@ -358,6 +472,113 @@
     } catch(e) {
       showToast('Error: ' + e.message, 'error');
       btn.disabled = false;
+    }
+  };
+
+  window.finalise = async function(orderId, newStatus, btn) {
+    btn.disabled = true;
+    try {
+      const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
+      if (error) throw error;
+      await loadData();
+      showToast(newStatus === 'collected' ? '✅ Collected!' : '✅ Delivered!', 'success');
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+      btn.disabled = false;
+    }
+  };
+
+  // ── Cash Credit Modal ────────────────────────────
+  window.openModal = function() {
+    _selectedUser = null;
+    document.getElementById('cust-search').value = '';
+    document.getElementById('credit-amount').value = '';
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('selected-customer').style.display = 'none';
+    document.getElementById('credit-confirm-btn').disabled = true;
+    document.getElementById('credit-modal').classList.add('open');
+    setTimeout(() => document.getElementById('cust-search').focus(), 50);
+  };
+
+  window.closeModal = function() {
+    document.getElementById('credit-modal').classList.remove('open');
+  };
+
+  document.getElementById('credit-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('credit-modal')) closeModal();
+  });
+
+  // Customer search
+  document.getElementById('cust-search').addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    const resultsEl = document.getElementById('search-results');
+    if (q.length < 2) { resultsEl.style.display = 'none'; return; }
+    const matches = _users.filter(u =>
+      (u.name||'').toLowerCase().includes(q) ||
+      (u.surname||'').toLowerCase().includes(q) ||
+      (u.email||'').toLowerCase().includes(q) ||
+      (u.phone||'').includes(q) ||
+      (u.ref_number||'').toLowerCase().includes(q)
+    ).slice(0, 6);
+    if (!matches.length) { resultsEl.innerHTML = '<div class="search-result-item"><div class="sri-name" style="color:#555">No customers found</div></div>'; resultsEl.style.display = 'block'; return; }
+    resultsEl.innerHTML = matches.map(u => `
+      <div class="search-result-item" onclick="selectCustomer('${u.id}')">
+        <div class="sri-name">${u.name} ${u.surname||''}</div>
+        <div class="sri-sub">${u.phone||''} · ${u.email||''} · Ref: ${u.ref_number||'—'} · Balance: ${formatCurrency(u.credit_balance||0)}</div>
+      </div>`).join('');
+    resultsEl.style.display = 'block';
+  });
+
+  window.selectCustomer = function(userId) {
+    const u = _users.find(u => u.id === userId);
+    if (!u) return;
+    _selectedUser = u;
+    document.getElementById('cust-search').value = `${u.name} ${u.surname||''}`;
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('sc-name').textContent = `${u.name} ${u.surname||''}`;
+    document.getElementById('sc-balance').textContent = `Current balance: ${formatCurrency(u.credit_balance||0)}`;
+    document.getElementById('sc-ref').textContent = `Ref: ${u.ref_number||'—'} · ${u.email||''}`;
+    document.getElementById('selected-customer').style.display = 'block';
+    document.getElementById('credit-confirm-btn').disabled = false;
+    document.getElementById('credit-amount').focus();
+  };
+
+  window.applyCredit = async function() {
+    if (!_selectedUser) return;
+    const amountRaw = parseFloat(document.getElementById('credit-amount').value);
+    if (!amountRaw || amountRaw <= 0) { showToast('Enter a valid amount', 'error'); return; }
+
+    const btn = document.getElementById('credit-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+
+    try {
+      const newBalance = parseFloat(_selectedUser.credit_balance || 0) + amountRaw;
+
+      const { error } = await supabase.from('users')
+        .update({ credit_balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('id', _selectedUser.id);
+      if (error) throw error;
+
+      await supabase.from('transactions').insert({
+        user_id: _selectedUser.id,
+        user_email: _selectedUser.email || '',
+        amount: amountRaw,
+        type: 'credit',
+        notes: `Cash deposit at till`,
+        status: 'completed'
+      });
+
+      // Refresh local user list so balance shows correctly on next search
+      const idx = _users.findIndex(u => u.id === _selectedUser.id);
+      if (idx !== -1) _users[idx].credit_balance = newBalance;
+
+      showToast(`✅ R${amountRaw.toFixed(2)} credited to ${_selectedUser.name}`, 'success');
+      closeModal();
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '✓ Add Credit';
     }
   };
 
