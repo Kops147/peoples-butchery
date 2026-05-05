@@ -1281,6 +1281,32 @@ tbody tr:hover {
   color: var(--text-primary);
 }
 
+.pap-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 0.78rem;
+}
+.pap-label { color: var(--text-secondary); }
+.pap-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color .15s;
+}
+.pap-btn:hover:not(:disabled) { color: var(--gold); }
+.pap-btn:disabled { opacity: 0.3; cursor: default; }
+.pap-count { font-weight: 700; color: var(--text-primary); min-width: 14px; text-align: center; }
+.pap-price { color: var(--gold); font-weight: 600; }
+
 .product-footer {
   display: flex;
   align-items: center;

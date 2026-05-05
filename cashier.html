@@ -6,411 +6,362 @@
   <title>Cashier Station — The Peoples Butchery</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; }
-    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 16px; }
-    .stn-title { display: flex; align-items: center; gap: 12px; }
-    .stn-title h1 { font-family: var(--font-head); font-size: 1.25rem; margin: 0; color: #fff; }
-    .stn-badge { background: rgba(232,160,32,.12); border: 1px solid rgba(232,160,32,.3); color: #e8a020; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; font-family: var(--font-body, sans-serif); }
+
+    /* PIN screen */
+    .pin-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .pin-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 40px; width: 340px; text-align: center; }
+    .pin-box h2 { font-family: var(--font-head, sans-serif); margin: 0 0 6px; font-size: 1.4rem; }
+    .pin-box p { color: #555; font-size: .85rem; margin: 0 0 24px; }
+    .pin-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #e0e0e0; padding: 12px 16px; border-radius: 10px; font-size: 1.1rem; text-align: center; letter-spacing: 4px; box-sizing: border-box; margin-bottom: 12px; }
+    .pin-input:focus { outline: none; border-color: #e8a020; }
+    .pin-err { color: #ff4d4d; font-size: .8rem; min-height: 18px; }
+
+    /* Header */
+    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 12px; flex-wrap: wrap; }
+    .stn-title { display: flex; align-items: center; gap: 10px; }
+    .stn-title h1 { font-family: var(--font-head, sans-serif); font-size: 1.1rem; margin: 0; color: #fff; }
+    .stn-badge { background: rgba(232,160,32,.12); border: 1px solid rgba(232,160,32,.3); color: #e8a020; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #e8a020; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
+    @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:.3} }
     .stn-nav { display: flex; gap: 6px; flex-wrap: wrap; }
     .stn-nav a { color: #555; text-decoration: none; font-size: .73rem; padding: 5px 10px; border: 1px solid #222; border-radius: 6px; transition: all .2s; white-space: nowrap; }
     .stn-nav a:hover { color: #aaa; border-color: #444; }
     .stn-nav a.active { color: #e8a020; border-color: rgba(232,160,32,.4); background: rgba(232,160,32,.05); }
-    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #e8a020; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
-    @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
     .stn-clock { font-size: .8rem; color: #444; white-space: nowrap; }
+    .refresh-btn { background: transparent; border: 1px solid #2a2a2a; color: #555; padding: 5px 12px; border-radius: 6px; font-size: .75rem; cursor: pointer; transition: all .2s; }
+    .refresh-btn:hover { color: #e8a020; border-color: rgba(232,160,32,.4); }
 
-    /* Layout */
-    .cashier-grid { display: grid; grid-template-columns: 1fr 400px; height: calc(100vh - 65px); overflow: hidden; }
-    @media(max-width:900px){ .cashier-grid { grid-template-columns: 1fr; height:auto; overflow:auto; } }
+    /* Stats bar */
+    .stats-bar { background: #0D0D0D; border-bottom: 1px solid #1a1a1a; padding: 10px 20px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+    .stat-chip { display: flex; align-items: center; gap: 8px; }
+    .stat-num { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1.4rem; }
+    .stat-num.red { color: #ff4d4d; }
+    .stat-num.amber { color: #f0a000; }
+    .stat-num.green { color: #3DD68C; }
+    .stat-num.blue { color: #3498db; }
+    .stat-lbl { font-size: .72rem; color: #555; }
 
-    /* LEFT — POS */
-    .pos-panel { border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow: hidden; }
-    .pos-header { padding: 16px 20px 12px; border-bottom: 1px solid #1a1a1a; }
-    .pos-header-title { font-family: var(--font-head); font-weight: 700; font-size: .95rem; color: #ccc; margin-bottom: 12px; }
+    /* Columns */
+    .cashier-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; height: calc(100vh - 115px); overflow: hidden; }
+    @media(max-width:900px){ .cashier-cols { grid-template-columns: 1fr; height: auto; overflow: visible; } }
+    .col { display: flex; flex-direction: column; overflow: hidden; }
+    .col:first-child { border-right: 1px solid #1a1a1a; }
+    .col-head { padding: 14px 20px 10px; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; gap: 10px; }
+    .col-head h2 { margin: 0; font-size: .95rem; font-weight: 700; color: #ccc; }
+    .col-cnt { background: #1a1a1a; color: #888; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .col-cnt.has-items { background: rgba(232,160,32,.15); color: #e8a020; }
+    .col-scroll { overflow-y: auto; flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 
-    /* Product Selector */
-    .product-selector { display: grid; grid-template-columns: 1fr 100px auto; gap: 8px; align-items: end; }
-    .sel-label { font-size: .72rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
-    .sel-input { background: #111; border: 1px solid #2a2a2a; color: #E0E0E0; padding: 9px 12px; border-radius: 8px; font-size: .88rem; width: 100%; box-sizing: border-box; }
-    .sel-input:focus { outline: none; border-color: #e8a020; }
-    select.sel-input option { background: #1a1a1a; }
+    /* Order cards */
+    .ocard { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; }
+    .ocard.new-order { border-left: 3px solid #e8a020; }
+    .ocard.butchering { border-left: 3px solid #ff4d4d; }
+    .ocard.braai { border-left: 3px solid #f97316; }
+    .ocard.packaging { border-left: 3px solid #8b5cf6; }
+    .ocard.ready { border-left: 3px solid #3DD68C; }
+    .ocard.dispatched { border-left: 3px solid #3498db; }
 
-    /* Sale List */
-    .sale-scroll { overflow-y: auto; flex: 1; }
-    .sale-header-row { display: grid; grid-template-columns: 1fr 80px 90px 36px; gap: 8px; padding: 8px 20px; border-bottom: 1px solid #1a1a1a; }
-    .col-head { font-size: .65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #333; font-weight: 700; }
-    .sale-item-row { display: grid; grid-template-columns: 1fr 80px 90px 36px; gap: 8px; padding: 11px 20px; border-bottom: 1px solid #141414; align-items: center; }
-    .sale-item-row:hover { background: #0f0f0f; }
-    .item-name { font-size: .88rem; font-weight: 600; color: #ddd; }
-    .item-unit-lbl { font-size: .72rem; color: #555; }
-    .item-price { font-size: .88rem; color: #999; }
-    .item-total-val { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: #e8a020; }
-    .remove-btn { background: transparent; border: none; color: #3a3a3a; cursor: pointer; font-size: .9rem; padding: 4px; border-radius: 4px; transition: color .15s; }
-    .remove-btn:hover { color: #ff4d4d; }
+    .ocard-head { padding: 12px 14px 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .ocard-id { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1rem; color: #ddd; }
+    .ocard-time { font-size: .72rem; color: #444; }
+    .ocard-status { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; padding: 3px 8px; border-radius: 4px; }
+    .st-pending { background: rgba(232,160,32,.15); color: #e8a020; }
+    .st-butchering { background: rgba(255,77,77,.15); color: #ff4d4d; }
+    .st-braai { background: rgba(249,115,22,.15); color: #f97316; }
+    .st-packaging { background: rgba(139,92,246,.15); color: #8b5cf6; }
+    .st-ready { background: rgba(61,214,140,.15); color: #3DD68C; }
+    .st-dispatched { background: rgba(52,152,219,.15); color: #3498db; }
 
-    /* Totals */
-    .totals-section { border-top: 2px solid #1a1a1a; padding: 14px 20px 0; flex-shrink: 0; }
-    .totals-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: .88rem; }
-    .totals-row.grand { padding-top: 10px; border-top: 1px solid #2a2a2a; margin-top: 6px; }
-    .totals-label { color: #666; }
-    .totals-value { font-weight: 600; color: #ccc; }
-    .grand-value { font-family: var(--font-head); font-weight: 800; font-size: 1.4rem; color: #e8a020; }
+    .ocard-body { padding: 0 14px 8px; }
+    .ocard-customer { font-size: .88rem; font-weight: 600; color: #ccc; margin-bottom: 3px; }
+    .ocard-phone { font-size: .78rem; color: #555; margin-bottom: 6px; }
+    .ocard-items { font-size: .8rem; color: #888; line-height: 1.5; margin-bottom: 6px; }
+    .item-line { display: flex; align-items: center; gap: 6px; }
+    .item-braai { background: rgba(249,115,22,.15); color: #f97316; font-size: .68rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+    .item-pap { background: rgba(61,214,140,.12); color: #3DD68C; font-size: .68rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+    .ocard-delivery { font-size: .78rem; color: #444; margin-bottom: 4px; }
+    .ocard-total { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1.05rem; color: #e8a020; }
 
-    /* Payment */
-    .payment-section { padding: 14px 20px 16px; flex-shrink: 0; border-top: 1px solid #1a1a1a; }
-    .pay-title { font-size: .72rem; text-transform: uppercase; letter-spacing: 1.5px; color: #444; font-weight: 700; margin-bottom: 10px; }
-    .pay-methods { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-    .pay-btn { background: #141414; border: 2px solid #222; color: #888; padding: 10px 6px; border-radius: 8px; cursor: pointer; font-size: .78rem; font-weight: 700; text-align: center; transition: all .2s; }
-    .pay-btn:hover { border-color: #444; color: #ccc; }
-    .pay-btn.selected { border-color: #e8a020; color: #e8a020; background: rgba(232,160,32,.08); }
-    .credit-ref { display: none; margin-bottom: 10px; }
-    .credit-ref.show { display: block; }
-    .process-btn { width: 100%; padding: 14px; background: linear-gradient(135deg,#c0392b,#e8a020); color: #fff; border: none; border-radius: 10px; font-family: var(--font-head); font-weight: 800; font-size: 1rem; cursor: pointer; transition: opacity .2s; }
-    .process-btn:hover { opacity: .9; }
-    .process-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .ocard-actions { padding: 10px 14px 12px; display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid #1a1a1a; }
+    .act-btn { padding: 7px 12px; border-radius: 8px; font-size: .78rem; font-weight: 700; cursor: pointer; border: none; transition: opacity .15s; }
+    .act-btn:hover { opacity: .85; }
+    .act-btn:disabled { opacity: .4; cursor: default; }
+    .btn-butcher { background: #ef4444; color: #fff; }
+    .btn-kitchen { background: #f97316; color: #fff; }
+    .btn-ready { background: #3DD68C; color: #000; }
+    .btn-dispatch { background: #3498db; color: #fff; }
+    .btn-cancel { background: #2a2a2a; color: #888; }
 
-    /* RIGHT — Orders */
-    .orders-panel { display: flex; flex-direction: column; overflow: hidden; }
-    .orders-head { padding: 16px 18px 12px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
-    .orders-scroll { overflow-y: auto; flex: 1; }
-
-    .order-row { padding: 12px 18px; border-bottom: 1px solid #141414; cursor: pointer; transition: background .15s; }
-    .order-row:hover { background: #111; }
-    .order-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .order-id { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: #aaa; }
-    .order-total { font-family: var(--font-head); font-weight: 800; color: #e8a020; }
-    .order-row-bot { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .otag { font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid; }
-    .otag-pending  { color: #f0a000; border-color: rgba(240,160,0,.3); background: rgba(240,160,0,.08); }
-    .otag-braai    { color: #ff4d4d; border-color: rgba(255,77,77,.3); background: rgba(255,77,77,.08); }
-    .otag-packaging{ color: #3498db; border-color: rgba(52,152,219,.3); background: rgba(52,152,219,.08); }
-    .otag-done     { color: #3DD68C; border-color: rgba(61,214,140,.3); background: rgba(61,214,140,.08); }
-    .otag-cash     { color: #888; border-color: #2a2a2a; background: transparent; }
-    .otag-delivery { color: #3498db; border-color: rgba(52,152,219,.3); background: rgba(52,152,219,.08); }
-    .otag-collect  { color: #e8a020; border-color: rgba(232,160,32,.3); background: rgba(232,160,32,.08); }
-    .otag-pos      { color: #9b59b6; border-color: rgba(155,89,182,.3); background: rgba(155,89,182,.08); }
-    .order-time    { font-size: .72rem; color: #444; }
-
-    .empty-panel { text-align: center; padding: 48px 16px; color: #2a2a2a; }
-    .empty-panel .ei { font-size: 2.5rem; margin-bottom: 12px; }
-    .empty-panel p { font-size: .8rem; }
-
-    /* empty sale */
-    .empty-sale { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #2a2a2a; padding: 40px; }
-    .empty-sale .ei { font-size: 3rem; margin-bottom: 12px; }
-    .empty-sale p { font-size: .85rem; text-align: center; }
+    .empty-col { text-align: center; padding: 60px 20px; color: #333; }
+    .empty-col .ei { font-size: 2.5rem; margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <div id="toast-container"></div>
 
+<div id="toast-container"></div>
+
+<!-- PIN Gate -->
+<div id="pin-screen" class="pin-wrap">
+  <div class="pin-box">
+    <div style="font-size:2rem;margin-bottom:12px">🧾</div>
+    <h2>Cashier Station</h2>
+    <p>The Peoples Butchery — Staff Access</p>
+    <input type="password" id="pin-input" class="pin-input" placeholder="Enter PIN" maxlength="30">
+    <div class="pin-err" id="pin-err"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="checkPin()">Unlock</button>
+  </div>
+</div>
+
+<!-- Main Screen -->
+<div id="main-screen" style="display:none">
   <header class="stn-header">
     <div class="stn-title">
-      <span style="font-size:1.4rem">💰</span>
+      <span class="live-dot"></span>
       <h1>Cashier Station</h1>
-      <span class="stn-badge">Point of Sale</span>
+      <span class="stn-badge">The Peoples Butchery</span>
     </div>
     <nav class="stn-nav">
-      <a href="cashier.html" class="active">💰 Cashier</a>
-      <a href="kitchen.html">🍳 Kitchen</a>
-      <a href="butcher.html">🥩 Butcher</a>
-      <a href="dispatch.html">🚚 Dispatch</a>
+      <a href="cashier.html" class="active">🧾 Cashier</a>
+      <a href="butcher.html">🔪 Butcher</a>
+      <a href="kitchen.html">🔥 Kitchen</a>
+      <a href="dispatch.html">🚗 Driver</a>
       <a href="admin.html">⚙️ Admin</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span class="live-dot"></span>
-      <span class="stn-clock" id="clock">—</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+      <span class="stn-clock" id="clock"></span>
     </div>
   </header>
 
-  <div class="cashier-grid">
-    <!-- LEFT: POS Terminal -->
-    <div class="pos-panel">
-      <div class="pos-header">
-        <div class="pos-header-title">🧾 New Walk-in Sale</div>
-        <div class="product-selector">
-          <div>
-            <div class="sel-label">Select Product</div>
-            <select class="sel-input" id="prod-select">
-              <option value="">Loading products...</option>
-            </select>
-          </div>
-          <div>
-            <div class="sel-label" id="qty-label">Qty / kg</div>
-            <input class="sel-input" type="number" id="prod-qty" placeholder="1" min="0.1" step="0.1" value="1">
-          </div>
-          <div style="padding-top:18px">
-            <button class="btn btn-primary" onclick="addItem()" style="height:38px;padding:0 16px;font-size:.85rem">+ Add</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sale Items -->
-      <div id="empty-sale-msg" class="empty-sale">
-        <div class="ei">🛒</div>
-        <p>Select a product above to start building the sale.</p>
-      </div>
-      <div id="sale-list-wrap" style="display:none;flex:1;overflow:hidden;display:flex;flex-direction:column;">
-        <div class="sale-header-row">
-          <span class="col-head">Product</span>
-          <span class="col-head">Qty</span>
-          <span class="col-head">Total</span>
-          <span class="col-head"></span>
-        </div>
-        <div class="sale-scroll" id="sale-items"></div>
-      </div>
-
-      <!-- Totals -->
-      <div class="totals-section" id="totals-section" style="display:none">
-        <div class="totals-row"><span class="totals-label">Subtotal</span><span class="totals-value" id="t-subtotal">R 0.00</span></div>
-        <div class="totals-row grand"><span class="totals-label">TOTAL</span><span class="grand-value" id="t-total">R 0.00</span></div>
-      </div>
-
-      <!-- Payment -->
-      <div class="payment-section">
-        <div class="pay-title">Payment Method</div>
-        <div class="pay-methods">
-          <div class="pay-btn selected" data-method="cash" onclick="selectPay(this)">💵<br>Cash</div>
-          <div class="pay-btn" data-method="card" onclick="selectPay(this)">💳<br>Card</div>
-          <div class="pay-btn" data-method="yoco" onclick="selectPay(this)">📱<br>Yoco</div>
-          <div class="pay-btn" data-method="credit" onclick="selectPay(this)">📝<br>Account</div>
-        </div>
-        <div class="credit-ref" id="credit-ref">
-          <div class="sel-label" style="margin-bottom:5px">Customer REF Number</div>
-          <input class="sel-input" id="customer-ref" placeholder="e.g. SN1234" style="margin-bottom:8px">
-        </div>
-        <div class="sel-label" style="margin-bottom:5px">Customer Name (Optional)</div>
-        <input class="sel-input" id="customer-name" placeholder="Walk-in / Name" style="margin-bottom:10px">
-        <button class="process-btn" id="process-btn" onclick="processSale()" disabled>🧾 Process Sale</button>
-      </div>
+  <div class="stats-bar">
+    <div class="stat-chip">
+      <div class="stat-num red" id="cnt-new">0</div>
+      <div class="stat-lbl">New Orders</div>
     </div>
-
-    <!-- RIGHT: Today's Orders -->
-    <div class="orders-panel">
-      <div class="orders-head">
-        <span style="font-family:var(--font-head);font-weight:700;font-size:.9rem;color:#ccc">Today's Orders</span>
-        <button onclick="loadOrders()" style="background:transparent;border:1px solid #222;color:#555;padding:4px 10px;border-radius:6px;font-size:.72rem;cursor:pointer">↻</button>
-      </div>
-      <div class="orders-scroll" id="orders-list">
-        <div class="empty-panel"><div class="ei">📋</div><p>Loading orders...</p></div>
-      </div>
+    <div class="stat-chip">
+      <div class="stat-num amber" id="cnt-prog">0</div>
+      <div class="stat-lbl">In Progress</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num blue" id="cnt-dispatch">0</div>
+      <div class="stat-lbl">Awaiting Dispatch</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num green" id="cnt-done">0</div>
+      <div class="stat-lbl">Done Today</div>
     </div>
   </div>
 
-  <script src="js/app.js"></script>
-  <script>
-    // Clock
-    function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
-    setInterval(tick, 1000); tick();
+  <div class="cashier-cols">
+    <!-- Left: New Orders -->
+    <div class="col">
+      <div class="col-head">
+        <h2>🔔 New Orders</h2>
+        <span class="col-cnt" id="badge-new">0</span>
+      </div>
+      <div class="col-scroll" id="new-orders">
+        <div class="empty-col"><div class="ei">📋</div>No new orders</div>
+      </div>
+    </div>
 
-    let _fb = null;
-    async function fb(){
-      if(_fb) return _fb;
-      const [cfg, fs] = await Promise.all([import('./js/firebase-config.js'), import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')]);
-      _fb = { db: cfg.db, ...fs };
-      return _fb;
+    <!-- Right: In Progress + Awaiting Dispatch -->
+    <div class="col">
+      <div class="col-head">
+        <h2>⚙️ In Progress &amp; Dispatch</h2>
+        <span class="col-cnt" id="badge-prog">0</span>
+      </div>
+      <div class="col-scroll" id="progress-orders">
+        <div class="empty-col"><div class="ei">✅</div>All clear</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script type="module">
+  import { supabase } from './js/supabase-config.js';
+  const ADMIN_PIN = 'peoplesV2_2024';
+  const SUPER_PIN = 'yType_Dev_2026';
+
+  let _orders = [], _users = [], _products = [];
+
+  // Clock
+  function tick() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  tick(); setInterval(tick, 1000);
+
+  // PIN
+  window.checkPin = function() {
+    const val = document.getElementById('pin-input').value;
+    if (val === ADMIN_PIN || val === SUPER_PIN) {
+      document.getElementById('pin-screen').style.display = 'none';
+      document.getElementById('main-screen').style.display = 'block';
+      loadData();
+    } else {
+      document.getElementById('pin-err').textContent = 'Incorrect PIN';
+      document.getElementById('pin-input').value = '';
     }
+  };
+  document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') window.checkPin(); });
 
-    function toDate(v){ return v?.toDate ? v.toDate() : v ? new Date(v) : null; }
-
-    // ── Products ──────────────────────────────────
-    let _prods = [];
-    async function loadProducts(){
-      const { db, collection, getDocs } = await fb();
-      const snap = await getDocs(collection(db, 'products'));
-      _prods = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.is_active !== false);
-      const sel = document.getElementById('prod-select');
-      sel.innerHTML = `<option value="">— Select product —</option>` +
-        _prods.map(p => `<option value="${p.id}">${p.name} — R${parseFloat(p.price||0).toFixed(2)} ${p.unit||'per kg'}</option>`).join('');
+  // Load
+  window.loadData = async function() {
+    try {
+      const [ordRes, usrRes, proRes] = await Promise.all([
+        supabase.from('orders').select('*').not('status', 'in', '("delivered","collected","cancelled")').order('created_at', { ascending: false }),
+        supabase.from('users').select('id,name,surname,phone,email'),
+        supabase.from('products').select('id,name,unit')
+      ]);
+      if (!ordRes.error) _orders = ordRes.data || [];
+      if (!usrRes.error) _users = usrRes.data || [];
+      if (!proRes.error) _products = proRes.data || [];
+      render();
+    } catch(e) {
+      showToast('Load failed: ' + e.message, 'error');
     }
+  };
 
-    document.getElementById('prod-select').addEventListener('change', function(){
-      const p = _prods.find(x => x.id === this.value);
-      if (!p) return;
-      const isEach = p.unit === 'each';
-      document.getElementById('qty-label').textContent = isEach ? 'Quantity' : 'Weight (kg)';
-      document.getElementById('prod-qty').step = isEach ? '1' : '0.1';
-      document.getElementById('prod-qty').value = isEach ? '1' : '1.0';
-    });
+  function getUser(o) {
+    return _users.find(u => u.id === o.user_id || u.email === o.user_email) || {};
+  }
+  function getProdName(id) {
+    const p = _products.find(p => String(p.id) === String(id));
+    return p ? p.name : `#${id}`;
+  }
+  function fmtTime(ts) {
+    if (!ts) return '';
+    return new Date(ts).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+  }
 
-    // ── Sale ──────────────────────────────────────
-    let saleItems = [];
+  function itemsHtml(items) {
+    if (!Array.isArray(items) || !items.length) return '<span style="color:#333">—</span>';
+    return items.map(i => {
+      const name = getProdName(i.productId || i.product_id);
+      const qty = i.quantity || i.qty || 1;
+      let tags = '';
+      if (i.braai) tags += '<span class="item-braai">🔥 BRAAI</span>';
+      if (i.pap > 0) tags += `<span class="item-pap">🍚 ×${i.pap} PAP</span>`;
+      return `<div class="item-line">${qty}× <strong>${name}</strong>${tags}</div>`;
+    }).join('');
+  }
 
-    function addItem(){
-      const selEl = document.getElementById('prod-select');
-      const p = _prods.find(x => x.id === selEl.value);
-      if (!p) { showToast('Select a product first', 'warning'); return; }
-      const qty = parseFloat(document.getElementById('prod-qty').value)||1;
-      if (qty <= 0) { showToast('Enter a valid quantity', 'warning'); return; }
+  function statusBadge(s) {
+    const map = {
+      pending: 'st-pending', butchering: 'st-butchering', braai: 'st-braai',
+      packaging: 'st-packaging', ready: 'st-ready', dispatched: 'st-dispatched'
+    };
+    return `<span class="ocard-status ${map[s]||'st-pending'}">${s}</span>`;
+  }
 
-      const existing = saleItems.find(x => x.id === p.id);
-      if (existing) {
-        existing.qty = parseFloat((existing.qty + qty).toFixed(2));
-      } else {
-        saleItems.push({ id: p.id, name: p.name, price: parseFloat(p.price||0), qty, unit: p.unit||'per kg' });
-      }
-      renderSale();
-      selEl.value = '';
-      document.getElementById('prod-qty').value = '1';
-    }
+  function cardClass(s) {
+    const m = { pending:'new-order', butchering:'butchering', braai:'braai', packaging:'packaging', ready:'ready', dispatched:'dispatched' };
+    return m[s] || '';
+  }
 
-    function removeItem(id){ saleItems = saleItems.filter(x => x.id !== id); renderSale(); }
+  function newOrderCard(o) {
+    const u = getUser(o);
+    const hasBraai = (o.items||[]).some(i => i.braai);
+    const isDeliv = o.delivery_method === 'delivery';
+    return `<div class="ocard ${cardClass(o.status)}" id="oc-${o.id}">
+      <div class="ocard-head">
+        <div>
+          <div class="ocard-id">#${o.id.slice(-8).toUpperCase()}</div>
+          <div class="ocard-time">${fmtTime(o.created_at)}</div>
+        </div>
+        ${statusBadge(o.status)}
+      </div>
+      <div class="ocard-body">
+        <div class="ocard-customer">${u.name || ''} ${u.surname || ''}</div>
+        <div class="ocard-phone">${u.phone || o.user_email || ''}</div>
+        <div class="ocard-items">${itemsHtml(o.items)}</div>
+        <div class="ocard-delivery">${isDeliv ? '🚗 Delivery — ' + (o.delivery_address||'') : '🏪 Collection'}</div>
+        <div class="ocard-total">${formatCurrency(o.total)}</div>
+      </div>
+      <div class="ocard-actions">
+        <button class="act-btn btn-butcher" onclick="allocate('${o.id}','butchering')">🔪 Butcher</button>
+        ${hasBraai || true ? `<button class="act-btn btn-kitchen" onclick="allocate('${o.id}','braai')">🔥 Kitchen</button>` : ''}
+        <button class="act-btn btn-cancel" onclick="allocate('${o.id}','cancelled')">✕ Cancel</button>
+      </div>
+    </div>`;
+  }
 
-    function renderSale(){
-      const wrap = document.getElementById('sale-list-wrap');
-      const emptyMsg = document.getElementById('empty-sale-msg');
-      const totSec = document.getElementById('totals-section');
-      const processBtn = document.getElementById('process-btn');
-
-      if (!saleItems.length) {
-        wrap.style.display = 'none';
-        emptyMsg.style.display = 'flex';
-        totSec.style.display = 'none';
-        processBtn.disabled = true;
-        return;
-      }
-
-      emptyMsg.style.display = 'none';
-      wrap.style.display = 'flex';
-      totSec.style.display = 'block';
-      processBtn.disabled = false;
-
-      document.getElementById('sale-items').innerHTML = saleItems.map(it => {
-        const lineTotal = (it.price * it.qty).toFixed(2);
-        return `
-        <div class="sale-item-row">
-          <div>
-            <div class="item-name">${it.name}</div>
-            <div class="item-unit-lbl">${it.unit}</div>
-          </div>
-          <div class="item-price">${it.qty} ${it.unit === 'each' ? '×' : 'kg'}</div>
-          <div class="item-total-val">R ${lineTotal}</div>
-          <button class="remove-btn" onclick="removeItem('${it.id}')">✕</button>
-        </div>`;
-      }).join('');
-
-      const subtotal = saleItems.reduce((s, it) => s + it.price * it.qty, 0);
-      document.getElementById('t-subtotal').textContent = 'R ' + subtotal.toFixed(2);
-      document.getElementById('t-total').textContent = 'R ' + subtotal.toFixed(2);
-    }
-
-    // ── Payment ───────────────────────────────────
-    let selectedPay = 'cash';
-    function selectPay(el){
-      document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedPay = el.dataset.method;
-      document.getElementById('credit-ref').classList.toggle('show', selectedPay === 'credit');
-    }
-
-    // ── Process Sale ──────────────────────────────
-    async function processSale(){
-      if (!saleItems.length) return;
-      const btn = document.getElementById('process-btn');
-      btn.disabled = true; btn.textContent = 'Processing...';
-
-      const subtotal = saleItems.reduce((s, it) => s + it.price * it.qty, 0);
-      const customerName = document.getElementById('customer-name').value.trim() || 'Walk-in';
-      const customerRef  = document.getElementById('customer-ref').value.trim().toUpperCase();
-
-      try {
-        const { db, collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } = await fb();
-
-        // If credit account, verify and deduct
-        if (selectedPay === 'credit') {
-          if (!customerRef) { showToast('Enter customer REF number for credit', 'warning'); btn.disabled=false; btn.textContent='🧾 Process Sale'; return; }
-          // Find user by refNumber
-          const { getDocs: gd, query, where } = await fb();
-          const uSnap = await gd(query(collection(db, 'users'), where('refNumber', '==', customerRef)));
-          if (uSnap.empty) { showToast('REF not found: ' + customerRef, 'error'); btn.disabled=false; btn.textContent='🧾 Process Sale'; return; }
-          const uDoc = uSnap.docs[0];
-          const uData = uDoc.data();
-          if ((uData.creditBalance||0) < subtotal) {
-            showToast(`Insufficient credit. Balance: R${(uData.creditBalance||0).toFixed(2)}`, 'error');
-            btn.disabled=false; btn.textContent='🧾 Process Sale'; return;
-          }
-          await updateDoc(doc(db,'users',uDoc.id), { creditBalance: (uData.creditBalance||0) - subtotal });
+  function progressCard(o) {
+    const u = getUser(o);
+    const isDeliv = o.delivery_method === 'delivery';
+    const isPackaging = o.status === 'packaging';
+    return `<div class="ocard ${cardClass(o.status)}">
+      <div class="ocard-head">
+        <div>
+          <div class="ocard-id">#${o.id.slice(-8).toUpperCase()}</div>
+          <div class="ocard-time">${fmtTime(o.created_at)}</div>
+        </div>
+        ${statusBadge(o.status)}
+      </div>
+      <div class="ocard-body">
+        <div class="ocard-customer">${u.name || ''} ${u.surname || ''}</div>
+        <div class="ocard-phone">${u.phone || o.user_email || ''}</div>
+        <div class="ocard-items">${itemsHtml(o.items)}</div>
+        <div class="ocard-delivery">${isDeliv ? '🚗 Delivery — ' + (o.delivery_address||'') : '🏪 Collection'}</div>
+        <div class="ocard-total">${formatCurrency(o.total)}</div>
+      </div>
+      ${isPackaging ? `<div class="ocard-actions">
+        ${isDeliv
+          ? `<button class="act-btn btn-dispatch" onclick="allocate('${o.id}','dispatched')">🚗 Send to Driver</button>`
+          : `<button class="act-btn btn-ready" onclick="allocate('${o.id}','ready')">✅ Mark Ready</button>`
         }
+      </div>` : ''}
+    </div>`;
+  }
 
-        const order = {
-          source: 'pos',
-          userName: customerName,
-          userEmail: 'walkin@store.local',
-          items: saleItems.map(it => ({ name: it.name, qty: it.qty, price: it.price, unit: it.unit })),
-          subtotal, deliveryFee: 0, total: subtotal,
-          deliveryMethod: 'collect',
-          paymentMethod: selectedPay,
-          customerRef: customerRef || null,
-          status: 'pending',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        };
+  function render() {
+    const newOrders = _orders.filter(o => o.status === 'pending');
+    const inProg = _orders.filter(o => ['butchering','braai','packaging'].includes(o.status));
+    const awaiting = _orders.filter(o => ['ready','dispatched','delivering'].includes(o.status));
+    const today = new Date().toDateString();
+    // Count done today (need separate query or from the already-loaded but filtered data — approximate from what we have)
 
-        const ref = await addDoc(collection(db, 'orders'), order);
-        showToast(`✅ Sale processed! Order #${ref.id.slice(-5).toUpperCase()} — R${subtotal.toFixed(2)}`, 'success');
+    document.getElementById('cnt-new').textContent = newOrders.length;
+    document.getElementById('cnt-prog').textContent = inProg.length;
+    document.getElementById('cnt-dispatch').textContent = awaiting.length;
 
-        // Clear sale
-        saleItems = [];
-        renderSale();
-        document.getElementById('customer-name').value = '';
-        document.getElementById('customer-ref').value = '';
-        document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
-        document.querySelector('[data-method="cash"]').classList.add('selected');
-        selectedPay = 'cash';
-        document.getElementById('credit-ref').classList.remove('show');
-        await loadOrders();
-      } catch(e) {
-        showToast('Error: ' + e.message, 'error');
-      }
-      btn.disabled = false; btn.textContent = '🧾 Process Sale';
+    const badgeNew = document.getElementById('badge-new');
+    badgeNew.textContent = newOrders.length;
+    badgeNew.className = 'col-cnt' + (newOrders.length ? ' has-items' : '');
+
+    const badgeProg = document.getElementById('badge-prog');
+    badgeProg.textContent = inProg.length + awaiting.length;
+    badgeProg.className = 'col-cnt' + ((inProg.length + awaiting.length) ? ' has-items' : '');
+
+    const newEl = document.getElementById('new-orders');
+    newEl.innerHTML = newOrders.length
+      ? newOrders.map(newOrderCard).join('')
+      : '<div class="empty-col"><div class="ei">🎉</div>No new orders</div>';
+
+    const progEl = document.getElementById('progress-orders');
+    const progAll = [...inProg, ...awaiting];
+    progEl.innerHTML = progAll.length
+      ? progAll.map(progressCard).join('')
+      : '<div class="empty-col"><div class="ei">✅</div>All clear</div>';
+  }
+
+  window.allocate = async function(orderId, newStatus) {
+    const btn = event.target;
+    btn.disabled = true;
+    try {
+      const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
+      if (error) throw error;
+      await loadData();
+      showToast(`Order → ${newStatus}`, 'success');
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+      btn.disabled = false;
     }
+  };
 
-    // ── Today's Orders ────────────────────────────
-    async function loadOrders(){
-      try {
-        const { db, collection, getDocs, query, orderBy, limit } = await fb();
-        const snap = await getDocs(query(collection(db,'orders'), orderBy('createdAt','desc'), limit(50)));
-        const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderOrders(orders);
-      } catch(e) {
-        document.getElementById('orders-list').innerHTML = `<div class="empty-panel"><div class="ei">⚠️</div><p>${e.message}</p></div>`;
-      }
-    }
-
-    function renderOrders(orders){
-      if (!orders.length) {
-        document.getElementById('orders-list').innerHTML = `<div class="empty-panel"><div class="ei">📋</div><p>No orders yet today.</p></div>`;
-        return;
-      }
-      const statusTag = { pending:'otag-pending', braai:'otag-braai', packaging:'otag-packaging', dispatched:'otag-done', delivered:'otag-done', collected:'otag-done', cancelled:'otag-pending' };
-      document.getElementById('orders-list').innerHTML = orders.map(o => {
-        const t = toDate(o.createdAt);
-        const tStr = t ? t.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}) : '';
-        const sCls = statusTag[o.status] || 'otag-cash';
-        const src = o.source === 'pos' ? '<span class="otag otag-pos">POS</span>' : '';
-        return `
-        <div class="order-row">
-          <div class="order-row-top">
-            <span class="order-id">#${o.id.slice(-5).toUpperCase()}</span>
-            <span class="order-total">R${parseFloat(o.total||0).toFixed(2)}</span>
-          </div>
-          <div class="order-row-bot">
-            <span class="otag ${sCls}">${(o.status||'pending').toUpperCase()}</span>
-            ${src}
-            <span class="otag ${o.deliveryMethod==='delivery'?'otag-delivery':'otag-collect'}">${o.deliveryMethod==='delivery'?'🚴 Delivery':'🏪 Collect'}</span>
-            <span class="otag otag-cash">${o.paymentMethod||'—'}</span>
-            <span class="order-time">${tStr}</span>
-          </div>
-          <div style="font-size:.75rem;color:#444;margin-top:4px">${o.userName||o.userEmail||'Walk-in'}</div>
-        </div>`;
-      }).join('');
-    }
-
-    async function init(){
-      await Promise.all([loadProducts(), loadOrders()]);
-    }
-    init();
-    setInterval(loadOrders, 30000);
-  </script>
+  setInterval(loadData, 15000);
+</script>
 </body>
 </html>

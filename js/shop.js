@@ -52,6 +52,11 @@ function isWeightBased(product) {
 function isQtyBased(product) {
   return /each/i.test(product.unit || '');
 }
+function isBraaible(product) {
+  if (!product || product.category === 'cooked') return false;
+  // Exclude Lamb Tripe (37) and Frozen Chicken Hearts (1166) — can't be braai'd
+  return !new Set(['37', '1166']).has(String(product.id));
+}
 
 // ── Cart Operations ────────────────────────────
 function addToCart(productId, qty = 1) {
@@ -191,7 +196,7 @@ function getCartTotal() {
     const p = findProduct(item.productId);
     if (!p) return sum;
     const extras = productExtras[item.productId] || {};
-    const extraCost = (extras.braai ? 10 : 0) + (extras.pap ? 10 : 0);
+    const extraCost = (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
     return sum + ((p.price + extraCost) * item.qty);
   }, 0);
 }
@@ -238,7 +243,7 @@ function renderProducts() {
   container.innerHTML = products.map(p => {
     const cartItem = cart.find(c => c.productId === p.id);
     const extras = productExtras[p.id] || {};
-    const basePrice = p.price + (extras.braai ? 10 : 0) + (extras.pap ? 10 : 0);
+    const basePrice = p.price + (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
     const weighted = isWeightBased(p);
     const catBadge = p.category === 'cooked'
       ? '<span class="badge badge-gold">🍽️ Cooked Meal</span>'
@@ -324,13 +329,17 @@ function renderProducts() {
         <div class="product-info">
           <div class="product-name">${p.name}</div>
           <div class="product-desc">${p.description}</div>
-          ${p.braaiable ? `<div class="product-extras">
+          ${isBraaible(p) ? `<div class="product-extras">
             <label class="extra-toggle ${extras.braai ? 'active' : ''}" onclick="toggleExtra('${p.id}','braai')">
               🔥 Add Braai <span>+R10</span>
             </label>
-            <label class="extra-toggle ${extras.pap ? 'active' : ''}" onclick="toggleExtra('${p.id}','pap')">
-              🍚 Add Pap <span>+R10</span>
-            </label>
+            <div class="pap-ctrl">
+              <span class="pap-label">🍚 Pap</span>
+              <button class="pap-btn" onclick="adjustPap('${p.id}',-1)" ${(extras.pap||0)===0?'disabled':''}>−</button>
+              <span class="pap-count">${extras.pap || 0}</span>
+              <button class="pap-btn" onclick="adjustPap('${p.id}',1)">+</button>
+              <span class="pap-price">${(extras.pap||0) > 0 ? `+R${(extras.pap*10).toFixed(0)}` : 'R10/ea'}</span>
+            </div>
           </div>` : ''}
           <div class="product-footer">
             <div>
@@ -355,6 +364,11 @@ function toggleExtra(productId, type) {
   productExtras[productId][type] = !productExtras[productId][type];
   renderProducts();
 }
+window.adjustPap = function(productId, delta) {
+  if (!productExtras[productId]) productExtras[productId] = {};
+  productExtras[productId].pap = Math.max(0, Math.min(20, (productExtras[productId].pap || 0) + delta));
+  renderProducts();
+};
 
 // ── Render Cart Panel ──────────────────────────
 function renderCartPanel() {
@@ -378,7 +392,7 @@ function renderCartPanel() {
       const p = findProduct(item.productId);
       if (!p) return '';
       const extras = productExtras[item.productId] || {};
-      const extraCost = (extras.braai ? 10 : 0) + (extras.pap ? 10 : 0);
+      const extraCost = (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
       const unitPrice = p.price + extraCost;
       const lineTotal = unitPrice * item.qty;
       const qtyLabel = isWeightBased(p)
@@ -600,7 +614,10 @@ async function checkout() {
     const orderId = await saveOrderToSupabase({
       userId: user.id,
       userEmail: user.email,
-      items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
+      items: cart.map(c => {
+        const ex = productExtras[c.productId] || {};
+        return { productId: c.productId, quantity: c.qty, braai: !!ex.braai, pap: ex.pap || 0 };
+      }),
       subtotal,
       deliveryFee: delivFee,
       total,
