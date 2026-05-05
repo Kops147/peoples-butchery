@@ -13,6 +13,42 @@ let userOrders = [];
 let allProducts = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Handle Supabase OAuth callback (Google sign-in redirects here with a session in the URL hash)
+  if (!Auth.isLoggedIn()) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        let profile = null;
+        const { data } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+        if (data) {
+          profile = data;
+        } else {
+          // First-time Google user — create profile row
+          const nameParts = (session.user.user_metadata?.full_name || session.user.email.split('@')[0]).split(' ');
+          const newUser = {
+            id: session.user.id,
+            email: session.user.email,
+            name: nameParts[0] || '',
+            surname: nameParts.slice(1).join(' ') || '',
+            is_admin: false,
+            credit_balance: 0
+          };
+          await supabase.from('users').insert(newUser);
+          profile = newUser;
+        }
+        const userData = {
+          ...profile,
+          isAdmin: profile.is_admin,
+          creditBalance: profile.credit_balance,
+          refNumber: profile.ref_number
+        };
+        Auth.login(userData, session.access_token);
+      }
+    } catch (e) {
+      console.warn('OAuth session check failed:', e);
+    }
+  }
+
   if (!Auth.requireLogin()) return;
 
   const sess = Auth.getSession();

@@ -106,26 +106,27 @@ const Auth = {
   TOKEN_KEY: 'peoples_token',
 
   login(user, token = null) {
-    sessionStorage.setItem(this.SESSION_KEY, JSON.stringify({
+    localStorage.setItem(this.SESSION_KEY, JSON.stringify({
       id: user.id,
       isAdmin: user.isAdmin || user.is_admin || false,
       name: user.name,
       surname: user.surname,
       email: user.email,
-      refNumber: user.refNumber || user.ref_number
+      refNumber: user.refNumber || user.ref_number,
+      creditBalance: parseFloat(user.creditBalance || user.credit_balance || 0)
     }));
-    if (token) sessionStorage.setItem(this.TOKEN_KEY, token);
+    if (token) localStorage.setItem(this.TOKEN_KEY, token);
   },
   logout() {
-    sessionStorage.removeItem(this.SESSION_KEY);
-    sessionStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.SESSION_KEY);
+    localStorage.removeItem(this.TOKEN_KEY);
     window.location.href = 'login.html';
   },
   getToken() {
-    return sessionStorage.getItem(this.TOKEN_KEY);
+    return localStorage.getItem(this.TOKEN_KEY);
   },
   getSession() {
-    try { return JSON.parse(sessionStorage.getItem(this.SESSION_KEY)); }
+    try { return JSON.parse(localStorage.getItem(this.SESSION_KEY)); }
     catch { return null; }
   },
   isLoggedIn() { return !!this.getSession(); },
@@ -412,6 +413,13 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
   const isLoggedIn = Auth.isLoggedIn();
   const isAdmin = Auth.isAdmin();
   const accountHref = isAdmin ? 'admin.html' : 'dashboard.html';
+  const sess = Auth.getSession();
+  const navLabel = isLoggedIn && sess
+    ? (sess.name ? `Hi, ${sess.name}` : 'My Account')
+    : 'My Account';
+  const balanceChip = isLoggedIn && sess && !isAdmin && sess.creditBalance > 0
+    ? `<span style="font-size:.75rem;color:var(--success);font-weight:700;margin-left:4px">R${Number(sess.creditBalance).toFixed(2)}</span>`
+    : '';
 
   const homeOnlyLinks = active === 'home' ? `
         <li><a href="#about" class="nav-link">About</a></li>
@@ -438,7 +446,7 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
       </ul>
       <div class="navbar-actions">
         <a href="login.html" class="btn btn-outline btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-login-btn">Login / Register</a>
-        <a href="${accountHref}" class="btn btn-primary btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-dash-btn">My Account</a>
+        <a href="${accountHref}" class="btn btn-primary btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-dash-btn">${navLabel}${balanceChip}</a>
         ${orderNowBtn}${cartBtn}
         <button class="btn btn-ghost btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-logout-btn">Logout</button>
         <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
