@@ -396,12 +396,25 @@ function initNavbar() {
   if (!nav) return;
   window.addEventListener('scroll', () => {
     nav.classList.toggle('scrolled', window.scrollY > 40);
-  });
-  // Hamburger
+  }, { passive: true });
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+
   const hamburger = document.getElementById('hamburger');
   const navMenu = document.getElementById('nav-menu');
   if (hamburger && navMenu) {
-    hamburger.addEventListener('click', () => navMenu.classList.toggle('open'));
+    hamburger.addEventListener('click', () => {
+      const isOpen = navMenu.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    });
+    // Close on nav link tap (mobile)
+    navMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        navMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
   }
 }
 
@@ -432,17 +445,26 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
 
   const orderNowBtn = showOrderNow ? `<a href="shop.html" class="btn btn-gold btn-sm">Order Now</a>` : '';
 
+  const mobileActions = `
+    <li class="mobile-actions">
+      ${!isLoggedIn ? `<a href="login.html" class="btn btn-outline">Login / Register</a>` : ''}
+      ${isLoggedIn ? `<a href="${accountHref}" class="btn btn-primary">${navLabel}${balanceChip}</a>` : ''}
+      ${isLoggedIn ? `<button class="btn btn-ghost" id="nav-logout-btn-mobile">Logout</button>` : ''}
+      ${orderNowBtn ? `<a href="shop.html" class="btn btn-gold">Order Now</a>` : ''}
+    </li>`;
+
   placeholder.outerHTML = `
   <nav class="navbar" role="navigation">
     <div class="navbar-inner">
       <a href="index.html" class="navbar-brand">
-        <div class="brand-logo">NB</div>
+        <div class="brand-logo">🥩</div>
         <span class="brand-name">The Peoples <span>Butchery</span></span>
       </a>
       <ul class="navbar-nav" id="nav-menu">
         <li><a href="index.html" class="nav-link${active === 'home' ? ' active' : ''}">Home</a></li>
         <li><a href="shop.html" class="nav-link${active === 'shop' ? ' active' : ''}">Shop</a></li>${homeOnlyLinks}
         <li${isLoggedIn ? '' : ' class="hidden"'}><a href="${accountHref}" class="nav-link">My Account</a></li>
+        ${mobileActions}
       </ul>
       <div class="navbar-actions">
         <a href="login.html" class="btn btn-outline btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-login-btn">Login / Register</a>
@@ -456,10 +478,9 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
 
   initNavbar();
 
-  document.getElementById('nav-logout-btn')?.addEventListener('click', () => {
-    Auth.logout();
-    window.location.href = 'index.html';
-  });
+  const logoutHandler = () => { Auth.logout(); window.location.href = 'index.html'; };
+  document.getElementById('nav-logout-btn')?.addEventListener('click', logoutHandler);
+  document.getElementById('nav-logout-btn-mobile')?.addEventListener('click', logoutHandler);
 }
 
 // ── Tabs ──────────────────────────────────────

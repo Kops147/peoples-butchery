@@ -284,15 +284,16 @@ h6 {
   right: 0;
   z-index: 1000;
   height: var(--navbar-h);
-  background: rgba(8, 8, 8, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(8, 8, 8, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border);
   transition: var(--transition);
 }
 
 .navbar.scrolled {
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
+  border-bottom-color: rgba(192, 57, 43, 0.2);
 }
 
 .navbar-inner {
@@ -309,11 +310,12 @@ h6 {
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
 }
 
 .brand-logo {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, var(--primary), #8b1a13);
   border-radius: 10px;
   display: flex;
@@ -321,17 +323,20 @@ h6 {
   justify-content: center;
   font-family: var(--font-head);
   font-weight: 900;
-  font-size: 18px;
+  font-size: 17px;
   color: #fff;
   letter-spacing: -1px;
   box-shadow: var(--shadow-primary);
+  flex-shrink: 0;
 }
 
 .brand-name {
   font-family: var(--font-head);
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   letter-spacing: -0.3px;
+  color: var(--text-primary);
+  line-height: 1.2;
 }
 
 .brand-name span {
@@ -341,16 +346,18 @@ h6 {
 .navbar-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  list-style: none;
 }
 
 .nav-link {
   padding: 8px 14px;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
   transition: var(--transition);
+  white-space: nowrap;
 }
 
 .nav-link:hover,
@@ -362,7 +369,7 @@ h6 {
 .navbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cart-btn {
@@ -376,7 +383,7 @@ h6 {
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   transition: var(--transition);
 }
 
@@ -402,6 +409,7 @@ h6 {
   justify-content: center;
 }
 
+/* ── Hamburger ── */
 .hamburger {
   display: none;
   flex-direction: column;
@@ -410,6 +418,11 @@ h6 {
   width: 40px;
   height: 40px;
   justify-content: center;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 1100;
 }
 
 .hamburger span {
@@ -418,15 +431,26 @@ h6 {
   height: 2px;
   background: var(--text-primary);
   border-radius: 2px;
-  transition: var(--transition);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform-origin: center;
 }
 
-@media(max-width:768px) {
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Mobile nav ── */
+@media(max-width: 768px) {
   .hamburger {
     display: flex;
   }
 
   .navbar-nav {
+    display: none;
+  }
+
+  /* Hide action buttons in top bar on mobile — they move into the menu */
+  .navbar-actions .btn:not(.cart-btn) {
     display: none;
   }
 
@@ -438,11 +462,47 @@ h6 {
     top: var(--navbar-h);
     left: 0;
     right: 0;
-    background: rgba(10, 10, 10, 0.98);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    padding: 16px;
+    bottom: 0;
+    background: rgba(8, 8, 8, 0.98);
+    backdrop-filter: blur(24px);
+    padding: 20px 16px 32px;
     gap: 4px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border);
+    animation: slideDown 0.22s ease forwards;
+  }
+
+  .navbar-nav.open .nav-link {
+    font-size: 1.05rem;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .navbar-nav.open .nav-link:last-of-type {
+    border-bottom: none;
+  }
+
+  /* Mobile action buttons injected into nav menu */
+  .navbar-nav.open .mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .navbar-nav.open .mobile-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 }
 
