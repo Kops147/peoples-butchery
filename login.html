@@ -74,27 +74,6 @@
 <body>
   <div id="toast-container"></div>
 
-  <!-- Phone collection modal (shown when Google account has no phone) -->
-  <div id="phone-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:40px 36px;max-width:440px;width:100%;box-shadow:var(--shadow-lg)">
-      <div style="text-align:center;margin-bottom:28px">
-        <div style="font-size:2.5rem;margin-bottom:12px">📱</div>
-        <h2 style="font-family:var(--font-head);font-weight:800;font-size:1.4rem;margin-bottom:8px">One more thing</h2>
-        <p style="color:var(--text-secondary);font-size:0.9rem">Your Google account doesn't have a cellphone number. Please add one so we can reach you about your orders.</p>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="modal-phone">Cellphone Number *</label>
-        <div class="input-group">
-          <span class="input-icon">📞</span>
-          <input type="tel" id="modal-phone" class="form-control" placeholder="e.g. 072 123 4567" autocomplete="tel" inputmode="tel">
-        </div>
-        <div id="modal-phone-error" class="form-error hidden">Please enter a valid SA cellphone number</div>
-      </div>
-      <button type="button" id="modal-phone-submit" class="btn btn-primary btn-full" style="margin-top:8px">Save & Continue</button>
-      <button type="button" id="modal-phone-skip" class="btn btn-ghost btn-full btn-sm" style="margin-top:10px;color:var(--text-muted)">Skip for now</button>
-    </div>
-  </div>
-
   <div class="auth-page">
     <!-- Left: Form -->
     <div class="auth-left"
@@ -210,147 +189,8 @@
 
   <script src="js/app.js"></script>
   <script type="module">
-    import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { auth, db } from './js/firebase-config.js';
+    import { supabase } from './js/supabase-config.js';
 
-    // Pending state while phone modal is open
-    let _pendingUserData = null;
-    let _pendingToken = null;
-
-    function formatSAPhone(raw) {
-      const digits = raw.replace(/\D/g, '');
-      if (digits.startsWith('27')) return '+' + digits;
-      if (digits.startsWith('0')) return '+27' + digits.slice(1);
-      return '+27' + digits;
-    }
-
-    function isValidSAPhone(raw) {
-      const digits = raw.replace(/\D/g, '');
-      return digits.length >= 9 && digits.length <= 12;
-    }
-
-    function showPhoneModal(userData, token) {
-      _pendingUserData = userData;
-      _pendingToken = token;
-      const modal = document.getElementById('phone-modal');
-      modal.style.display = 'flex';
-      setTimeout(() => document.getElementById('modal-phone')?.focus(), 100);
-    }
-
-    function proceedAfterLogin(userData, token) {
-      Auth.login(userData, token);
-      showToast('Welcome, ' + (userData.name || 'there') + '! 🎉', 'success');
-      const params = new URLSearchParams(window.location.search);
-      setTimeout(() => {
-        window.location.href = userData.isAdmin ? 'admin.html' : (params.get('redirect') || 'dashboard.html');
-      }, 800);
-    }
-
-    // ── Phone modal handlers ──────────────────────
-    document.getElementById('modal-phone-submit').addEventListener('click', async () => {
-      const raw = document.getElementById('modal-phone').value.trim();
-      const errEl = document.getElementById('modal-phone-error');
-      if (!raw || !isValidSAPhone(raw)) {
-        errEl.classList.remove('hidden');
-        return;
-      }
-      errEl.classList.add('hidden');
-
-      const btn = document.getElementById('modal-phone-submit');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Saving...';
-
-      const phone = formatSAPhone(raw);
-      _pendingUserData.phone = phone;
-
-      // Establish session first so API.put can authenticate the request
-      Auth.login(_pendingUserData, _pendingToken);
-      try {
-        await API.put('/users/me', { phone });
-      } catch (_) { /* non-critical — phone can be updated later from profile */ }
-
-      document.getElementById('phone-modal').style.display = 'none';
-      // Session already set above; just redirect
-      showToast('Welcome, ' + (_pendingUserData.name || 'there') + '! 🎉', 'success');
-      const params = new URLSearchParams(window.location.search);
-      setTimeout(() => {
-        window.location.href = _pendingUserData.isAdmin ? 'admin.html' : (params.get('redirect') || 'dashboard.html');
-      }, 800);
-    });
-
-    document.getElementById('modal-phone-skip').addEventListener('click', () => {
-      document.getElementById('phone-modal').style.display = 'none';
-      proceedAfterLogin(_pendingUserData, _pendingToken);
-    });
-
-    document.getElementById('modal-phone').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('modal-phone-submit').click();
-    });
-
-    // ── Google Sign-In ────────────────────────────
-    document.getElementById('google-signin-btn').addEventListener('click', async () => {
-      const btn = document.getElementById('google-signin-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Signing in...';
-      try {
-        const result = await signInWithPopup(auth, new GoogleAuthProvider());
-        const fbUser = result.user;
-        const token = await fbUser.getIdToken();
-
-        const snap = await getDoc(doc(db, 'users', fbUser.uid));
-        let userData;
-        if (snap.exists()) {
-          userData = snap.data();
-          // Backfill missing REF for existing Google users
-          if (!userData.refNumber) {
-            const _parts = (fbUser.displayName || userData.name + ' ' + (userData.surname || '')).split(' ');
-            const _initials = ((_parts[0]?.[0] || '') + (_parts[1]?.[0] || '')).toUpperCase() || 'GG';
-            const _suffix = fbUser.uid.slice(-4).toUpperCase();
-            userData.refNumber = _initials + _suffix;
-            await setDoc(doc(db, 'users', fbUser.uid), { refNumber: userData.refNumber }, { merge: true });
-          }
-        } else {
-          const parts = (fbUser.displayName || '').split(' ');
-          const initials = ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'XX';
-          const counter = String(Date.now()).slice(-4);
-          userData = {
-            id: fbUser.uid,
-            name: parts[0] || '',
-            surname: parts.slice(1).join(' ') || '',
-            email: fbUser.email,
-            phone: fbUser.phoneNumber || '',
-            address: '', suburb: '',
-            creditBalance: 0, isAdmin: false,
-            phoneVerified: !!fbUser.phoneNumber,
-            refNumber: initials + counter,
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(doc(db, 'users', fbUser.uid), userData);
-          const _users = DB.getUsers();
-          _users.push(userData);
-          DB.saveUsers(_users);
-        }
-
-        // If no phone number on the account, prompt before proceeding
-        if (!userData.phone) {
-          btn.disabled = false;
-          btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
-          showPhoneModal(userData, token);
-          return;
-        }
-
-        proceedAfterLogin(userData, token);
-      } catch (err) {
-        if (err.code !== 'auth/popup-closed-by-user') {
-          showToast('Google sign-in failed: ' + err.message, 'error');
-        }
-        btn.disabled = false;
-        btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
-      }
-    });
-
-    // Redirect if already logged in
     if (Auth.isLoggedIn()) {
       window.location.href = Auth.isAdmin() ? 'admin.html' : 'dashboard.html';
     }
@@ -362,13 +202,29 @@
       this.textContent = pw.type === 'password' ? '👁️' : '🙈';
     });
 
+    // Google Sign-In
+    document.getElementById('google-signin-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('google-signin-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Connecting...';
+      try {
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin + '/dashboard.html' }
+        });
+      } catch (err) {
+        showToast('Google sign-in failed: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
+      }
+    });
+
     // Login form
-    document.getElementById('login-form').addEventListener('submit', async function (e) {
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('login-btn');
       const errEl = document.getElementById('login-error');
       errEl.style.display = 'none';
-
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Signing in...';
 
@@ -384,53 +240,34 @@
       }
 
       try {
-        // Ensure admin accounts are seeded before checking
+        // Admin check (PIN-based local auth)
         await seedAdmin();
         const localUser = DB.findUserByEmail(email);
         if (localUser && localUser.isAdmin) {
           const hash = await hashPassword(password);
-          if (hash !== localUser.passwordHash) {
-            errEl.textContent = '❌ Invalid email or password.';
-            errEl.style.display = 'flex';
-            btn.disabled = false;
-            btn.textContent = 'Sign In to My Account';
-            return;
-          }
+          if (hash !== localUser.passwordHash) throw new Error('Invalid email or password.');
           Auth.login(localUser, null);
           showToast('Welcome back, ' + localUser.name + '! 🎉', 'success');
           setTimeout(() => { window.location.href = 'admin.html'; }, 800);
           return;
         }
 
-        // Regular users: Firebase Auth
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        const firebaseUser = userCred.user;
-        const token = await firebaseUser.getIdToken();
+        // Customer: Supabase auth
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
 
-        const userSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
-        const userData = userSnap.exists()
-          ? userSnap.data()
-          : { id: firebaseUser.uid, email, name: email.split('@')[0] };
+        const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+        const userData = profile
+          ? { ...profile, isAdmin: profile.is_admin, creditBalance: profile.credit_balance, refNumber: profile.ref_number }
+          : { id: data.user.id, email, name: email.split('@')[0], isAdmin: false };
 
-        if (!DB.findUserByEmail(email)) {
-          const users = DB.getUsers();
-          users.push(userData);
-          DB.saveUsers(users);
-        }
-
-        Auth.login(userData, token);
+        Auth.login(userData, data.session?.access_token);
         showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
-
         const params = new URLSearchParams(window.location.search);
-        const redirect = params.get('redirect');
-        setTimeout(() => {
-          window.location.href = redirect || 'dashboard.html';
-        }, 800);
+        setTimeout(() => { window.location.href = params.get('redirect') || 'dashboard.html'; }, 800);
 
       } catch (err) {
-        const msg = ['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(err.code)
-          ? 'Invalid email or password.'
-          : (err.message || 'Login failed. Please try again.');
+        const msg = err.message?.includes('Invalid login') ? 'Invalid email or password.' : (err.message || 'Login failed. Please try again.');
         errEl.textContent = '❌ ' + msg;
         errEl.style.display = 'flex';
         btn.disabled = false;

@@ -242,32 +242,23 @@
           <input type="tel" id="r-phone" class="form-control" placeholder="e.g. 072 123 4567" autocomplete="tel">
         </div>
         <div class="form-error hidden" id="err-phone">Please enter your phone number</div>
-        <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;gap:8px;align-items:center">
-            <button type="button" id="send-otp-btn" class="btn btn-outline btn-sm">📱 Send OTP</button>
-            <span id="phone-verify-status" style="font-size:0.82rem;color:var(--text-muted)"></span>
-          </div>
-          <div id="otp-row" style="display:none;gap:8px;align-items:center">
-            <input type="text" id="otp-input" class="form-control" placeholder="6-digit OTP"
-              maxlength="6" inputmode="numeric" style="max-width:160px">
-            <button type="button" id="confirm-otp-btn" class="btn btn-primary btn-sm">Confirm</button>
-          </div>
-        </div>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="position:relative">
         <label class="form-label" for="r-suburb">Suburb / Area *</label>
         <div class="input-group">
           <span class="input-icon">🏘️</span>
           <input type="text" id="r-suburb" class="form-control" placeholder="e.g. Silverton, Mamelodi, East Lynne"
-            autocomplete="address-level2">
+            autocomplete="off">
         </div>
-        <div class="form-hint">Used to calculate your delivery fee</div>
+        <div id="reg-suburb-suggestions" class="delivery-suggestions" style="position:absolute;width:100%;z-index:100;top:100%"></div>
+        <div class="form-hint">Start typing your suburb — suggestions will appear</div>
         <div class="form-error hidden" id="err-suburb">Please enter your suburb</div>
       </div>
       <div class="form-group">
         <label class="form-label" for="r-address">Full Street Address *</label>
         <textarea id="r-address" class="form-control" rows="3" placeholder="e.g. 15 Main St, Silverton, Pretoria, 0184"
           autocomplete="street-address"></textarea>
+        <div class="form-hint">Auto-filled when you pick a suburb above, or type it manually</div>
         <div class="form-error hidden" id="err-address">Please enter your delivery address</div>
       </div>
 
@@ -365,136 +356,23 @@
     <a href="index.html" style="color:var(--text-muted)">← Back to Home</a>
   </p>
 
-  <div id="recaptcha-container"></div>
-
   <script src="js/app.js"></script>
   <script type="module">
-    import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { auth, db } from './js/firebase-config.js';
-
-    // ── Google Sign-In state ──────────────────────
-    let googleUser = null;
+    import { supabase } from './js/supabase-config.js';
 
     document.getElementById('google-register-btn').addEventListener('click', async () => {
       const btn = document.getElementById('google-register-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Connecting...';
       try {
-        const result = await signInWithPopup(auth, new GoogleAuthProvider());
-        googleUser = result.user;
-        const token = await googleUser.getIdToken();
-
-        // If profile already exists with a phone → login directly
-        const snap = await getDoc(doc(db, 'users', googleUser.uid));
-        if (snap.exists()) {
-          const userData = snap.data();
-          if (userData.phone) {
-            Auth.login(userData, token);
-            showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
-            setTimeout(() => { window.location.href = userData.isAdmin ? 'admin.html' : 'dashboard.html'; }, 800);
-            return;
-          }
-          // Profile exists but no phone — pre-fill and send to step 2
-          const existingParts = (userData.name + ' ' + userData.surname).trim().split(' ');
-          document.getElementById('r-name').value = userData.name || '';
-          document.getElementById('r-surname').value = userData.surname || '';
-          document.getElementById('r-email').value = userData.email || '';
-          document.getElementById('r-email').readOnly = true;
-          document.getElementById('r-password').closest('.form-group').style.display = 'none';
-          document.getElementById('r-confirm').closest('.form-group').style.display = 'none';
-          document.getElementById('google-signin-section').style.display = 'none';
-          document.getElementById('google-prefill-banner').style.display = 'block';
-          document.getElementById('google-prefill-banner').innerHTML =
-            '<span style="font-weight:600;color:#4285F4">✓ Signed in with Google</span>' +
-            '<span style="color:var(--text-secondary)"> — please add your cellphone number to continue.</span>';
-          goToStep(2);
-          showToast('Please add your cellphone number to complete your profile.', 'info');
-          return;
-        }
-
-        // New Google user — pre-fill Step 1 and jump to Step 2
-        const parts = (googleUser.displayName || '').split(' ');
-        document.getElementById('r-name').value = parts[0] || '';
-        document.getElementById('r-surname').value = parts.slice(1).join(' ') || '';
-        document.getElementById('r-email').value = googleUser.email || '';
-        document.getElementById('r-email').readOnly = true;
-        document.getElementById('r-password').closest('.form-group').style.display = 'none';
-        document.getElementById('r-confirm').closest('.form-group').style.display = 'none';
-        document.getElementById('google-signin-section').style.display = 'none';
-        document.getElementById('google-prefill-banner').style.display = 'block';
-
-        goToStep(2);
-        showToast('Google account connected! Now add your address details.', 'success');
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin + '/dashboard.html' }
+        });
       } catch (err) {
-        googleUser = null;
-        if (err.code !== 'auth/popup-closed-by-user') {
-          showToast('Google sign-in failed: ' + err.message, 'error');
-        }
+        showToast('Google sign-in failed: ' + err.message, 'error');
         btn.disabled = false;
         btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
-      }
-    });
-
-    // ── Phone verification state ──────────────────
-    let phoneVerified = false;
-    let phoneConfirmResult = null;
-
-    function formatSAPhone(raw) {
-      const digits = raw.replace(/\D/g, '');
-      if (digits.startsWith('27')) return '+' + digits;
-      if (digits.startsWith('0')) return '+27' + digits.slice(1);
-      return '+27' + digits;
-    }
-
-    function initRecaptcha() {
-      if (window._recaptchaVerifier) return;
-      window._recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
-    }
-
-    document.getElementById('send-otp-btn').addEventListener('click', async () => {
-      const rawPhone = document.getElementById('r-phone').value.trim();
-      if (!rawPhone) { showError('err-phone', 'Enter your phone number first'); return; }
-
-      const phone = formatSAPhone(rawPhone);
-      const btn = document.getElementById('send-otp-btn');
-      const status = document.getElementById('phone-verify-status');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>';
-      status.textContent = '';
-
-      try {
-        initRecaptcha();
-        phoneConfirmResult = await signInWithPhoneNumber(auth, phone, window._recaptchaVerifier);
-        document.getElementById('otp-row').style.display = 'flex';
-        status.textContent = `OTP sent to ${phone}`;
-        btn.textContent = '🔄 Resend OTP';
-      } catch (err) {
-        status.textContent = '❌ ' + (err.message || 'Failed to send OTP');
-        window._recaptchaVerifier = null;
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    document.getElementById('confirm-otp-btn').addEventListener('click', async () => {
-      const otp = document.getElementById('otp-input').value.trim();
-      if (otp.length < 6) { showToast('Enter the 6-digit OTP', 'warning'); return; }
-      const btn = document.getElementById('confirm-otp-btn');
-      btn.disabled = true;
-      btn.textContent = '...';
-      try {
-        await phoneConfirmResult.confirm(otp);
-        await signOut(auth); // clear phone session before email/password registration
-        phoneVerified = true;
-        document.getElementById('phone-verify-status').innerHTML = '<span style="color:var(--success)">✅ Verified</span>';
-        document.getElementById('otp-row').style.display = 'none';
-        document.getElementById('send-otp-btn').textContent = '✅ Verified';
-        document.getElementById('send-otp-btn').disabled = true;
-      } catch (err) {
-        showToast('❌ Wrong OTP. Try again.', 'error');
-        btn.disabled = false;
-        btn.textContent = 'Confirm';
       }
     });
 
@@ -555,6 +433,60 @@
 
     document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
 
+    // Suburb autocomplete (Photon, Pretoria area)
+    (function () {
+      const suburbInput = document.getElementById('r-suburb');
+      const suggestionsEl = document.getElementById('reg-suburb-suggestions');
+      let timer;
+
+      suburbInput.addEventListener('input', () => {
+        clearTimeout(timer);
+        suggestionsEl.innerHTML = '';
+        const q = suburbInput.value.trim();
+        if (q.length < 3) return;
+
+        timer = setTimeout(async () => {
+          try {
+            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-25.7219&lon=28.3412&limit=6&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
+            const res = await fetch(url);
+            const json = await res.json();
+            const results = (json.features || []).filter(f => !f.properties.country_code || f.properties.country_code === 'za');
+            suggestionsEl.innerHTML = '';
+            results.slice(0, 5).forEach(r => {
+              const p = r.properties;
+              const suburb = p.suburb || p.district || p.neighbourhood || p.name || '';
+              const street = p.housenumber ? `${p.housenumber} ${p.street || ''}`.trim() : (p.street || '');
+              const city = p.city || p.town || p.county || 'Pretoria';
+              const fullAddress = [street, suburb, city].filter(Boolean).join(', ');
+              const label = suburb || p.name || city;
+              const [lng, lat] = r.geometry.coordinates;
+
+              const item = document.createElement('div');
+              item.className = 'delivery-suggestion-item';
+              item.textContent = label + (city && city !== label ? `, ${city}` : '');
+              item.addEventListener('click', () => {
+                suburbInput.value = label;
+                const addrEl = document.getElementById('r-address');
+                if (!addrEl.value.trim()) addrEl.value = fullAddress;
+                pendingCoords = { lat, lng };
+                suggestionsEl.innerHTML = '';
+                hideError('err-suburb');
+              });
+              suggestionsEl.appendChild(item);
+            });
+          } catch {
+            // silent — user can type manually
+          }
+        }, 500);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!suburbInput.contains(e.target) && !suggestionsEl.contains(e.target)) {
+          suggestionsEl.innerHTML = '';
+        }
+      });
+    })();
+
     // Delivery fee calculation
     document.getElementById('calc-delivery-btn').addEventListener('click', async () => {
       const suburb = document.getElementById('r-suburb').value.trim();
@@ -589,7 +521,6 @@
       if (!suburb) { showError('err-suburb', 'Please enter your suburb'); valid = false; } else hideError('err-suburb');
       if (!address) { showError('err-address', 'Please enter your delivery address'); valid = false; } else hideError('err-address');
       if (!valid) return;
-      if (!googleUser && !phoneVerified) { showToast('⚠️ Please verify your phone number with the OTP first', 'warning', 5000); return; }
 
       // Populate review
       const rName = document.getElementById('r-name').value.trim();
@@ -636,36 +567,26 @@
       }
 
       try {
-        let firebaseUser, token;
-        if (googleUser) {
-          firebaseUser = googleUser;
-          token = await googleUser.getIdToken(true);
-        } else {
-          const userCred = await createUserWithEmailAndPassword(auth, email, password);
-          firebaseUser = userCred.user;
-          token = await firebaseUser.getIdToken();
-        }
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
 
         const newUser = {
-          id: firebaseUser.uid,
-          refNumber: pendingRef,
-          name, surname, email, phone, address, suburb,
-          coordinates: pendingCoords || null,
-          deliveryFee: pendingDeliveryFee,
-          creditBalance: 0,
-          isAdmin: false,
-          phoneVerified,
-          createdAt: new Date().toISOString()
+          id: data.user.id,
+          email, name, surname, phone, suburb, address,
+          ref_number: pendingRef,
+          credit_balance: 0,
+          is_admin: false
         };
 
-        // Establish session so API.post can include the auth token
-        Auth.login(newUser, token);
-        try {
-          await API.post('/users', newUser);
-        } catch (apiErr) {
-          // Non-fatal on localhost (mock handles it); on production the backend will save to Supabase
-          console.warn('Profile save to backend failed:', apiErr);
-        }
+        const { error: insertError } = await supabase.from('users').insert(newUser);
+        if (insertError && !insertError.message.includes('duplicate')) throw insertError;
+
+        const sessionUser = { ...newUser, refNumber: pendingRef, creditBalance: 0, isAdmin: false };
+        const users = DB.getUsers();
+        users.push(sessionUser);
+        DB.saveUsers(users);
+
+        Auth.login(sessionUser, data.session?.access_token);
 
         document.getElementById('success-ref').textContent = pendingRef;
         document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
@@ -675,10 +596,8 @@
       } catch (err) {
         btn.disabled = false;
         btn.textContent = '🎉 Create My Account';
-        const msg = err.code === 'auth/email-already-in-use'
+        const msg = err.message?.includes('already registered') || err.message?.includes('duplicate')
           ? 'This email is already registered. Please login instead.'
-          : err.code === 'auth/weak-password'
-          ? 'Password is too weak. Use at least 6 characters.'
           : (err.message || 'Registration failed. Please try again.');
         showToast('❌ ' + msg, 'error', 5000);
       }

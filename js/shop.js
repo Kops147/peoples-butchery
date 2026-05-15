@@ -4,27 +4,9 @@
 
 'use strict';
 
-import { saveOrderToFirebase } from './firebase-orders.js';
+import { supabase } from './supabase-config.js';
+import { saveOrderToSupabase } from './supabase-orders.js';
 import { LOCAL_CATALOG, mapToProduct } from './catalog.js';
-
-// ── Google Image Search fallback ───────────────
-const GOOGLE_API_KEY = 'AIzaSyD1wDQZISSbrI0B15wVhxEiiB4WilM3QTc';
-const GOOGLE_CSE_ID  = '51a7510b6bf774c12';
-
-window.imgError = async function(el, productName) {
-  el.onerror = null;
-  if (GOOGLE_API_KEY && GOOGLE_CSE_ID) {
-    try {
-      const q   = encodeURIComponent(productName + ' meat south africa');
-      const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&searchType=image&num=1&q=${q}`;
-      const res  = await fetch(url);
-      const data = await res.json();
-      const img  = data.items?.[0]?.link;
-      if (img) { el.src = img; return; }
-    } catch { /* fall through */ }
-  }
-  el.src = 'assets/img/food/meat_on_braai.jpg';
-};
 
 // ── State ──────────────────────────────────────
 let cart = [];
@@ -41,17 +23,13 @@ function findProduct(id) {
 
 async function loadProductsFromAPI() {
   try {
-    const { db } = await import('./firebase-config.js');
-    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-    const snap = await getDocs(collection(db, 'products'));
-    if (snap.size > 0) {
-      apiProducts = snap.docs
-        .map(d => ({ ...d.data(), id: d.id }))
-        .filter(p => p.is_active !== false);
+    const { data, error } = await supabase.from('products').select('*').eq('is_active', true);
+    if (!error && data && data.length > 0) {
+      apiProducts = data.map(p => ({ ...p, image_url: p.image, categoryLabel: p.category_label }));
       return;
     }
   } catch (err) {
-    console.warn('Firestore products unavailable, using local catalog:', err);
+    console.warn('Supabase products unavailable, using local catalog:', err);
   }
   apiProducts = LOCAL_CATALOG.map(mapToProduct);
 }
@@ -67,9 +45,17 @@ function saveCart(fullRender = true) {
   else renderCartPanel();
 }
 
-// ── Weight helper ──────────────────────────────
+// ── Unit helpers ───────────────────────────────
 function isWeightBased(product) {
   return /kg/i.test(product.unit || '');
+}
+function isQtyBased(product) {
+  return /each/i.test(product.unit || '');
+}
+function isBraaible(product) {
+  if (!product || product.category === 'cooked') return false;
+  // Exclude Lamb Tripe (37) and Frozen Chicken Hearts (1166) — can't be braai'd
+  return !new Set(['37', '1166']).has(String(product.id));
 }
 
 // ── Cart Operations ────────────────────────────
@@ -144,8 +130,48 @@ window.commitWeight = (productId) => {
   const item = cart.find(c => c.productId === productId);
   if (item) {
     item.qty = parseFloat(kg.toFixed(3));
-    saveCart(false); // cart panel only, no product grid re-render
+    saveCart(false);
   }
+};
+
+// ── Qty-based (each) cart helpers ─────────────
+window.addQtyToCart = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const qty = parseInt(qtyInput?.value || 1);
+  if (isNaN(qty) || qty < 1) { showToast('Minimum order is 1', 'warning'); return; }
+  const product = findProduct(productId);
+  if (!product || !product.available) return;
+  const existing = cart.find(c => c.productId === productId);
+  if (existing) { existing.qty = qty; } else { cart.push({ productId, qty }); }
+  saveCart();
+  showToast(`${qty}× ${product.name} added!`, 'success');
+};
+
+window.syncFromQty = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const totalInput = document.getElementById('ti-' + productId);
+  const p = findProduct(productId);
+  if (!qtyInput || !totalInput || !p) return;
+  const qty = parseInt(qtyInput.value) || 0;
+  totalInput.value = qty > 0 ? (qty * p.price).toFixed(2) : '';
+};
+
+window.syncFromTotal = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const totalInput = document.getElementById('ti-' + productId);
+  const p = findProduct(productId);
+  if (!qtyInput || !totalInput || !p || !p.price) return;
+  const rand = parseFloat(totalInput.value) || 0;
+  const qty = rand > 0 ? Math.max(1, Math.round(rand / p.price)) : 0;
+  qtyInput.value = qty > 0 ? qty : '';
+};
+
+window.commitQty = (productId) => {
+  const qtyInput = document.getElementById('qi-' + productId);
+  const qty = parseInt(qtyInput?.value) || 0;
+  if (qty < 1) return;
+  const item = cart.find(c => c.productId === productId);
+  if (item) { item.qty = qty; saveCart(false); }
 };
 
 function removeFromCart(productId) {
@@ -170,7 +196,7 @@ function getCartTotal() {
     const p = findProduct(item.productId);
     if (!p) return sum;
     const extras = productExtras[item.productId] || {};
-    const extraCost = (extras.braai ? 10 : 0) + (extras.pap ? 10 : 0);
+    const extraCost = (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
     return sum + ((p.price + extraCost) * item.qty);
   }, 0);
 }
@@ -217,11 +243,13 @@ function renderProducts() {
   container.innerHTML = products.map(p => {
     const cartItem = cart.find(c => c.productId === p.id);
     const extras = productExtras[p.id] || {};
-    const basePrice = p.price + (extras.braai ? 10 : 0) + (extras.pap ? 10 : 0);
+    const basePrice = p.price + (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
     const weighted = isWeightBased(p);
     const catBadge = p.category === 'cooked'
       ? '<span class="badge badge-gold">🍽️ Cooked Meal</span>'
       : `<span class="badge badge-red">🥩 ${p.categoryLabel}</span>`;
+
+    const qtyBased = isQtyBased(p);
 
     let cartControl;
     if (weighted) {
@@ -252,6 +280,34 @@ function renderProducts() {
             : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addWeightToCart('${p.id}')">Add to Cart</button>`
           }
         </div>`;
+    } else if (qtyBased) {
+      const currentQty = cartItem ? cartItem.qty : 1;
+      const currentTotal = parseFloat((currentQty * basePrice).toFixed(2));
+      const inCart = !!cartItem;
+      cartControl = `
+        <div class="weight-ctrl${inCart ? ' in-cart' : ''}">
+          <div class="weight-dual-row">
+            <div class="weight-field">
+              <input type="number" class="weight-inp" id="qi-${p.id}"
+                value="${currentQty}" min="1" max="100" step="1"
+                oninput="syncFromQty('${p.id}')"
+                onblur="commitQty('${p.id}')">
+              <span class="weight-lbl">each</span>
+            </div>
+            <span class="weight-sep">↔</span>
+            <div class="weight-field">
+              <span class="weight-lbl">R</span>
+              <input type="number" class="weight-inp" id="ti-${p.id}"
+                value="${currentTotal.toFixed(2)}" min="0" step="1"
+                oninput="syncFromTotal('${p.id}')"
+                onblur="commitQty('${p.id}')">
+            </div>
+          </div>
+          ${inCart
+            ? `<button class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);width:100%" onclick="removeItem('${p.id}')">✓ In Cart — Remove</button>`
+            : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addQtyToCart('${p.id}')">Add to Cart</button>`
+          }
+        </div>`;
     } else {
       const qty = cartItem ? cartItem.qty : 0;
       cartControl = qty === 0
@@ -263,30 +319,36 @@ function renderProducts() {
            </div>`;
     }
 
+    const usesInputCtrl = weighted || qtyBased;
+
     return `<div class="product-card" id="pc-${p.id}">
         <div class="product-img">
-          <img src="${p.image_url || p.image}" alt="${p.name}" loading="lazy" onerror="imgError(this,'${p.name}')">
+          <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
           <div class="product-category-tag">${catBadge}</div>
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
           <div class="product-desc">${p.description}</div>
-          ${p.braaiable ? `<div class="product-extras">
+          ${isBraaible(p) ? `<div class="product-extras">
             <label class="extra-toggle ${extras.braai ? 'active' : ''}" onclick="toggleExtra('${p.id}','braai')">
               🔥 Add Braai <span>+R10</span>
             </label>
-            <label class="extra-toggle ${extras.pap ? 'active' : ''}" onclick="toggleExtra('${p.id}','pap')">
-              🍚 Add Pap <span>+R10</span>
-            </label>
+            <div class="pap-ctrl">
+              <span class="pap-label">🍚 Pap</span>
+              <button class="pap-btn" onclick="adjustPap('${p.id}',-1)" ${(extras.pap||0)===0?'disabled':''}>−</button>
+              <span class="pap-count">${extras.pap || 0}</span>
+              <button class="pap-btn" onclick="adjustPap('${p.id}',1)">+</button>
+              <span class="pap-price">${(extras.pap||0) > 0 ? `+R${(extras.pap*10).toFixed(0)}` : 'R10/ea'}</span>
+            </div>
           </div>` : ''}
           <div class="product-footer">
             <div>
               <div class="product-price">${formatCurrency(basePrice)}</div>
               <div class="product-unit">${p.unit}</div>
             </div>
-            ${weighted ? '' : cartControl}
+            ${usesInputCtrl ? '' : cartControl}
           </div>
-          ${weighted ? `<div class="weight-ctrl-wrap">${cartControl}</div>` : ''}
+          ${usesInputCtrl ? `<div class="weight-ctrl-wrap">${cartControl}</div>` : ''}
         </div>
       </div>`;
   }).join('\n');
@@ -302,6 +364,11 @@ function toggleExtra(productId, type) {
   productExtras[productId][type] = !productExtras[productId][type];
   renderProducts();
 }
+window.adjustPap = function(productId, delta) {
+  if (!productExtras[productId]) productExtras[productId] = {};
+  productExtras[productId].pap = Math.max(0, Math.min(20, (productExtras[productId].pap || 0) + delta));
+  renderProducts();
+};
 
 // ── Render Cart Panel ──────────────────────────
 function renderCartPanel() {
@@ -325,14 +392,14 @@ function renderCartPanel() {
       const p = findProduct(item.productId);
       if (!p) return '';
       const extras = productExtras[item.productId] || {};
-      const extraCost = (extras.braai ? 10 : 0) + (extras.pap ? 10 : 0);
+      const extraCost = (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
       const unitPrice = p.price + extraCost;
       const lineTotal = unitPrice * item.qty;
       const qtyLabel = isWeightBased(p)
         ? `${item.qty} kg × ${formatCurrency(unitPrice)}/kg`
         : `${item.qty} × ${formatCurrency(unitPrice)}`;
       return `<div class="cart-item">
-        <div class="cart-item-img"><img src="${p.image_url || p.image}" alt="${p.name}" onerror="imgError(this,'${p.name}')"></div>
+        <div class="cart-item-img"><img src="${p.image}" alt="${p.name}" onerror="this.src='assets/img/food/meat_on_braai.jpg'"></div>
         <div class="cart-item-info">
           <div class="cart-item-name">${p.name}</div>
           <div style="font-size:0.8rem;color:var(--text-muted)">${qtyLabel}</div>
@@ -403,7 +470,7 @@ function initDeliveryLocation() {
     debounceTimer = setTimeout(async () => {
       suggestionsEl.innerHTML = '<div class="delivery-suggestion-item" style="opacity:0.5">Searching...</div>';
       try {
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${STORE_COORDS.lat}&lon=${STORE_COORDS.lng}&limit=5&lang=en`;
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${STORE_COORDS.lat}&lon=${STORE_COORDS.lng}&limit=5&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
         const res = await fetch(url);
         const data = await res.json();
         const results = (data.features || []).filter(f => {
@@ -516,10 +583,13 @@ async function checkout() {
     return;
   }
 
-  // Fetch live credit balance before placing order
+  // Fetch live credit balance from Supabase
+  const session = Auth.getSession();
   let user;
   try {
-    user = await API.get('/users/me');
+    const { data, error } = await supabase.from('users').select('*').eq('id', session.id).single();
+    if (error || !data) throw new Error('Could not verify account');
+    user = { ...data, creditBalance: parseFloat(data.credit_balance) || 0 };
   } catch (err) {
     showToast('Could not verify your account. Please log in again.', 'error');
     setTimeout(() => window.location.href = 'login.html', 1500);
@@ -530,66 +600,58 @@ async function checkout() {
   const delivFee = deliveryMethod === 'collect' ? 0 : Math.max(10, Math.round(haversineKm(STORE_COORDS, deliveryCoords) * 5));
   const total = subtotal + delivFee;
 
-  if (parseFloat(user.credit_balance) < total) {
-    showToast(`Insufficient credit. Balance: ${formatCurrency(user.credit_balance)}, Required: ${formatCurrency(total)}`, 'error', 6000);
+  if (user.creditBalance < total) {
+    showToast(`Insufficient credit. Balance: ${formatCurrency(user.creditBalance)}, Required: ${formatCurrency(total)}`, 'error', 6000);
     setTimeout(() => window.location.href = 'dashboard.html#credits', 2000);
     return;
   }
 
+  const deliveryAddress = deliveryMethod === 'delivery'
+    ? document.getElementById('delivery-addr-input')?.value
+    : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne';
+
   try {
-    // Save order to Firebase
-    const orderId = await saveOrderToFirebase({
+    const orderId = await saveOrderToSupabase({
+      userId: user.id,
+      userEmail: user.email,
       items: cart.map(c => {
-        const p = findProduct(c.productId);
-        return { productId: c.productId, quantity: c.qty, qty: c.qty, name: p?.name, price: p?.price, unit: p?.unit, category: p?.category, categoryLabel: p?.categoryLabel };
+        const ex = productExtras[c.productId] || {};
+        return { productId: c.productId, quantity: c.qty, braai: !!ex.braai, pap: ex.pap || 0 };
       }),
-      subtotal: subtotal,
+      subtotal,
       deliveryFee: delivFee,
-      total: total,
+      total,
       deliveryMethod,
-      deliveryAddress: deliveryMethod === 'delivery'
-        ? document.getElementById('delivery-addr-input')?.value
-        : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
-      deliveryCoordinates: deliveryCoords || null,
+      deliveryAddress,
     });
 
-    // Save to local mock DB for the dashboards
+    // Deduct credit in Supabase
+    await supabase.from('users').update({ credit_balance: user.creditBalance - total }).eq('id', user.id);
+
+    // Log purchase transaction (non-critical)
+    supabase.from('transactions').insert({
+      user_id: user.id,
+      user_email: user.email,
+      amount: total,
+      type: 'purchase',
+      notes: `Order #${orderId}`,
+      status: 'completed'
+    }).then(({ error: txErr }) => { if (txErr) console.warn('Transaction log failed:', txErr.message); });
+
+    // Mirror to local DB for dashboard display on same device
     DB.addOrder({
       id: orderId,
       userId: user.id,
-      name: user.name,
-      surname: user.surname,
-      email: user.email,
+      name: user.name, surname: user.surname, email: user.email,
       items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
-      subtotal: subtotal,
-      deliveryFee: delivFee,
-      total: total,
-      deliveryMethod,
-      deliveryAddress: deliveryMethod === 'delivery'
-        ? document.getElementById('delivery-addr-input')?.value
-        : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
+      subtotal, deliveryFee: delivFee, total, deliveryMethod, deliveryAddress,
       status: 'pending',
       created_at: new Date().toISOString()
     });
 
-    // Also send to backend API if available (for legacy support)
-    try {
-      await API.post('/orders', {
-        firebaseId: orderId,
-        items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
-        deliveryMethod,
-        deliveryAddress: deliveryMethod === 'delivery'
-          ? document.getElementById('delivery-addr-input')?.value
-          : 'Collect at The Peoples Butchery, 76 Meeu St, East Lynne',
-        deliveryCoordinates: deliveryCoords || null,
-      });
-    } catch (apiErr) {
-      console.log('Backend API not available, order saved to Firebase and Mock DB only');
-    }
-
     clearCart();
     closeCart();
-    showToast('🎉 Order placed successfully! Order ID: ' + orderId, 'success', 5000);
+    showToast('🎉 Order placed! Order ID: ' + orderId, 'success', 5000);
     setTimeout(() => window.location.href = 'dashboard.html', 2000);
   } catch (err) {
     showToast('Order failed: ' + err.message, 'error', 6000);

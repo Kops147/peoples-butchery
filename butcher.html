@@ -6,619 +6,153 @@
   <title>Butcher Station — The Peoples Butchery</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; }
-    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 16px; }
-    .stn-title { display: flex; align-items: center; gap: 12px; }
-    .stn-title h1 { font-family: var(--font-head); font-size: 1.25rem; margin: 0; color: #fff; }
-    .stn-badge { background: rgba(255,77,77,.12); border: 1px solid rgba(255,77,77,.3); color: #ff6b6b; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; font-family: var(--font-body, sans-serif); }
+    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 12px; flex-wrap: wrap; }
+    .stn-title { display: flex; align-items: center; gap: 10px; }
+    .stn-title h1 { font-family: var(--font-head, sans-serif); font-size: 1.1rem; margin: 0; color: #fff; }
+    .stn-badge { background: rgba(255,77,77,.12); border: 1px solid rgba(255,77,77,.3); color: #ff6b6b; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff6b6b; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
+    @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:.3} }
     .stn-nav { display: flex; gap: 6px; flex-wrap: wrap; }
-    .stn-nav a { color: #555; text-decoration: none; font-size: .73rem; padding: 5px 10px; border: 1px solid #222; border-radius: 6px; transition: all .2s; white-space: nowrap; }
+    .stn-nav a { color: #555; text-decoration: none; font-size: .73rem; padding: 5px 10px; border: 1px solid #222; border-radius: 6px; transition: all .2s; }
     .stn-nav a:hover { color: #aaa; border-color: #444; }
     .stn-nav a.active { color: #ff6b6b; border-color: rgba(255,107,107,.4); background: rgba(255,77,77,.05); }
-    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff6b6b; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
-    @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
-    .stn-clock { font-size: .8rem; color: #444; white-space: nowrap; }
+    .stn-clock { font-size: .8rem; color: #444; }
 
-    .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 0; height: calc(100vh - 65px); overflow: hidden; }
-    @media(max-width:900px){ .main-grid { grid-template-columns: 1fr; height:auto; overflow:auto; } }
+    .stats-bar { background: #0D0D0D; border-bottom: 1px solid #1a1a1a; padding: 10px 20px; display: flex; gap: 24px; align-items: center; }
+    .stat-num { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1.6rem; color: #ff6b6b; }
+    .stat-lbl { font-size: .72rem; color: #555; }
 
-    /* LEFT — Stock */
-    .panel-left { border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; overflow: hidden; }
-    .panel-header { padding: 16px 20px 12px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
-    .panel-title { font-family: var(--font-head); font-weight: 700; font-size: .95rem; color: #ccc; }
-    .panel-scroll { overflow-y: auto; flex: 1; }
+    .queue { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; align-content: start; }
 
-    .stock-table { width: 100%; border-collapse: collapse; }
-    .stock-table th { padding: 8px 20px; font-size: .68rem; text-transform: uppercase; letter-spacing: 1.5px; color: #3a3a3a; font-weight: 700; text-align: left; border-bottom: 1px solid #1a1a1a; position: sticky; top: 0; background: #0A0A0A; }
-    .stock-table td { padding: 12px 20px; border-bottom: 1px solid #141414; font-size: .88rem; }
-    .stock-table tr:hover td { background: #111; }
-    .stock-table tr:last-child td { border-bottom: none; }
+    .ocard { background: #141414; border: 1px solid #1e1e1e; border-left: 4px solid #ff4d4d; border-radius: 12px; overflow: hidden; }
+    .ocard-head { padding: 14px 16px 6px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .ocard-id { font-family: var(--font-head, sans-serif); font-weight: 900; font-size: 1.3rem; color: #ff6b6b; }
+    .ocard-time { font-size: .75rem; color: #444; margin-top: 2px; }
+    .wait-badge { font-size: .72rem; color: #f0a000; font-weight: 700; background: rgba(240,160,0,.1); border-radius: 4px; padding: 2px 6px; }
+    .ocard-body { padding: 4px 16px 12px; }
+    .ocard-customer { font-size: 1rem; font-weight: 700; color: #ccc; margin-bottom: 10px; }
+    .cut-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .cut-item { display: flex; align-items: center; gap: 10px; background: #1a1a1a; border-radius: 8px; padding: 10px 14px; }
+    .cut-qty { font-family: var(--font-head, sans-serif); font-weight: 900; font-size: 1.4rem; color: #ff6b6b; min-width: 50px; }
+    .cut-name { font-size: .95rem; font-weight: 600; color: #ddd; }
+    .cut-unit { font-size: .75rem; color: #555; }
+    .done-btn { display: block; width: 100%; margin: 12px 16px 16px; width: calc(100% - 32px); padding: 14px; border-radius: 10px; background: #22c55e; color: #000; font-size: 1rem; font-weight: 800; border: none; cursor: pointer; transition: background .15s; letter-spacing: .5px; }
+    .done-btn:hover { background: #16a34a; }
+    .done-btn:disabled { background: #1a1a1a; color: #555; cursor: default; }
 
-    .qty-cell { font-family: var(--font-head); font-weight: 800; font-size: 1.05rem; }
-    .qty-green { color: #3DD68C; }
-    .qty-yellow { color: #f0a000; }
-    .qty-red    { color: #ff4d4d; }
-
-    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: .7rem; font-weight: 700; }
-    .pill-green  { background: rgba(61,214,140,.1); color: #3DD68C; border: 1px solid rgba(61,214,140,.2); }
-    .pill-yellow { background: rgba(240,160,0,.1);  color: #f0a000;  border: 1px solid rgba(240,160,0,.2); }
-    .pill-red    { background: rgba(255,77,77,.1);  color: #ff4d4d;  border: 1px solid rgba(255,77,77,.2); }
-
-    .restock-btn { background: transparent; border: 1px solid #2a2a2a; color: #555; padding: 4px 10px; border-radius: 6px; font-size: .72rem; cursor: pointer; transition: all .2s; }
-    .restock-btn:hover { border-color: #3DD68C; color: #3DD68C; }
-
-    /* RIGHT — Alerts + Schedule */
-    .panel-right { display: flex; flex-direction: column; overflow: hidden; }
-    .right-section { border-bottom: 1px solid #1a1a1a; flex-shrink: 0; }
-    .right-section:last-child { border-bottom: none; flex: 1; overflow-y: auto; }
-    .rsec-head { padding: 14px 18px 10px; display: flex; justify-content: space-between; align-items: center; }
-    .rsec-title { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: #bbb; }
-
-    .alert-card { margin: 0 16px 12px; background: rgba(255,77,77,.05); border: 1px solid rgba(255,77,77,.15); border-radius: 10px; padding: 12px 14px; }
-    .alert-product { font-weight: 700; font-size: .9rem; color: #ff6b6b; margin-bottom: 4px; }
-    .alert-detail  { font-size: .78rem; color: #888; margin-bottom: 8px; }
-    .alert-tip { font-size: .75rem; color: #f0a000; background: rgba(240,160,0,.08); border: 1px solid rgba(240,160,0,.2); border-radius: 6px; padding: 6px 10px; }
-
-    .schedule-row { padding: 12px 18px; border-bottom: 1px solid #141414; display: flex; justify-content: space-between; align-items: center; }
-    .schedule-row:last-child { border-bottom: none; }
-    .sched-time { font-size: .75rem; color: #555; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-    .sched-item { font-size: .88rem; color: #ccc; }
-    .sched-qty  { font-family: var(--font-head); font-weight: 700; color: #f0a000; }
-
-    .empty-panel { text-align: center; padding: 32px 16px; color: #2a2a2a; }
-    .empty-panel .ei { font-size: 2rem; margin-bottom: 8px; }
-    .empty-panel p { font-size: .8rem; }
-
-    /* ── Customer Display Mode ── */
-    .cdisp { display: none; position: fixed; inset: 0; z-index: 900; background: #060606; flex-direction: column; overflow: hidden; }
-    .cdisp.open { display: flex; }
-
-    /* Animated BG */
-    .cdisp-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-    .cdisp-bg::before { content: ''; position: absolute; inset: -50%; background: conic-gradient(from 0deg at 50% 50%, #8B0000 0%, #1a0000 25%, #0a0a0a 50%, #1a0800 75%, #8B0000 100%); animation: bgSpin 20s linear infinite; opacity: .18; }
-    @keyframes bgSpin { to { transform: rotate(360deg); } }
-    .cdisp-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, #060606 100%); }
-
-    /* Header bar */
-    .cdisp-header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,.05); flex-shrink: 0; }
-    .cdisp-brand { display: flex; align-items: center; gap: 16px; }
-    .cdisp-logo { height: 44px; filter: drop-shadow(0 0 12px rgba(232,160,32,.4)); }
-    .cdisp-store-name { font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: .5px; }
-    .cdisp-store-name span { color: #e8a020; }
-    .cdisp-tagline { font-size: .8rem; color: #555; }
-    .cdisp-clock { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: #333; letter-spacing: 2px; }
-
-    /* Main content */
-    .cdisp-body { flex: 1; position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 360px; overflow: hidden; }
-
-    /* Product carousel */
-    .cdisp-carousel { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 40px; position: relative; overflow: hidden; }
-    .cdisp-slide { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 40px; opacity: 0; transform: translateX(60px); transition: opacity .8s ease, transform .8s ease; pointer-events: none; }
-    .cdisp-slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
-    .cdisp-slide.exit { opacity: 0; transform: translateX(-60px); }
-    .slide-img-wrap { width: 280px; height: 280px; border-radius: 24px; overflow: hidden; border: 2px solid rgba(232,160,32,.2); box-shadow: 0 0 60px rgba(232,160,32,.12), 0 20px 60px rgba(0,0,0,.8); margin-bottom: 28px; flex-shrink: 0; }
-    .slide-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .slide-cat { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #555; margin-bottom: 8px; }
-    .slide-name { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: #fff; text-align: center; line-height: 1.2; margin-bottom: 10px; }
-    .slide-price { font-family: var(--font-head); font-size: 2.8rem; font-weight: 900; color: #e8a020; line-height: 1; }
-    .slide-unit { font-size: .9rem; color: #555; margin-top: 4px; }
-    .slide-desc { font-size: .88rem; color: #444; text-align: center; margin-top: 10px; max-width: 380px; }
-
-    /* Dots */
-    .cdisp-dots { display: flex; gap: 8px; margin-top: 20px; position: relative; z-index: 2; flex-shrink: 0; }
-    .cdot { width: 8px; height: 8px; border-radius: 50%; background: #2a2a2a; transition: background .3s, transform .3s; }
-    .cdot.active { background: #e8a020; transform: scale(1.4); }
-
-    /* Order board */
-    .cdisp-orders { position: relative; z-index: 2; border-left: 1px solid rgba(255,255,255,.05); display: flex; flex-direction: column; overflow: hidden; }
-    .cdisp-orders-head { padding: 24px 24px 16px; flex-shrink: 0; }
-    .cdisp-orders-title { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 2px; }
-    .cdisp-order-list { flex: 1; overflow-y: auto; padding: 0 24px 24px; }
-    .cdisp-order-list::-webkit-scrollbar { display: none; }
-
-    .cord { background: #111; border: 1px solid #1e1e1e; border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; animation: slideIn .4s ease; }
-    .cord.ready { border-color: rgba(61,214,140,.3); background: rgba(61,214,140,.04); animation: slideIn .4s ease, readyPulse 2s ease-in-out infinite; }
-    @keyframes slideIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes readyPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(61,214,140,0); } 50%{ box-shadow:0 0 0 6px rgba(61,214,140,.08); } }
-
-    .cord-status { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
-    .cord.ready .cord-status { color: #3DD68C; }
-    .cord.prep .cord-status { color: #f0a000; }
-    .cord.waiting .cord-status { color: #3498db; }
-    .cord-name { font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; color: #ddd; }
-    .cord-id { font-size: .72rem; color: #3a3a3a; margin-top: 2px; }
-    .cord-items { font-size: .78rem; color: #555; margin-top: 6px; }
-
-    .cdisp-no-orders { text-align: center; padding: 40px 20px; color: #2a2a2a; }
-    .cdisp-no-orders .ei { font-size: 2.5rem; margin-bottom: 10px; }
-
-    /* Ticker */
-    .cdisp-ticker { position: relative; z-index: 2; border-top: 1px solid rgba(232,160,32,.1); background: rgba(232,160,32,.03); padding: 10px 0; overflow: hidden; flex-shrink: 0; }
-    .ticker-inner { display: flex; white-space: nowrap; animation: ticker 30s linear infinite; }
-    .ticker-item { padding: 0 40px; font-size: .82rem; color: #555; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-    .ticker-item span { color: #e8a020; font-weight: 700; }
-    @keyframes ticker { from { transform:translateX(0); } to { transform:translateX(-50%); } }
-
-    /* Exit hint */
-    .cdisp-exit { position: absolute; bottom: 60px; right: 24px; z-index: 10; font-size: .68rem; color: #1e1e1e; }
-
-    /* Restock modal */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 1000; align-items: center; justify-content: center; }
-    .modal-overlay.open { display: flex; }
-    .modal-box { background: #141414; border: 1px solid #2a2a2a; border-radius: 14px; padding: 28px; width: 360px; max-width: 90vw; }
-    .modal-title { font-family: var(--font-head); font-weight: 800; font-size: 1.1rem; margin-bottom: 4px; }
-    .modal-sub { font-size: .82rem; color: #666; margin-bottom: 20px; }
-    .modal-label { font-size: .78rem; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-    .modal-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #E0E0E0; padding: 10px 14px; border-radius: 8px; font-size: .95rem; box-sizing: border-box; }
-    .modal-input:focus { outline: none; border-color: #3DD68C; }
-    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .empty-queue { text-align: center; padding: 80px 20px; color: #333; grid-column: 1/-1; }
+    .empty-queue .ei { font-size: 3rem; margin-bottom: 12px; }
+    .empty-queue p { font-size: 1rem; }
   </style>
 </head>
 <body>
-  <div id="toast-container"></div>
+<div id="toast-container"></div>
 
-  <!-- ══════════════════════════════════════════
-       CUSTOMER DISPLAY — full-screen 17" mode
-       Press ESC or triple-tap to exit
-  ══════════════════════════════════════════ -->
-  <div class="cdisp" id="cdisp">
-    <div class="cdisp-bg"></div>
-
-    <!-- Header -->
-    <div class="cdisp-header">
-      <div class="cdisp-brand">
-        <img src="assets/img/logo-navbar.png" class="cdisp-logo" alt="Logo" onerror="this.style.display='none'">
-        <div>
-          <div class="cdisp-store-name">The Peoples <span>Butchery</span></div>
-          <div class="cdisp-tagline">76 Meeu St, East Lynne, Pretoria · 012 345 6789</div>
-        </div>
-      </div>
-      <div class="cdisp-clock" id="cdisp-clock">—</div>
-    </div>
-
-    <!-- Body -->
-    <div class="cdisp-body">
-
-      <!-- Product / Ad Carousel -->
-      <div class="cdisp-carousel">
-        <div id="cdisp-slides"></div>
-        <div class="cdisp-dots" id="cdisp-dots"></div>
-      </div>
-
-      <!-- Live Order Board -->
-      <div class="cdisp-orders">
-        <div class="cdisp-orders-head">
-          <div class="cdisp-orders-title">📋 Order Status</div>
-        </div>
-        <div class="cdisp-order-list" id="cdisp-order-list">
-          <div class="cdisp-no-orders"><div class="ei">✅</div><p>No orders in queue</p></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Specials Ticker -->
-    <div class="cdisp-ticker">
-      <div class="ticker-inner" id="cdisp-ticker">
-        <!-- cloned twice for seamless loop -->
-      </div>
-    </div>
-
-    <div class="cdisp-exit">ESC to exit display mode</div>
+<header class="stn-header">
+  <div class="stn-title">
+    <span class="live-dot"></span>
+    <h1>🔪 Butcher Station</h1>
+    <span class="stn-badge">Cutting Queue</span>
   </div>
+  <nav class="stn-nav">
+    <a href="cashier.html">🧾 Cashier</a>
+    <a href="butcher.html" class="active">🔪 Butcher</a>
+    <a href="kitchen.html">🔥 Kitchen</a>
+    <a href="dispatch.html">🚗 Driver</a>
+  </nav>
+  <span class="stn-clock" id="clock"></span>
+</header>
 
-  <header class="stn-header">
-    <div class="stn-title">
-      <span style="font-size:1.4rem">🥩</span>
-      <h1>Butcher Station</h1>
-      <span class="stn-badge">Inventory &amp; Cutting</span>
-    </div>
-    <nav class="stn-nav">
-      <a href="cashier.html">💰 Cashier</a>
-      <a href="kitchen.html">🍳 Kitchen</a>
-      <a href="butcher.html" class="active">🥩 Butcher</a>
-      <a href="dispatch.html">🚚 Dispatch</a>
-      <a href="admin.html">⚙️ Admin</a>
-    </nav>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="openDisplay()" style="background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);color:#e8a020;padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(232,160,32,.2)'" onmouseout="this.style.background='rgba(232,160,32,.1)'">📺 Customer Display</button>
-      <span class="live-dot"></span>
-      <span class="stn-clock" id="clock">—</span>
-    </div>
-  </header>
-
-  <div class="main-grid">
-    <!-- LEFT: Stock -->
-    <div class="panel-left">
-      <div class="panel-header">
-        <span class="panel-title">📦 Live Stock Status</span>
-        <button class="btn btn-outline btn-sm" onclick="load()" style="font-size:.75rem">↻ Refresh</button>
-      </div>
-      <div class="panel-scroll">
-        <table class="stock-table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th>In Stock</th>
-              <th>Unit</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="stock-tbody">
-            <tr><td colspan="6" style="text-align:center;padding:40px;color:#333">Loading stock...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- RIGHT: Alerts + Schedule -->
-    <div class="panel-right">
-      <!-- Spoilage / Low Stock Alerts -->
-      <div class="right-section" style="max-height:45%">
-        <div class="rsec-head">
-          <span class="rsec-title">⚠️ Low Stock Alerts</span>
-          <span id="alert-count" style="font-size:.72rem;color:#ff6b6b;font-weight:700"></span>
-        </div>
-        <div id="alerts-container">
-          <div class="empty-panel"><div class="ei">✅</div><p>All stock levels healthy</p></div>
-        </div>
-      </div>
-
-      <!-- Cutting Schedule -->
-      <div class="right-section">
-        <div class="rsec-head">
-          <span class="rsec-title">📊 Cutting Schedule</span>
-          <span style="font-size:.72rem;color:#555">Based on pending orders</span>
-        </div>
-        <div id="schedule-container">
-          <div class="empty-panel"><div class="ei">📋</div><p>No pending orders to schedule</p></div>
-        </div>
-      </div>
-    </div>
+<div class="stats-bar">
+  <div>
+    <div class="stat-num" id="cnt">0</div>
+    <div class="stat-lbl">Orders to Cut</div>
   </div>
+</div>
 
-  <!-- Restock Modal -->
-  <div class="modal-overlay" id="restock-modal">
-    <div class="modal-box">
-      <div class="modal-title">+ Log Restock</div>
-      <div class="modal-sub" id="restock-product-name">Product</div>
-      <div class="modal-label">Current Stock</div>
-      <div style="font-family:var(--font-head);font-weight:800;font-size:1.5rem;margin-bottom:16px" id="restock-current">—</div>
-      <div class="modal-label">Add Quantity</div>
-      <input class="modal-input" type="number" id="restock-qty" placeholder="e.g. 20" min="1" style="margin-bottom:12px">
-      <div class="modal-label">New Total Will Be</div>
-      <div style="font-family:var(--font-head);font-weight:700;font-size:1.1rem;color:#3DD68C;margin-bottom:4px" id="restock-new-total">—</div>
-      <div class="modal-actions">
-        <button class="btn btn-outline" onclick="closeRestock()" style="flex:1">Cancel</button>
-        <button class="btn btn-primary" onclick="confirmRestock()" style="flex:2" id="restock-confirm-btn">✅ Confirm Restock</button>
-      </div>
-    </div>
-  </div>
+<div class="queue" id="queue">
+  <div class="empty-queue"><div class="ei">✅</div><p>All done — no cutting orders</p></div>
+</div>
 
-  <script src="js/app.js"></script>
-  <script>
-    // Clock
-    function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
-    setInterval(tick, 1000); tick();
+<script src="js/app.js"></script>
+<script type="module">
+  import { supabase } from './js/supabase-config.js';
 
-    let _fb = null;
-    async function fb(){
-      if(_fb) return _fb;
-      const [cfg, fs] = await Promise.all([import('./js/firebase-config.js'), import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')]);
-      _fb = { db: cfg.db, ...fs };
-      return _fb;
+  let _products = [];
+
+  function tick() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' }); }
+  tick(); setInterval(tick, 1000);
+
+  function getProdName(id) {
+    const p = _products.find(p => String(p.id) === String(id));
+    return p ? p.name : `Product #${id}`;
+  }
+  function getProdUnit(id) {
+    const p = _products.find(p => String(p.id) === String(id));
+    return p ? p.unit : '';
+  }
+  function waitLabel(ts) {
+    const mins = Math.floor((Date.now() - new Date(ts)) / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    return `${Math.floor(mins/60)}h ${mins%60}m ago`;
+  }
+
+  async function load() {
+    const [ordRes, proRes] = await Promise.all([
+      supabase.from('orders').select('*').eq('status', 'butchering').order('created_at', { ascending: true }),
+      supabase.from('products').select('id,name,unit')
+    ]);
+    if (!ordRes.error) {
+      if (!proRes.error) _products = proRes.data || [];
+      render(ordRes.data || []);
     }
+  }
 
-    let _products = [];
-    let _restockTarget = null;
-
-    function stockStatus(qty, unit) {
-      const isEach = unit === 'each';
-      const low = isEach ? 5 : 3, med = isEach ? 20 : 10;
-      if (qty <= low)  return { cls: 'qty-red',    pill: 'pill-red',    label: '🔴 LOW', text: 'LOW' };
-      if (qty <= med)  return { cls: 'qty-yellow',  pill: 'pill-yellow', label: '🟡 Medium', text: 'MEDIUM' };
-      return              { cls: 'qty-green',   pill: 'pill-green',  label: '🟢 Good', text: 'GOOD' };
+  function render(orders) {
+    document.getElementById('cnt').textContent = orders.length;
+    if (!orders.length) {
+      document.getElementById('queue').innerHTML = '<div class="empty-queue"><div class="ei">✅</div><p>All done — no cutting orders</p></div>';
+      return;
     }
-
-    async function load(){
-      try {
-        const { db, collection, getDocs, query, where } = await fb();
-        const [prodSnap, ordSnap] = await Promise.all([
-          getDocs(collection(db, 'products')),
-          getDocs(query(collection(db, 'orders'), where('status', 'in', ['pending','braai'])))
-        ]);
-
-        _products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const pendingOrders = ordSnap.docs.map(d => d.data());
-
-        renderStock(_products);
-        renderAlerts(_products);
-        renderSchedule(_products, pendingOrders);
-      } catch(e) {
-        document.getElementById('stock-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#ff4d4d">⚠ ${e.message}</td></tr>`;
-      }
-    }
-
-    function renderStock(products) {
-      const sorted = [...products].sort((a,b) => {
-        const sa = stockStatus(a.stockQty||0, a.unit);
-        const sb = stockStatus(b.stockQty||0, b.unit);
-        const order = { 'LOW':0, 'MEDIUM':1, 'GOOD':2 };
-        return (order[sa.text]||0) - (order[sb.text]||0);
-      });
-
-      document.getElementById('stock-tbody').innerHTML = sorted.map(p => {
-        const qty = p.stockQty || 0;
-        const s = stockStatus(qty, p.unit);
-        return `
-        <tr>
-          <td><strong>${p.name}</strong></td>
-          <td><span style="font-size:.75rem;color:#555">${p.categoryLabel||p.category||'—'}</span></td>
-          <td class="qty-cell ${s.cls}">${qty}</td>
-          <td style="font-size:.78rem;color:#555">${p.unit||'per kg'}</td>
-          <td><span class="status-pill ${s.pill}">${s.label}</span></td>
-          <td><button class="restock-btn" onclick="openRestock('${p.id}')">+ Restock</button></td>
-        </tr>`;
-      }).join('');
-    }
-
-    function renderAlerts(products) {
-      const alerts = products.filter(p => {
-        const qty = p.stockQty || 0;
-        const s = stockStatus(qty, p.unit);
-        return s.text === 'LOW' || s.text === 'MEDIUM';
-      }).sort((a,b) => (a.stockQty||0) - (b.stockQty||0));
-
-      const cnt = document.getElementById('alert-count');
-      cnt.textContent = alerts.length ? alerts.length + ' alert' + (alerts.length > 1 ? 's' : '') : '';
-
-      if (!alerts.length) {
-        document.getElementById('alerts-container').innerHTML = `<div class="empty-panel"><div class="ei">✅</div><p>All stock levels healthy</p></div>`;
-        return;
-      }
-
-      document.getElementById('alerts-container').innerHTML = alerts.slice(0, 5).map(p => {
-        const qty = p.stockQty || 0;
-        const isCritical = qty <= (p.unit === 'each' ? 5 : 3);
-        return `
-        <div class="alert-card">
-          <div class="alert-product">${isCritical ? '🔴' : '🟡'} ${p.name} — ${qty} ${p.unit||'kg'} remaining</div>
-          <div class="alert-detail">Last price: R${parseFloat(p.price||0).toFixed(2)} ${p.unit||'per kg'}</div>
-          ${isCritical ? `<div class="alert-tip">💡 Consider running a special to clear remaining stock or restock urgently.</div>` : ''}
-        </div>`;
-      }).join('');
-    }
-
-    function renderSchedule(products, pendingOrders) {
-      // Aggregate pending order items
-      const needed = {};
-      pendingOrders.forEach(o => {
-        (o.items||[]).forEach(it => {
-          const key = it.name;
-          needed[key] = (needed[key] || 0) + parseFloat(it.qty||1);
-        });
-      });
-
-      const entries = Object.entries(needed).sort((a,b) => b[1]-a[1]);
-      if (!entries.length) {
-        document.getElementById('schedule-container').innerHTML = `<div class="empty-panel"><div class="ei">📋</div><p>No pending orders to schedule</p></div>`;
-        return;
-      }
-
-      const shifts = [
-        { label: 'Morning', icon: '🌅', items: entries.slice(0, Math.ceil(entries.length/3)) },
-        { label: 'Midday',  icon: '☀️', items: entries.slice(Math.ceil(entries.length/3), Math.ceil(entries.length*2/3)) },
-        { label: 'Evening', icon: '🌙', items: entries.slice(Math.ceil(entries.length*2/3)) },
-      ].filter(s => s.items.length);
-
-      document.getElementById('schedule-container').innerHTML = shifts.map(sh =>
-        sh.items.map((e, i) => `
-        <div class="schedule-row">
+    document.getElementById('queue').innerHTML = orders.map(o => {
+      const items = Array.isArray(o.items) ? o.items : [];
+      return `<div class="ocard">
+        <div class="ocard-head">
           <div>
-            ${i === 0 ? `<div class="sched-time">${sh.icon} ${sh.label}</div>` : '<div style="height:18px"></div>'}
-            <div class="sched-item">${e[0]}</div>
+            <div class="ocard-id">#${o.id.slice(-6).toUpperCase()}</div>
+            <div class="ocard-time">${new Date(o.created_at).toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' })}</div>
           </div>
-          <div class="sched-qty">${e[1].toFixed(1)} kg</div>
-        </div>`).join('')
-      ).join('');
-    }
+          <span class="wait-badge">⏱ ${waitLabel(o.created_at)}</span>
+        </div>
+        <div class="ocard-body">
+          <div class="ocard-customer">${o.user_email || 'Customer'}</div>
+          <ul class="cut-list">
+            ${items.map(i => `
+              <li class="cut-item">
+                <span class="cut-qty">${i.quantity || i.qty || 1}</span>
+                <div>
+                  <div class="cut-name">${getProdName(i.productId || i.product_id)}</div>
+                  <div class="cut-unit">${getProdUnit(i.productId || i.product_id)}</div>
+                </div>
+              </li>`).join('')}
+          </ul>
+        </div>
+        <button class="done-btn" onclick="markDone('${o.id}', this)">✓ DONE — Send to Packaging</button>
+      </div>`;
+    }).join('');
+  }
 
-    // Restock modal
-    function openRestock(productId) {
-      const p = _products.find(x => x.id === productId);
-      if (!p) return;
-      _restockTarget = p;
-      document.getElementById('restock-product-name').textContent = p.name;
-      document.getElementById('restock-current').textContent = (p.stockQty||0) + ' ' + (p.unit||'kg');
-      document.getElementById('restock-qty').value = '';
-      document.getElementById('restock-new-total').textContent = '—';
-      document.getElementById('restock-modal').classList.add('open');
-    }
+  window.markDone = async function(id, btn) {
+    btn.disabled = true; btn.textContent = 'Updating...';
+    const { error } = await supabase.from('orders').update({ status: 'packaging', updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✓ DONE — Send to Packaging'; return; }
+    await load();
+  };
 
-    document.getElementById('restock-qty').addEventListener('input', function(){
-      const add = parseFloat(this.value)||0;
-      const cur = parseFloat(_restockTarget?.stockQty||0);
-      document.getElementById('restock-new-total').textContent = (cur + add).toFixed(1) + ' ' + (_restockTarget?.unit||'kg');
-    });
-
-    function closeRestock() { document.getElementById('restock-modal').classList.remove('open'); }
-
-    async function confirmRestock() {
-      const add = parseFloat(document.getElementById('restock-qty').value)||0;
-      if (add <= 0 || !_restockTarget) return;
-      const btn = document.getElementById('restock-confirm-btn');
-      btn.disabled = true; btn.textContent = 'Saving...';
-      try {
-        const { db, doc, updateDoc } = await fb();
-        const newQty = (parseFloat(_restockTarget.stockQty||0) + add);
-        await updateDoc(doc(db, 'products', _restockTarget.id), { stockQty: newQty, available_qty: newQty, available: true, is_active: true });
-        showToast(`✅ ${_restockTarget.name} restocked to ${newQty} ${_restockTarget.unit||'kg'}`, 'success');
-        closeRestock();
-        await load();
-      } catch(e) { showToast('Error: ' + e.message, 'error'); }
-      btn.disabled = false; btn.textContent = '✅ Confirm Restock';
-    }
-
-    load();
-    setInterval(load, 60000);
-  </script>
-
-  <!-- ── Customer Display Logic ── -->
-  <script>
-    'use strict';
-
-    // ── Ads / product showcase ─────────────────────
-    // Promotional slides shown when no product matches — always shown in rotation
-    const ADS = [
-      { type: 'ad', name: 'Fresh Daily', sub: 'Cut to order every morning', price: null, img: 'assets/img/food/meatOnbraai.jpg', cat: '🔥 Today\'s Special' },
-      { type: 'ad', name: 'Pap & Mogodu', sub: 'Traditional tripe with pap', price: 'R50', img: 'assets/img/food/37.jpg', cat: '🍽️ Cooked Meals' },
-      { type: 'ad', name: 'Club Special', sub: 'Steak, Wors & Chicken with Pap', price: 'From R70', img: 'assets/img/food/172 ChickenSteakAndWors.jpeg', cat: '⭐ Weekend Special' },
-      { type: 'ad', name: 'Boerewors', sub: 'Premium South African sausage', price: 'R95.99/kg', img: 'assets/img/food/1206.jpg', cat: '🥩 Raw Cut' },
-      { type: 'ad', name: 'Lamb Chops', sub: 'Grade A fresh lamb', price: 'R140/kg', img: 'assets/img/food/291.jpg', cat: '🥩 Raw Cut' },
-      { type: 'ad', name: 'Mutton Curry', sub: 'Rich slow-cooked mutton', price: 'R65', img: 'assets/img/food/1179.jpg', cat: '⭐ Special' },
-      { type: 'ad', name: 'Pap & Beef Stew', sub: 'Slow-cooked beef with pap', price: 'R50', img: 'assets/img/food/1126.jpg', cat: '🍽️ Cooked Meals' },
-      { type: 'ad', name: 'Halfskop & Pap', sub: 'A township classic', price: 'R45', img: 'assets/img/food/meatOnbraai.jpg', cat: '🍽️ Cooked Meals' },
-    ];
-
-    let _displaySlides   = [];
-    let _slideIdx        = 0;
-    let _slideInterval   = null;
-    let _displayOrders   = [];
-    let _tapCount        = 0;
-    let _tapTimer        = null;
-    let _displayOpen     = false;
-
-    async function openDisplay(){
-      document.getElementById('cdisp').classList.add('open');
-      _displayOpen = true;
-      document.body.style.overflow = 'hidden';
-      await refreshDisplayData();
-      startSlideShow();
-      startDisplayClock();
-    }
-
-    function closeDisplay(){
-      document.getElementById('cdisp').classList.remove('open');
-      _displayOpen = false;
-      document.body.style.overflow = '';
-      if (_slideInterval) { clearInterval(_slideInterval); _slideInterval = null; }
-    }
-
-    // ESC or triple-tap to exit
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && _displayOpen) closeDisplay(); });
-    document.getElementById('cdisp').addEventListener('click', () => {
-      _tapCount++;
-      if (_tapTimer) clearTimeout(_tapTimer);
-      _tapTimer = setTimeout(() => { _tapCount = 0; }, 600);
-      if (_tapCount >= 3) { closeDisplay(); _tapCount = 0; }
-    });
-
-    // ── Clock ──────────────────────────────────────
-    function startDisplayClock(){
-      const el = document.getElementById('cdisp-clock');
-      const update = () => { el.textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}); };
-      update();
-      setInterval(update, 10000);
-    }
-
-    // ── Refresh data ───────────────────────────────
-    async function refreshDisplayData(){
-      // Build slides from products + static ads
-      try {
-        const { db, collection, getDocs } = await fb();
-        const [prodSnap, ordSnap] = await Promise.all([
-          getDocs(collection(db,'products')),
-          getDocs(collection(db,'orders'))
-        ]);
-        const prods = prodSnap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.is_active!==false && p.price > 0);
-        _displayOrders = ordSnap.docs.map(d=>({id:d.id,...d.data()})).filter(o=>['pending','braai','packaging'].includes(o.status));
-        // Mix real products with static ads
-        const realSlides = prods.slice(0,6).map(p => ({
-          type:'product', name:p.name, sub:p.description||'Fresh today',
-          price: p.unit && /kg/i.test(p.unit) ? `R${parseFloat(p.price).toFixed(2)}/kg` : `R${parseFloat(p.price).toFixed(2)}`,
-          img: p.image_url || p.image || 'assets/img/food/meatOnbraai.jpg',
-          cat: p.categoryLabel || p.category || 'Product'
-        }));
-        _displaySlides = [...realSlides, ...ADS];
-      } catch {
-        _displaySlides = ADS;
-        _displayOrders = [];
-      }
-      buildSlides();
-      buildOrderBoard();
-      buildTicker();
-    }
-
-    // ── Carousel ───────────────────────────────────
-    function buildSlides(){
-      const el   = document.getElementById('cdisp-slides');
-      const dots = document.getElementById('cdisp-dots');
-      el.innerHTML   = _displaySlides.map((s,i) => `
-        <div class="cdisp-slide${i===0?' active':''}" id="cslide-${i}">
-          <div class="slide-img-wrap">
-            <img src="${s.img}" alt="${s.name}" onerror="this.src='assets/img/food/meatOnbraai.jpg'">
-          </div>
-          <div class="slide-cat">${s.cat}</div>
-          <div class="slide-name">${s.name}</div>
-          ${s.price ? `<div class="slide-price">${s.price}</div>` : '<div class="slide-price" style="font-size:1.4rem;color:#333">Ask in store</div>'}
-          <div class="slide-desc">${s.sub}</div>
-        </div>`).join('');
-      dots.innerHTML = _displaySlides.map((_,i) => `<div class="cdot${i===0?' active':''}" id="cdot-${i}"></div>`).join('');
-      _slideIdx = 0;
-    }
-
-    function goSlide(idx){
-      const prev = document.getElementById('cslide-' + _slideIdx);
-      const pdot = document.getElementById('cdot-' + _slideIdx);
-      if (prev){ prev.classList.remove('active'); prev.classList.add('exit'); setTimeout(()=>prev.classList.remove('exit'),900); }
-      if (pdot) pdot.classList.remove('active');
-      _slideIdx = (idx + _displaySlides.length) % _displaySlides.length;
-      const next = document.getElementById('cslide-' + _slideIdx);
-      const ndot = document.getElementById('cdot-' + _slideIdx);
-      if (next) next.classList.add('active');
-      if (ndot) ndot.classList.add('active');
-    }
-
-    function startSlideShow(){
-      if (_slideInterval) clearInterval(_slideInterval);
-      _slideInterval = setInterval(() => { if (_displayOpen) goSlide(_slideIdx + 1); }, 5000);
-    }
-
-    // ── Order Board ────────────────────────────────
-    function buildOrderBoard(){
-      const el = document.getElementById('cdisp-order-list');
-      if (!_displayOrders.length) {
-        el.innerHTML = `<div class="cdisp-no-orders"><div class="ei">✅</div><p>All orders clear</p></div>`;
-        return;
-      }
-      const statusMap = { packaging:'ready', braai:'prep', pending:'waiting' };
-      const statusLabel = { packaging:'✅ READY TO COLLECT', braai:'🔪 BEING PREPARED', pending:'⏳ WAITING' };
-      el.innerHTML = _displayOrders
-        .sort((a,b) => (statusMap[a.status]==='ready'?0:statusMap[a.status]==='prep'?1:2) - (statusMap[b.status]==='ready'?0:statusMap[b.status]==='prep'?1:2))
-        .map(o => `
-        <div class="cord ${statusMap[o.status]||'waiting'}">
-          <div class="cord-status">${statusLabel[o.status]||'In Queue'}</div>
-          <div class="cord-name">${o.userName||'Walk-in'}</div>
-          <div class="cord-id">Order #${o.id.slice(-5).toUpperCase()}</div>
-          <div class="cord-items">${(o.items||[]).slice(0,2).map(it=>it.name).join(' · ')}${(o.items||[]).length>2?' +more':''}</div>
-        </div>`).join('');
-    }
-
-    // ── Specials Ticker ────────────────────────────
-    function buildTicker(){
-      const items = [
-        '🍽️ Pap & Mogodu — R50', '🍽️ Pap & Beef Stew — R50', '🍖 Halfskop — R40',
-        '⭐ Club Special Small — R70', '⭐ Club Special Large — R140', '🍛 Mutton Curry — R65',
-        '🥩 Boerewors — R95.99/kg', '🐑 Lamb Chops — R140/kg', '🥩 Short Rib — R130/kg',
-        '🛒 Order online: thepeoplesbutchery.co.za', '📍 76 Meeu St, East Lynne, Pretoria', '📞 012 345 6789',
-      ];
-      const html = items.map(i => `<div class="ticker-item">• <span>${i}</span></div>`).join('');
-      document.getElementById('cdisp-ticker').innerHTML = html + html; // duplicate for seamless loop
-    }
-
-    // Refresh display data every 30s while open
-    setInterval(() => { if (_displayOpen) refreshDisplayData(); }, 30000);
-  </script>
+  load();
+  setInterval(load, 15000);
+</script>
 </body>
 </html>

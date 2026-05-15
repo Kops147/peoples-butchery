@@ -1,116 +1,119 @@
 /* =============================================
    The Peoples Butchery — Admin Portal (admin.js)
-   Data sourced from Firestore
+   Data sourced from Supabase
    ============================================= */
 
 'use strict';
 
-
-// ── Google Image Search fallback ───────────────
-const GOOGLE_API_KEY = 'AIzaSyD1wDQZISSbrI0B15wVhxEiiB4WilM3QTc';
-const GOOGLE_CSE_ID  = '51a7510b6bf774c12';
-
-window.imgError = async function(el, productName) {
-  el.onerror = null;
-  if (GOOGLE_API_KEY && GOOGLE_CSE_ID) {
-    try {
-      const q   = encodeURIComponent(productName + ' meat south africa');
-      const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&searchType=image&num=1&q=${q}`;
-      const res  = await fetch(url);
-      const data = await res.json();
-      const img  = data.items?.[0]?.link;
-      if (img) { el.src = img; return; }
-    } catch { /* fall through */ }
-  }
-  el.src = 'assets/img/food/meat_on_braai.jpg';
-};
+import { supabase } from './supabase-config.js';
+import { LOCAL_CATALOG, mapToProduct } from './catalog.js';
 
 let _users = [];
 let _orders = [];
 let _products = [];
 let _stats = {};
-let _fb = null;
 
-async function getFirebase() {
-  if (_fb) return _fb;
-  const { db } = await import('./firebase-config.js');
-  const fb = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-  _fb = { db, ...fb };
-  return _fb;
+// ── Data Mappers ──────────────────────────────
+function mapUser(u) {
+  return { ...u, isAdmin: u.is_admin, creditBalance: u.credit_balance, refNumber: u.ref_number, createdAt: u.created_at };
+}
+function mapOrder(o) {
+  return { ...o, userId: o.user_id, userEmail: o.user_email, deliveryMethod: o.delivery_method, deliveryAddress: o.delivery_address, deliveryFee: o.delivery_fee, createdAt: o.created_at };
+}
+function mapProduct(p) {
+  return { ...p, categoryLabel: p.category_label, stockQty: p.stock_qty, image_url: p.image, createdAt: p.created_at };
+}
+function toSupabaseProduct(p) {
+  return { id: p.id, name: p.name, category: p.category, category_label: p.categoryLabel, price: p.price, unit: p.unit, description: p.description || '', image: p.image, is_active: true, available: true, stock_qty: 100 };
 }
 
-// ── Seed products to Firestore from catalog ───
-async function seedProductsToFirestore() {
-  const { LOCAL_CATALOG, mapToProduct } = await import('./catalog.js');
-  const { db, collection, doc, setDoc } = await getFirebase();
-  const products = LOCAL_CATALOG.map(mapToProduct);
-  await Promise.all(products.map(p => setDoc(doc(collection(db, 'products'), p.id), p)));
-  showToast('Products seeded to Firestore ✅', 'success');
-  return products;
+// ── Seed products from catalog ─────────────────
+async function seedProductsToSupabase() {
+  const products = LOCAL_CATALOG.map(mapToProduct).map(toSupabaseProduct);
+  const { error } = await supabase.from('products').upsert(products);
+  if (error) throw error;
+  showToast('Products seeded to Supabase ✅', 'success');
+  return products.map(p => mapProduct({ ...p, category_label: p.category_label, stock_qty: p.stock_qty }));
 }
 
-// ── Resync product images from local catalog ──
-// Run once after switching from Google Drive to local assets
-async function resyncProductImages() {
-  const { LOCAL_CATALOG, mapToProduct } = await import('./catalog.js');
-  const { db, doc, updateDoc } = await getFirebase();
-  const updates = LOCAL_CATALOG.map(p => {
-    const mapped = mapToProduct(p);
-    return updateDoc(doc(db, 'products', mapped.id), {
-      image: mapped.image,
-      image_url: mapped.image,
-    }).catch(() => {}); // skip if product doesn't exist in Firestore yet
+// ── Local Photo Picker ─────────────────────────
+async function openPhotoPicker() {
+  let images;
+  try {
+    const res = await fetch('assets/img/food/manifest.json');
+    images = await res.json();
+  } catch {
+    showToast('Could not load photo library', 'error');
+    return;
+  }
+
+  document.getElementById('photo-picker-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'photo-picker-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:var(--card-bg,#1a1a1a);border-radius:12px;padding:20px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:12px';
+
+  const shimmerStyle = `
+    <style>
+      @keyframes _pkshimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      .picker-thumb { cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color 0.15s; }
+      .picker-thumb:hover { border-color:var(--gold,#e8a020); }
+      .picker-skel { width:100%;height:90px;background:linear-gradient(90deg,#2a2a2a 25%,#383838 50%,#2a2a2a 75%);background-size:200% 100%;animation:_pkshimmer 1.4s infinite; }
+      .picker-img { width:100%;height:90px;object-fit:cover;display:block;opacity:0;transition:opacity 0.25s; }
+      .picker-img.loaded { opacity:1; }
+      .picker-label { font-size:0.62rem;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted,#aaa); }
+    </style>`;
+
+  modal.innerHTML = `
+    ${shimmerStyle}
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0;font-size:1.1rem">Choose a Photo</h3>
+      <button id="picker-close" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer">✕</button>
+    </div>
+    <div id="picker-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;overflow-y:auto;max-height:55vh;padding:4px">
+      ${images.map(name => `
+        <div class="picker-thumb" data-name="${name}">
+          <div class="picker-skel" id="skel-${CSS.escape(name)}"></div>
+          <img class="picker-img" data-src="assets/img/food/${encodeURIComponent(name)}" alt="${name}"
+            style="display:none" onerror="this.style.display='none';document.getElementById('skel-${CSS.escape(name)}')?.remove()">
+          <div class="picker-label">${name}</div>
+        </div>`).join('')}
+    </div>`;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  modal.querySelector('#picker-close').addEventListener('click', () => overlay.remove());
+
+  // Lazy-load images as they scroll into view
+  const grid = modal.querySelector('#picker-grid');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      img.src = img.dataset.src;
+      img.style.display = 'block';
+      img.addEventListener('load', () => {
+        img.classList.add('loaded');
+        document.getElementById('skel-' + CSS.escape(img.alt))?.remove();
+      }, { once: true });
+      observer.unobserve(img);
+    });
+  }, { root: grid, rootMargin: '120px' });
+
+  modal.querySelectorAll('.picker-img').forEach(img => observer.observe(img));
+
+  modal.querySelectorAll('.picker-thumb').forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      const url = `assets/img/food/${thumb.dataset.name}`;
+      document.getElementById('prod-image').value = url;
+      setImagePreview(url);
+      document.getElementById('upload-status').textContent = `✅ Selected: ${thumb.dataset.name}`;
+      overlay.remove();
+    });
   });
-  await Promise.all(updates);
-  showToast('Product images resynced ✅', 'success');
-  await loadAllAdminData();
-}
-
-// ── Image Compression (Canvas API) ────────────
-function compressImage(file, maxPx = 800, quality = 0.75) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = reject;
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxPx || height > maxPx) {
-          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
-          else { width = Math.round(width * maxPx / height); height = maxPx; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compression failed')), 'image/jpeg', quality);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function uploadProductImage(file) {
-  const statusEl = document.getElementById('upload-status');
-  const originalKb = Math.round(file.size / 1024);
-  statusEl.textContent = `Compressing ${originalKb}KB...`;
-
-  const compressed = await compressImage(file);
-  const compressedKb = Math.round(compressed.size / 1024);
-  statusEl.textContent = `Uploading ${compressedKb}KB (was ${originalKb}KB)...`;
-
-  const { storage } = await import('./firebase-config.js');
-  const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js');
-
-  const path = `products/${Date.now()}_product.jpg`;
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg' });
-  const url = await getDownloadURL(storageRef);
-
-  statusEl.textContent = `✅ Uploaded · ${compressedKb}KB (was ${originalKb}KB)`;
-  return url;
 }
 
 function toDate(val) {
@@ -121,10 +124,8 @@ function toDate(val) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireAdmin()) return;
-
   initSidebar();
   renderAdminUser();
-
   await loadAllAdminData();
 
   document.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
@@ -132,20 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
       link.classList.add('active');
       showAdminTab(link.dataset.tab);
-      location.hash = link.dataset.tab;
     });
   });
-
-  // Restore tab from URL hash on load/refresh
-  const hash = location.hash.replace('#', '');
-  const validTabs = ['overview','credit','orders','inventory','products','reports','customers','settings'];
-  const startTab = validTabs.includes(hash) ? hash : 'overview';
-  const startLink = document.querySelector(`.sidebar-link[data-tab="${startTab}"]`);
-  if (startLink) {
-    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-    startLink.classList.add('active');
-    showAdminTab(startTab);
-  }
 
   document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
 });
@@ -154,35 +143,24 @@ async function loadAllAdminData() {
   const failures = [];
 
   try {
-    const { db, collection, getDocs, query, orderBy } = await getFirebase();
+    const { data, error } = await supabase.from('users').select('*').eq('is_admin', false);
+    if (error) throw error;
+    _users = (data || []).map(mapUser);
+  } catch (e) { failures.push('users: ' + e.message); console.error('Users load failed:', e); }
 
-    try {
-      const snap = await getDocs(collection(db, 'users'));
-      const firestoreUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => !u.isAdmin);
-      const localUsers = typeof DB !== 'undefined' && DB.getUsers ? DB.getUsers().filter(u => !u.isAdmin) : [];
-      const firestoreEmails = new Set(firestoreUsers.map(u => u.email).filter(Boolean));
-      const extraLocal = localUsers.filter(u => u.email && !firestoreEmails.has(u.email));
-      _users = [...firestoreUsers, ...extraLocal];
-    } catch (e) { failures.push('users: ' + e.message); console.error('Users load failed:', e); }
-
-    try {
-      const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
-      _orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) { failures.push('orders: ' + e.message); console.error('Orders load failed:', e); }
-
-  } catch (e) {
-    failures.push('firebase: ' + e.message);
-    console.error('Firebase init failed:', e);
-  }
-
-  // Load products from Firestore, seed from catalog if empty
   try {
-    const { db, collection, getDocs } = await getFirebase();
-    const snap = await getDocs(collection(db, 'products'));
-    if (snap.size > 0) {
-      _products = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    _orders = (data || []).map(mapOrder);
+  } catch (e) { failures.push('orders: ' + e.message); console.error('Orders load failed:', e); }
+
+  try {
+    const { data, error } = await supabase.from('products').select('*');
+    if (error) throw error;
+    if (data && data.length > 0) {
+      _products = data.map(mapProduct);
     } else {
-      _products = await seedProductsToFirestore();
+      _products = await seedProductsToSupabase();
     }
   } catch (e) {
     failures.push('products: ' + e.message);
@@ -197,9 +175,7 @@ async function loadAllAdminData() {
     pendingOrders: _orders.filter(o => o.status === 'pending').length
   };
 
-  if (failures.length) {
-    showToast('⚠️ Some data failed to load: ' + failures.join(', '), 'error', 8000);
-  }
+  if (failures.length) showToast('⚠️ Some data failed to load: ' + failures.join(', '), 'error', 8000);
 
   renderAdminOverview();
   renderAdminOrders();
@@ -218,28 +194,25 @@ function showAdminTab(tab) {
   if (panel) panel.classList.add('active');
 }
 
-// ── Admin User Display ─────────────────────────
 function renderAdminUser() {
   const admin = Auth.getCurrentUser();
   document.getElementById('admin-name').textContent = admin?.name || 'Admin';
 }
 
-// ── Overview Stats ─────────────────────────────
 function renderAdminOverview() {
   const today = new Date().toDateString();
   const todayOrders = _orders.filter(o => toDate(o.createdAt)?.toDateString() === today);
 
-  setVal('stat-customers', _stats.totalUsers ?? _users.length);
-  setVal('stat-orders', _stats.totalOrders ?? _orders.length);
+  setVal('stat-customers', _users.length);
+  setVal('stat-orders', _orders.length);
   setVal('stat-revenue', formatCurrency(_stats.totalRevenue ?? 0));
-  setVal('stat-pending', _stats.pendingOrders ?? _orders.filter(o => o.status === 'pending').length);
+  setVal('stat-pending', _orders.filter(o => o.status === 'pending').length);
   setVal('stat-today', todayOrders.length);
 
   const recentEl = document.getElementById('admin-recent-orders');
   if (!recentEl) return;
 
   const recent = [..._orders].slice(0, 8);
-
   if (recent.length === 0) {
     recentEl.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">No orders yet</td></tr>`;
     return;
@@ -305,24 +278,32 @@ function initCreditForm() {
       e.preventDefault();
       const userId = document.getElementById('credit-user-id').value;
       const amount = parseFloat(document.getElementById('credit-amount').value);
-      const note = document.getElementById('credit-note').value.trim();
 
       if (!userId) { showToast('Look up a customer first', 'warning'); return; }
       if (!amount || amount <= 0) { showToast('Enter a valid amount', 'warning'); return; }
 
       try {
-        const { db, doc, updateDoc } = await getFirebase();
         const user = _users.find(u => u.id === userId);
         const newBalance = (parseFloat(user?.creditBalance || 0) + amount);
 
-        await updateDoc(doc(db, 'users', userId), { creditBalance: newBalance });
+        const { error } = await supabase.from('users').update({ credit_balance: newBalance }).eq('id', userId);
+        if (error) throw error;
+
+        // Log to transactions table (non-critical — don't block if table doesn't exist yet)
+        supabase.from('transactions').insert({
+          user_id: userId,
+          user_email: user?.email || '',
+          amount,
+          type: 'credit',
+          notes: 'Credit added by admin',
+          status: 'completed'
+        }).then(({ error: txErr }) => { if (txErr) console.warn('Transaction log failed:', txErr.message); });
 
         const localUser = DB.findUserById(userId);
         if (localUser) { localUser.creditBalance = newBalance; DB.updateUser(localUser); }
-
-        const userName = user ? `${user.name} ${user.surname}` : 'Customer';
         if (user) user.creditBalance = newBalance;
 
+        const userName = user ? `${user.name} ${user.surname}` : 'Customer';
         showToast(`✅ R${amount.toFixed(2)} credited to ${userName}!`, 'success', 5000);
         document.getElementById('credit-user-info').innerHTML = `
           <div class="alert alert-success">✅ New balance for <strong>${userName}</strong>: <strong>${formatCurrency(newBalance)}</strong></div>`;
@@ -338,7 +319,7 @@ function initCreditForm() {
   refInput?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); lookupBtn?.click(); } });
 }
 
-// ── Orders Management ──────────────────────────
+// ── Orders ────────────────────────────────────
 function renderAdminOrders() {
   const tbody = document.getElementById('admin-orders-tbody');
   if (!tbody) return;
@@ -375,9 +356,7 @@ function renderAdminOrders() {
   }).join('');
 
   const filterEl = document.getElementById('order-status-filter');
-  if (filterEl) {
-    filterEl.addEventListener('change', () => filterOrders(filterEl.value));
-  }
+  if (filterEl) filterEl.addEventListener('change', () => filterOrders(filterEl.value));
 }
 
 function filterOrders(status) {
@@ -389,13 +368,10 @@ function filterOrders(status) {
   });
 }
 
-window.resyncProductImages = resyncProductImages;
-window.seedProductsToFirestore = seedProductsToFirestore;
-
 window.updateOrderStatus = async (orderId, newStatus) => {
   try {
-    const { db, doc, updateDoc } = await getFirebase();
-    await updateDoc(doc(db, 'orders', orderId), { status: newStatus, updatedAt: new Date().toISOString() });
+    const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
+    if (error) throw error;
     const order = _orders.find(o => o.id === orderId);
     if (order) order.status = newStatus;
     showToast(`Order updated to: ${newStatus}`, 'success');
@@ -406,13 +382,13 @@ window.updateOrderStatus = async (orderId, newStatus) => {
   }
 };
 
-// ── Inventory Tab ────────────────────────────
+// ── Inventory ─────────────────────────────────
 function renderInventory() {
   const tbody = document.getElementById('inventory-tbody');
   if (!tbody) return;
 
   tbody.innerHTML = _products.map(p => {
-    const stock = parseFloat(p.available_qty ?? p.stockKg ?? 0);
+    const stock = parseFloat(p.stockQty ?? p.stock_qty ?? 0);
     const minStock = parseFloat(p.min_stock ?? p.minStock ?? 5);
     const isLow = stock <= minStock;
     const badge = isLow
@@ -442,21 +418,22 @@ window.handleUpdateStock = async (id) => {
   const p = _products.find(pr => pr.id == id);
   if (!p) return;
 
-  const current = parseFloat(p.available_qty ?? p.stockQty ?? p.stockKg ?? 0);
+  const current = parseFloat(p.stockQty ?? p.stock_qty ?? 0);
   const newQty = current + amount;
-  p.available_qty = newQty;
   p.stockQty = newQty;
+
   try {
-    const { db, doc, updateDoc } = await getFirebase();
-    await updateDoc(doc(db, 'products', id), { stockQty: newQty, available_qty: newQty });
-  } catch (e) { DB.updateProduct(p); }
+    const { error } = await supabase.from('products').update({ stock_qty: newQty }).eq('id', id);
+    if (error) throw error;
+  } catch (e) { console.warn('Stock update failed:', e); }
+
   input.value = '';
   showToast(`Added ${amount} units to ${p.name}`, 'success');
   renderInventory();
   renderReports();
 };
 
-// ── Reports Tab ──────────────────────────────
+// ── Reports ───────────────────────────────────
 let revenueChart, inventoryChart;
 
 function renderReports() {
@@ -470,14 +447,7 @@ function renderReports() {
       type: 'line',
       data: {
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        datasets: [{
-          label: 'Revenue (R)',
-          data: [1200, 1900, 1500, 2500, 2200, 3100, 2800],
-          borderColor: '#e8a020',
-          backgroundColor: 'rgba(232, 160, 32, 0.1)',
-          fill: true,
-          tension: 0.4
-        }]
+        datasets: [{ label: 'Revenue (R)', data: [1200, 1900, 1500, 2500, 2200, 3100, 2800], borderColor: '#e8a020', backgroundColor: 'rgba(232, 160, 32, 0.1)', fill: true, tension: 0.4 }]
       },
       options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false } } }
     });
@@ -491,45 +461,32 @@ function renderReports() {
       type: 'bar',
       data: {
         labels: top6.map(p => p.name),
-        datasets: [{
-          label: 'Stock (qty)',
-          data: top6.map(p => parseFloat(p.available_qty ?? p.stockKg ?? 0)),
-          backgroundColor: top6.map(p =>
-            parseFloat(p.available_qty ?? p.stockKg ?? 0) < parseFloat(p.min_stock ?? p.minStock ?? 5) ? '#e74c3c' : '#e8a020'
-          )
-        }]
+        datasets: [{ label: 'Stock (qty)', data: top6.map(p => parseFloat(p.stockQty ?? 0)), backgroundColor: top6.map(p => parseFloat(p.stockQty ?? 0) < 5 ? '#e74c3c' : '#e8a020') }]
       },
       options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
     });
   }
 }
 
-// ── Products Management ────────────────────────
+// ── Products ──────────────────────────────────
 function renderAdminProducts() {
   const container = document.getElementById('admin-products-list');
   if (!container) return;
 
   container.innerHTML = _products.map(p => {
-    const isActive = (p.is_active ?? p.available) !== false;
+    const isActive = p.is_active !== false;
     return `
     <div class="product-admin-card mb-4" id="prod-admin-${p.id}">
       <div class="product-admin-img">
-        <img src="${p.image_url || p.image || ''}" alt="${p.name}"
-          onerror="imgError(this,'${p.name}')">
+        <img src="${p.image_url || p.image || ''}" alt="${p.name}" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
       </div>
       <div class="product-admin-info">
         <div style="font-family:var(--font-head);font-weight:700">${p.name}</div>
         <div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${p.description || ''}</div>
         <div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap">
-          <span class="text-gold font-bold">
-            ${p.is_special
-        ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:0.8rem">R${p.price}</span> ${formatCurrency(p.discount_price)}`
-        : formatCurrency(p.price)}
-            <span style="font-weight:400;color:var(--text-muted);font-size:0.8rem">${p.unit || ''}</span>
-          </span>
+          <span class="text-gold font-bold">${formatCurrency(p.price)} <span style="font-weight:400;color:var(--text-muted);font-size:0.8rem">${p.unit || ''}</span></span>
           <span class="badge ${p.category === 'raw' ? 'badge-red' : 'badge-gold'}">${p.category === 'raw' ? '🥩 Raw' : '🍽️ Cooked'}</span>
           <span class="badge ${isActive ? 'badge-green' : 'badge-gray'}">${isActive ? '✅ Available' : '❌ Unavailable'}</span>
-          ${p.is_special ? '<span class="badge badge-gold">🔥 Special</span>' : ''}
         </div>
       </div>
       <div class="product-admin-actions">
@@ -546,23 +503,18 @@ function renderAdminProducts() {
 window.toggleAvailability = async (productId) => {
   const p = _products.find(pr => pr.id == productId);
   if (!p) return;
-  const newState = !((p.is_active ?? p.available) !== false);
+  const newState = !(p.is_active !== false);
   p.is_active = newState;
   p.available = newState;
-  try {
-    const { db, doc, updateDoc } = await getFirebase();
-    await updateDoc(doc(db, 'products', productId), { is_active: newState, available: newState });
-  } catch (e) { DB.updateProduct(p); }
+  const { error } = await supabase.from('products').update({ is_active: newState, available: newState }).eq('id', productId);
+  if (error) showToast('Update failed: ' + error.message, 'error');
   renderAdminProducts();
   showToast(`${p.name} ${newState ? 'enabled' : 'disabled'}`, 'info');
 };
 
 window.deleteProduct = async (productId) => {
   if (!confirm('Delete this product?')) return;
-  try {
-    const { db, doc, updateDoc } = await getFirebase();
-    await updateDoc(doc(db, 'products', productId), { is_active: false, available: false });
-  } catch (e) { /* fallback silent */ }
+  await supabase.from('products').update({ is_active: false, available: false }).eq('id', productId);
   _products = _products.filter(pr => pr.id != productId);
   renderAdminProducts();
   showToast('Product removed', 'warning');
@@ -587,7 +539,7 @@ window.editProduct = (productId) => {
   document.getElementById('prod-image').value = p.image_url || p.image || '';
   document.getElementById('prod-is-special').checked = p.is_special || false;
   document.getElementById('prod-discount').value = p.discount_price || '';
-  document.getElementById('upload-status').textContent = 'Auto-compressed · max 800px · JPEG';
+  document.getElementById('upload-status').textContent = 'Click Browse to pick a photo from the library';
   setImagePreview(p.image_url || p.image || '');
   document.getElementById('product-modal').classList.add('open');
   document.getElementById('product-modal-title').textContent = 'Edit Product';
@@ -598,49 +550,13 @@ function initProductForm() {
     document.getElementById('product-form')?.reset();
     document.getElementById('prod-id').value = '';
     document.getElementById('prod-image').value = '';
-    document.getElementById('upload-status').textContent = 'Auto-compressed · max 800px · JPEG';
+    document.getElementById('upload-status').textContent = 'Click Browse to pick a photo from the library';
     setImagePreview('');
     document.getElementById('product-modal-title').textContent = 'Add New Product';
     document.getElementById('product-modal').classList.add('open');
   });
 
-  // Upload button triggers hidden file input
-  document.getElementById('upload-image-btn')?.addEventListener('click', () => {
-    document.getElementById('prod-image-file').click();
-  });
-
-  // File selected — compress and upload
-  document.getElementById('prod-image-file')?.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const btn = document.getElementById('upload-image-btn');
-    const statusEl = document.getElementById('upload-status');
-    btn.disabled = true;
-    btn.textContent = '⏳ Uploading...';
-
-    const safetyTimer = setTimeout(() => {
-      btn.disabled = false;
-      btn.textContent = '📷 Upload Photo';
-      statusEl.textContent = '⚠️ Upload timed out — check your internet connection';
-      e.target.value = '';
-    }, 30000);
-
-    try {
-      const url = await uploadProductImage(file);
-      clearTimeout(safetyTimer);
-      document.getElementById('prod-image').value = url;
-      setImagePreview(url);
-      showToast('Image uploaded!', 'success');
-    } catch (err) {
-      clearTimeout(safetyTimer);
-      showToast('Upload failed: ' + err.message, 'error');
-      statusEl.textContent = '❌ ' + err.message;
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '📷 Upload Photo';
-      e.target.value = '';
-    }
-  });
+  document.getElementById('upload-image-btn')?.addEventListener('click', () => openPhotoPicker());
 
   document.querySelectorAll('.modal-close').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -655,32 +571,32 @@ function initProductForm() {
     submitBtn.textContent = 'Saving...';
 
     const id = document.getElementById('prod-id').value;
-    const imgVal = document.getElementById('prod-image').value.trim()
-      || 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop';
+    const imgVal = document.getElementById('prod-image').value.trim() || 'assets/img/food/meat_on_braai.jpg';
     const payload = {
       name: document.getElementById('prod-name').value.trim(),
       category: document.getElementById('prod-category').value,
+      category_label: document.getElementById('prod-category').value,
       price: parseFloat(document.getElementById('prod-price').value),
       unit: document.getElementById('prod-unit').value.trim(),
       description: document.getElementById('prod-desc').value.trim(),
       image: imgVal,
-      image_url: imgVal,
       is_active: true,
       available: true,
     };
 
     try {
-      const { db, doc, setDoc, updateDoc, collection } = await getFirebase();
       if (id) {
-        await updateDoc(doc(db, 'products', id), payload);
+        const { error } = await supabase.from('products').update(payload).eq('id', id);
+        if (error) throw error;
         const idx = _products.findIndex(p => p.id == id);
-        if (idx !== -1) _products[idx] = { ..._products[idx], ...payload };
+        if (idx !== -1) _products[idx] = { ..._products[idx], ...payload, image_url: imgVal };
         showToast('Product updated!', 'success');
       } else {
         const newId = generateId('p_');
-        const newProd = { ...payload, id: newId, stockQty: 0, createdAt: new Date().toISOString() };
-        await setDoc(doc(collection(db, 'products'), newId), newProd);
-        _products.push(newProd);
+        const newProd = { ...payload, id: newId, stock_qty: 0 };
+        const { error } = await supabase.from('products').insert(newProd);
+        if (error) throw error;
+        _products.push(mapProduct(newProd));
         showToast('Product added!', 'success');
       }
     } catch (err) {
@@ -695,7 +611,7 @@ function initProductForm() {
   });
 }
 
-// ── Customers Tab ──────────────────────────────
+// ── Customers ─────────────────────────────────
 function renderAdminCustomers() {
   const tbody = document.getElementById('customers-tbody');
   if (!tbody) return;
@@ -719,11 +635,7 @@ function renderAdminCustomers() {
             </div>
           </div>
         </td>
-        <td>
-          ${u.refNumber
-            ? `<span class="ref-number" style="font-size:1rem;letter-spacing:2px">${u.refNumber}</span>`
-            : `<button class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:4px 10px" onclick="assignRef('${u.id}')">+ Assign REF</button>`}
-        </td>
+        <td><span class="ref-number" style="font-size:1rem;letter-spacing:2px">${u.refNumber || ''}</span></td>
         <td>${u.phone || ''}</td>
         <td class="text-gold font-bold">${formatCurrency(u.creditBalance || 0)}</td>
         <td>${orderCount}</td>
@@ -743,33 +655,7 @@ function renderAdminCustomers() {
   }
 }
 
-// ── Assign REF Number ─────────────────────────
-window.assignRef = async (userId) => {
-  const user = _users.find(u => u.id === userId);
-  if (!user) return;
-
-  const initials = ((user.name || '?')[0] + (user.surname || '?')[0]).toUpperCase();
-  const existing = _users.filter(u => u.refNumber && u.refNumber.startsWith(initials));
-  const counter = String(existing.length + 1).padStart(4, '0');
-  let ref = initials + counter;
-  // Ensure uniqueness
-  let suffix = 65;
-  while (_users.find(u => u.refNumber === ref)) {
-    ref = initials + counter + String.fromCharCode(suffix++);
-  }
-
-  try {
-    const { db, doc, updateDoc } = await getFirebase();
-    await updateDoc(doc(db, 'users', userId), { refNumber: ref });
-    user.refNumber = ref;
-    showToast(`REF ${ref} assigned to ${user.name}`, 'success');
-    renderAdminCustomers();
-  } catch (e) {
-    showToast('Failed to assign REF: ' + e.message, 'error');
-  }
-};
-
-// ── System Settings ───────────────────────────
+// ── Settings ──────────────────────────────────
 function initSettingsForm() {
   const settings = DB.getSettings();
   document.getElementById('setting-opt-a-setup').value = settings.optA.setup;
@@ -780,17 +666,10 @@ function initSettingsForm() {
 
   document.getElementById('save-settings-btn')?.addEventListener('click', () => {
     const s = {
-      optA: {
-        setup: parseFloat(document.getElementById('setting-opt-a-setup').value),
-        monthly: parseFloat(document.getElementById('setting-opt-a-monthly').value)
-      },
-      optB: {
-        setup: parseFloat(document.getElementById('setting-opt-b-setup').value),
-        monthly: parseFloat(document.getElementById('setting-opt-b-monthly').value),
-        commission: parseFloat(document.getElementById('setting-opt-b-comm').value)
-      }
+      optA: { setup: parseFloat(document.getElementById('setting-opt-a-setup').value), monthly: parseFloat(document.getElementById('setting-opt-a-monthly').value) },
+      optB: { setup: parseFloat(document.getElementById('setting-opt-b-setup').value), monthly: parseFloat(document.getElementById('setting-opt-b-monthly').value), commission: parseFloat(document.getElementById('setting-opt-b-comm').value) }
     };
     DB.saveSettings(s);
-    showToast('Pricing configurations saved!', 'success');
+    showToast('Settings saved!', 'success');
   });
 }

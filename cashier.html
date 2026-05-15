@@ -2,1070 +2,587 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cashier Station — The Peoples Butchery</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; font-family: var(--font-body,sans-serif); overflow: hidden; }
+    body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; font-family: var(--font-body, sans-serif); }
 
-    /* ── Header ──────────────────────────────────── */
-    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 56px; position: sticky; top: 0; z-index: 100; }
-    .stn-title  { display: flex; align-items: center; gap: 10px; }
-    .stn-logo   { height: 36px; width: auto; }
-    .stn-title h1 { font-family: var(--font-head); font-size: 1.1rem; margin: 0; color: #fff; }
-    .stn-badge  { background: rgba(232,160,32,.12); border: 1px solid rgba(232,160,32,.3); color: #e8a020; padding: 2px 9px; border-radius: 20px; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-    .stn-nav    { display: flex; gap: 5px; }
-    .stn-nav a  { color: #555; text-decoration: none; font-size: .72rem; padding: 5px 9px; border: 1px solid #222; border-radius: 6px; transition: all .2s; white-space: nowrap; }
+    /* PIN screen */
+    .pin-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .pin-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 40px; width: 340px; text-align: center; }
+    .pin-box h2 { font-family: var(--font-head, sans-serif); margin: 0 0 6px; font-size: 1.4rem; }
+    .pin-box p { color: #555; font-size: .85rem; margin: 0 0 24px; }
+    .pin-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #e0e0e0; padding: 12px 16px; border-radius: 10px; font-size: 1.1rem; text-align: center; letter-spacing: 4px; box-sizing: border-box; margin-bottom: 12px; }
+    .pin-input:focus { outline: none; border-color: #e8a020; }
+    .pin-err { color: #ff4d4d; font-size: .8rem; min-height: 18px; }
+
+    /* Header */
+    .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 12px; flex-wrap: wrap; }
+    .stn-title { display: flex; align-items: center; gap: 10px; }
+    .stn-title h1 { font-family: var(--font-head, sans-serif); font-size: 1.1rem; margin: 0; color: #fff; }
+    .stn-badge { background: rgba(232,160,32,.12); border: 1px solid rgba(232,160,32,.3); color: #e8a020; padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #e8a020; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
+    @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .stn-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stn-nav a { color: #555; text-decoration: none; font-size: .73rem; padding: 5px 10px; border: 1px solid #222; border-radius: 6px; transition: all .2s; white-space: nowrap; }
     .stn-nav a:hover { color: #aaa; border-color: #444; }
     .stn-nav a.active { color: #e8a020; border-color: rgba(232,160,32,.4); background: rgba(232,160,32,.05); }
-    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #e8a020; display: inline-block; margin-right: 4px; animation: livepulse 2s infinite; }
-    @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
-    .stn-clock  { font-size: .8rem; color: #444; white-space: nowrap; }
+    .stn-clock { font-size: .8rem; color: #444; white-space: nowrap; }
+    .refresh-btn { background: transparent; border: 1px solid #2a2a2a; color: #555; padding: 5px 12px; border-radius: 6px; font-size: .75rem; cursor: pointer; transition: all .2s; }
+    .refresh-btn:hover { color: #e8a020; border-color: rgba(232,160,32,.4); }
+    .cash-btn { background: #22c55e; color: #000; padding: 6px 14px; border-radius: 8px; font-size: .78rem; font-weight: 800; border: none; cursor: pointer; white-space: nowrap; transition: background .15s; }
+    .cash-btn:hover { background: #16a34a; }
 
-    /* ── Root grid ───────────────────────────────── */
-    .cashier-root { display: grid; grid-template-columns: 1fr 390px; height: calc(100vh - 56px); overflow: hidden; }
-    @media(max-width:900px){ .cashier-root { grid-template-columns: 1fr; height: auto; overflow: auto; } }
+    /* Stats bar */
+    .stats-bar { background: #0D0D0D; border-bottom: 1px solid #1a1a1a; padding: 10px 20px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+    .stat-chip { display: flex; align-items: center; gap: 8px; }
+    .stat-num { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1.4rem; }
+    .stat-num.red { color: #ff4d4d; }
+    .stat-num.amber { color: #f0a000; }
+    .stat-num.green { color: #3DD68C; }
+    .stat-num.blue { color: #3498db; }
+    .stat-num.purple { color: #8b5cf6; }
+    .stat-lbl { font-size: .72rem; color: #555; }
 
-    /* ── LEFT SIDE ───────────────────────────────── */
-    .left-side { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #1a1a1a; }
+    /* Columns */
+    .cashier-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; height: calc(100vh - 115px); overflow: hidden; }
+    @media(max-width:900px){ .cashier-cols { grid-template-columns: 1fr; height: auto; overflow: visible; } }
+    .col { display: flex; flex-direction: column; overflow: hidden; }
+    .col:first-child { border-right: 1px solid #1a1a1a; }
+    .col-head { padding: 14px 20px 10px; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; gap: 10px; }
+    .col-head h2 { margin: 0; font-size: .95rem; font-weight: 700; color: #ccc; }
+    .col-cnt { background: #1a1a1a; color: #888; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .col-cnt.has-items { background: rgba(232,160,32,.15); color: #e8a020; }
+    .col-scroll { overflow-y: auto; flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 
-    /* Mode tabs */
-    .mode-tabs { display: grid; grid-template-columns: repeat(3,1fr); border-bottom: 2px solid #1a1a1a; flex-shrink: 0; }
-    .mode-tab  { background: transparent; border: none; border-bottom: 3px solid transparent; color: #444; padding: 11px 6px 9px; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
-    .mode-tab:hover { color: #aaa; background: rgba(255,255,255,.02); }
-    .mode-tab.active { color: #e8a020; border-bottom-color: #e8a020; background: rgba(232,160,32,.04); }
-    .mtab-icon  { font-size: 1.15rem; }
-    .mtab-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-    .mtab-count { position: absolute; top: 7px; right: 14px; background: #ff4d4d; color: #fff; font-size: .55rem; font-weight: 800; padding: 1px 4px; border-radius: 6px; min-width: 14px; text-align: center; display: none; }
-    .mtab-count.show { display: block; }
-    .mtab-count.green { background: #3DD68C; }
+    /* Order cards */
+    .ocard { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; }
+    .ocard.new-order { border-left: 3px solid #e8a020; }
+    .ocard.butchering { border-left: 3px solid #ff4d4d; }
+    .ocard.braai { border-left: 3px solid #f97316; }
+    .ocard.packaging { border-left: 3px solid #8b5cf6; }
+    .ocard.ready { border-left: 3px solid #3DD68C; }
+    .ocard.dispatched { border-left: 3px solid #3498db; }
 
-    /* Shared scanner strip */
-    .scanner-strip { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(232,160,32,.03); border-bottom: 1px solid #161616; flex-shrink: 0; }
-    .scan-icon  { font-size: 1rem; opacity: .35; }
-    .scan-field { flex: 1; background: transparent; border: none; color: #e8a020; font-family: 'Courier New',monospace; font-size: .82rem; letter-spacing: .5px; }
-    .scan-field:focus { outline: none; }
-    .scan-field::placeholder { color: #222; }
-    .scan-hint  { font-size: .62rem; color: #2a2a2a; border: 1px solid #1e1e1e; border-radius: 10px; padding: 2px 8px; white-space: nowrap; transition: all .3s; flex-shrink: 0; }
-    .scan-hint.flash { color: #e8a020; border-color: rgba(232,160,32,.5); background: rgba(232,160,32,.08); }
+    .ocard-head { padding: 12px 14px 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .ocard-id { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1rem; color: #ddd; }
+    .ocard-time { font-size: .72rem; color: #444; }
+    .ocard-status { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; padding: 3px 8px; border-radius: 4px; }
+    .st-pending { background: rgba(232,160,32,.15); color: #e8a020; }
+    .st-butchering { background: rgba(255,77,77,.15); color: #ff4d4d; }
+    .st-braai { background: rgba(249,115,22,.15); color: #f97316; }
+    .st-packaging { background: rgba(139,92,246,.15); color: #8b5cf6; }
+    .st-ready { background: rgba(61,214,140,.15); color: #3DD68C; }
+    .st-dispatched { background: rgba(52,152,219,.15); color: #3498db; }
 
-    /* Panel areas */
-    .panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-    .panel.active { display: flex; }
+    .ocard-body { padding: 0 14px 8px; }
+    .ocard-customer { font-size: .88rem; font-weight: 600; color: #ccc; margin-bottom: 3px; }
+    .ocard-phone { font-size: .78rem; color: #e8a020; margin-bottom: 6px; font-weight: 600; }
+    .ocard-items { font-size: .8rem; color: #888; line-height: 1.5; margin-bottom: 6px; }
+    .item-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .item-braai { background: rgba(249,115,22,.15); color: #f97316; font-size: .68rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+    .item-pap { background: rgba(61,214,140,.12); color: #3DD68C; font-size: .68rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+    .ocard-delivery { font-size: .78rem; color: #444; margin-bottom: 4px; }
+    .ocard-address { background: #1a1a1a; border-radius: 6px; padding: 6px 10px; font-size: .8rem; color: #aaa; margin-bottom: 6px; }
+    .ocard-total { font-family: var(--font-head, sans-serif); font-weight: 800; font-size: 1.05rem; color: #e8a020; }
 
-    /* ── ORDERS PANEL ────────────────────────────── */
-    .order-filters { display: flex; gap: 5px; padding: 9px 12px; border-bottom: 1px solid #161616; flex-shrink: 0; flex-wrap: wrap; }
-    .of-btn { background: #111; border: 1px solid #1e1e1e; color: #3a3a3a; padding: 4px 10px; border-radius: 12px; font-size: .65rem; font-weight: 700; cursor: pointer; transition: all .15s; }
-    .of-btn:hover { border-color: #333; color: #777; }
-    .of-btn.active { background: rgba(232,160,32,.1); border-color: rgba(232,160,32,.4); color: #e8a020; }
-    .orders-scroll { flex: 1; overflow-y: auto; padding: 10px 12px; }
+    .ocard-actions { padding: 10px 14px 12px; display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid #1a1a1a; }
+    .act-btn { padding: 7px 12px; border-radius: 8px; font-size: .78rem; font-weight: 700; cursor: pointer; border: none; transition: opacity .15s; }
+    .act-btn:hover { opacity: .85; }
+    .act-btn:disabled { opacity: .4; cursor: default; }
+    .btn-butcher { background: #ef4444; color: #fff; }
+    .btn-kitchen { background: #f97316; color: #fff; }
+    .btn-ready { background: #3DD68C; color: #000; }
+    .btn-dispatch { background: #3498db; color: #fff; }
+    .btn-collected { background: #3DD68C; color: #000; font-size: .85rem; padding: 10px 14px; flex: 1; }
+    .btn-delivered { background: #3498db; color: #fff; font-size: .85rem; padding: 10px 14px; flex: 1; }
+    .btn-cancel { background: #2a2a2a; color: #888; }
 
-    .ord-card { background: #131313; border: 1px solid #1e1e1e; border-left: 4px solid; border-radius: 10px; padding: 11px 13px; cursor: pointer; transition: all .18s; margin-bottom: 8px; }
-    .ord-card:hover  { background: #161616; transform: translateX(2px); }
-    .ord-card.sel    { background: rgba(232,160,32,.06); border-color: rgba(232,160,32,.4) !important; box-shadow: 0 0 0 1px rgba(232,160,32,.15); }
-    .ord-card.s-pending   { border-left-color: #3498db; }
-    .ord-card.s-braai     { border-left-color: #f0a000; }
-    .ord-card.s-packaging { border-left-color: #3DD68C; }
-    .oc-top   { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-    .oc-num   { font-family: var(--font-head); font-weight: 800; font-size: .95rem; }
-    .s-pending .oc-num   { color: #3498db; }
-    .s-braai .oc-num     { color: #f0a000; }
-    .s-packaging .oc-num { color: #3DD68C; }
-    .oc-name  { font-size: .7rem; color: #555; margin-top: 1px; }
-    .oc-meta  { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-    .oc-badge { font-size: .58rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-    .badge-new   { background: rgba(52,152,219,.12); color: #3498db; }
-    .badge-prep  { background: rgba(240,160,0,.12); color: #f0a000; }
-    .badge-ready { background: rgba(61,214,140,.12); color: #3DD68C; }
-    .oc-time  { font-size: .6rem; color: #3a3a3a; }
-    .oc-preview { font-size: .7rem; color: #3a3a3a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-    .oc-footer  { display: flex; justify-content: space-between; align-items: center; }
-    .oc-total   { font-family: var(--font-head); font-weight: 700; font-size: .88rem; color: #e8a020; }
-    .oc-dtype   { font-size: .62rem; color: #3a3a3a; }
-    .orders-empty { text-align: center; padding: 60px 20px; color: #252525; }
-    .orders-empty .ei { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-col { text-align: center; padding: 60px 20px; color: #333; }
+    .empty-col .ei { font-size: 2.5rem; margin-bottom: 10px; }
 
-    /* ── WALK-IN PANEL ───────────────────────────── */
-    .cat-tabs { display: flex; border-bottom: 1px solid #1a1a1a; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
-    .cat-tabs::-webkit-scrollbar { display: none; }
-    .cat-tab  { background: transparent; border: none; border-bottom: 3px solid transparent; color: #555; padding: 9px 14px; font-size: .72rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all .2s; }
-    .cat-tab:hover { color: #aaa; }
-    .cat-tab.active { color: #e8a020; border-bottom-color: #e8a020; background: rgba(232,160,32,.04); }
-    .cnt-badge { background: #1e1e1e; color: #555; padding: 1px 5px; border-radius: 8px; font-size: .58rem; margin-left: 4px; }
-    .cat-tab.active .cnt-badge { background: rgba(232,160,32,.15); color: #e8a020; }
-    .tiles-wrap { flex: 1; overflow-y: auto; padding: 10px; }
-    .tiles-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-    @media(max-width:600px){ .tiles-grid { grid-template-columns: repeat(2,1fr); } }
+    /* Wait timer badges */
+    .wait-badge { font-size: .7rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+    .wait-ok   { background: rgba(61,214,140,.12); color: #3DD68C; }
+    .wait-warn { background: rgba(240,160,0,.15); color: #f0a000; }
+    .wait-over { background: rgba(255,77,77,.2); color: #ff4d4d; animation: pulse-over 1.5s infinite; }
+    @keyframes pulse-over { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .ocard.overdue { box-shadow: 0 0 0 1px rgba(255,77,77,.35); }
+    .overdue-banner { background: rgba(255,77,77,.12); border-top: 1px solid rgba(255,77,77,.2); padding: 5px 14px; font-size: .72rem; color: #ff4d4d; font-weight: 700; }
+    .section-alert { background: rgba(255,77,77,.08); border: 1px solid rgba(255,77,77,.2); border-radius: 8px; padding: 8px 14px; font-size: .78rem; color: #ff4d4d; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
-    .prod-tile { background: #131313; border: 2px solid #1e1e1e; border-radius: 10px; padding: 10px 9px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: all .15s; user-select: none; position: relative; overflow: hidden; min-height: 82px; }
-    .prod-tile:hover  { border-color: #2a2a2a; background: #161616; }
-    .prod-tile:active { transform: scale(.95); }
-    .prod-tile.cooked { border-color: rgba(232,160,32,.12); }
-    .prod-tile.cooked:hover { border-color: rgba(232,160,32,.3); background: rgba(232,160,32,.04); }
-    .prod-tile.added  { animation: tileFlash .35s ease; }
-    @keyframes tileFlash { 0%{background:#1a1600} 50%{background:rgba(232,160,32,.22)} 100%{background:#131313} }
-    .tile-dot  { position: absolute; top: 7px; right: 7px; width: 5px; height: 5px; border-radius: 50%; }
-    .dot-cooked { background: #e8a020; }
-    .dot-raw    { background: #ff6b6b; }
-    .dot-other  { background: #3DD68C; }
-    .tile-name  { font-size: .76rem; font-weight: 700; color: #ddd; line-height: 1.2; }
-    .tile-price { font-family: var(--font-head); font-weight: 800; font-size: 1rem; color: #e8a020; margin-top: auto; }
-    .tile-unit  { font-size: .58rem; color: #555; }
-    .tile-badge { font-size: .56rem; font-weight: 700; padding: 1px 5px; border-radius: 3px; width: fit-content; }
-    .badge-plate { background: rgba(232,160,32,.12); color: #e8a020; border: 1px solid rgba(232,160,32,.2); }
-    .badge-kg    { background: rgba(255,77,77,.1); color: #ff6b6b; border: 1px solid rgba(255,77,77,.2); }
-
-    /* ── CREDITS PANEL ───────────────────────────── */
-    .cred-panel { padding: 16px; }
-    .cred-search { display: flex; gap: 8px; margin-bottom: 14px; }
-    .cred-input  { flex: 1; background: #111; border: 1px solid #2a2a2a; color: #E0E0E0; padding: 10px 12px; border-radius: 8px; font-size: .88rem; font-family: var(--font-head); letter-spacing: 1px; }
-    .cred-input:focus { outline: none; border-color: #e8a020; }
-    .cred-find   { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: .82rem; font-weight: 700; transition: all .2s; }
-    .cred-find:hover { border-color: #e8a020; color: #e8a020; }
-    .cust-card   { background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 16px; }
-    .cust-name   { font-family: var(--font-head); font-weight: 800; font-size: 1.05rem; color: #fff; }
-    .cust-ref    { font-size: .73rem; color: #555; font-family: monospace; letter-spacing: 1px; margin: 2px 0 12px; }
-    .cust-bal-lbl { font-size: .62rem; color: #555; text-transform: uppercase; letter-spacing: 1px; }
-    .cust-bal    { font-family: var(--font-head); font-weight: 800; font-size: 1.7rem; }
-    .cred-add    { display: flex; gap: 7px; margin-top: 14px; }
-    .cred-amt    { flex: 1; background: #0A0A0A; border: 1px solid #2a2a2a; color: #E0E0E0; padding: 9px 12px; border-radius: 8px; font-size: .95rem; font-family: var(--font-head); }
-    .cred-amt:focus { outline: none; border-color: #3DD68C; }
-    .cred-add-btn { background: rgba(61,214,140,.1); border: 1px solid rgba(61,214,140,.3); color: #3DD68C; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: .8rem; transition: all .2s; white-space: nowrap; }
-    .cred-add-btn:hover { background: rgba(61,214,140,.2); }
-
-    /* ── RIGHT: Action panel ─────────────────────── */
-    .action-side { display: flex; flex-direction: column; overflow: hidden; background: #0D0D0D; }
-    .action-view { display: none; flex-direction: column; height: 100%; overflow: hidden; }
-    .action-view.show { display: flex; }
-
-    /* Order detail view */
-    .od-wrap { flex: 1; overflow-y: auto; padding: 16px; }
-    .od-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #1e1e1e; text-align: center; padding: 30px; }
-    .od-empty .ei { font-size: 3rem; margin-bottom: 12px; }
-    .od-empty p   { font-size: .8rem; line-height: 1.7; color: #252525; }
-
-    .od-num  { font-family: var(--font-head); font-weight: 900; font-size: 1.45rem; margin-bottom: 6px; }
-    .od-status-bar { display: flex; margin-bottom: 16px; }
-    .od-step { flex: 1; text-align: center; font-size: .57rem; color: #252525; padding: 6px 2px; background: #141414; border: 1px solid #1a1a1a; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
-    .od-step:first-child { border-radius: 5px 0 0 5px; }
-    .od-step:last-child  { border-radius: 0 5px 5px 0; }
-    .od-step.done    { background: rgba(61,214,140,.07); color: #3DD68C; border-color: rgba(61,214,140,.2); }
-    .od-step.current { background: rgba(232,160,32,.1); color: #e8a020; border-color: rgba(232,160,32,.3); }
-
-    .od-cust-row { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 11px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-    .od-cust-name { font-weight: 700; font-size: .88rem; color: #ddd; }
-    .od-cust-sub  { font-size: .7rem; color: #555; margin-top: 2px; }
-    .od-dtype-tag { font-size: .65rem; font-weight: 700; padding: 4px 9px; border-radius: 6px; flex-shrink: 0; }
-    .type-collect  { background: rgba(232,160,32,.1); color: #e8a020; border: 1px solid rgba(232,160,32,.2); }
-    .type-delivery { background: rgba(52,152,219,.1); color: #3498db; border: 1px solid rgba(52,152,219,.2); }
-
-    .od-route-tags { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-    .route-tag { font-size: .65rem; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
-    .rt-kitchen { background: rgba(240,160,0,.1); color: #f0a000; border: 1px solid rgba(240,160,0,.25); }
-    .rt-butcher { background: rgba(255,107,107,.1); color: #ff6b6b; border: 1px solid rgba(255,107,107,.25); }
-
-    .od-items-hdr { font-size: .62rem; color: #3a3a3a; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 8px; }
-    .od-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #151515; }
-    .od-item:last-child { border-bottom: none; }
-    .od-iname { font-size: .83rem; color: #ccc; }
-    .od-isub  { font-size: .68rem; color: #3a3a3a; margin-top: 1px; }
-    .od-iprice { font-family: var(--font-head); font-weight: 700; font-size: .86rem; color: #e8a020; }
-
-    .od-total-row  { display: flex; justify-content: space-between; padding: 10px 0 12px; border-top: 1px solid #1e1e1e; }
-    .od-total-lbl  { color: #555; font-size: .84rem; }
-    .od-total-val  { font-family: var(--font-head); font-weight: 800; font-size: 1.2rem; color: #e8a020; }
-    .od-paid-chip  { background: rgba(61,214,140,.07); border: 1px solid rgba(61,214,140,.2); color: #3DD68C; font-size: .73rem; padding: 5px 10px; border-radius: 6px; text-align: center; margin-bottom: 14px; }
-
-    .od-actions { display: flex; flex-direction: column; gap: 7px; padding-bottom: 4px; }
-    .btn-collect  { width: 100%; padding: 14px; background: linear-gradient(135deg,#1a3a2a,#2d5c3a); color: #3DD68C; border: 1px solid rgba(61,214,140,.3); border-radius: 10px; font-family: var(--font-head); font-weight: 800; font-size: .98rem; cursor: pointer; transition: all .2s; }
-    .btn-collect:hover  { background: linear-gradient(135deg,#1f4a35,#366b44); }
-    .btn-driver   { width: 100%; padding: 14px; background: linear-gradient(135deg,#132038,#1a3060); color: #3498db; border: 1px solid rgba(52,152,219,.3); border-radius: 10px; font-family: var(--font-head); font-weight: 800; font-size: .98rem; cursor: pointer; transition: all .2s; }
-    .btn-driver:hover   { background: linear-gradient(135deg,#182840,#204070); }
-    .btn-start-prep  { width: 100%; padding: 11px; background: rgba(52,152,219,.08); color: #3498db; border: 1px solid rgba(52,152,219,.25); border-radius: 9px; font-weight: 700; font-size: .84rem; cursor: pointer; transition: all .2s; }
-    .btn-mark-ready  { width: 100%; padding: 11px; background: rgba(240,160,0,.08); color: #f0a000; border: 1px solid rgba(240,160,0,.25); border-radius: 9px; font-weight: 700; font-size: .84rem; cursor: pointer; transition: all .2s; }
-    .btn-print-slip  { width: 100%; padding: 9px; background: #141414; border: 1px solid #2a2a2a; color: #555; border-radius: 8px; cursor: pointer; font-size: .8rem; transition: all .2s; }
-    .btn-print-slip:hover { border-color: #555; color: #aaa; }
-
-    /* Walk-in sale view */
-    .sale-header { padding: 11px 15px 9px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-    .sale-title  { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: #ccc; }
-    .clear-btn   { background: transparent; border: 1px solid #2a2a2a; color: #3a3a3a; padding: 4px 10px; border-radius: 6px; font-size: .68rem; cursor: pointer; transition: all .2s; }
-    .clear-btn:hover { border-color: #ff4d4d; color: #ff4d4d; }
-    .sale-items-wrap { flex: 1; overflow-y: auto; }
-    .sale-empty  { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #1e1e1e; padding: 20px; text-align: center; }
-    .sale-empty .ei { font-size: 2rem; margin-bottom: 8px; }
-
-    .sale-item { display: grid; grid-template-columns: 1fr auto auto auto; gap: 7px; align-items: center; padding: 9px 14px; border-bottom: 1px solid #141414; }
-    .si-name { font-size: .81rem; font-weight: 600; color: #ddd; }
-    .si-sub  { font-size: .65rem; color: #3a3a3a; }
-    .si-qty-ctrl { display: flex; align-items: center; gap: 3px; }
-    .si-q-btn { background: #1a1a1a; border: 1px solid #252525; color: #666; width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-size: .88rem; display: flex; align-items: center; justify-content: center; transition: all .15s; }
-    .si-q-btn:hover { border-color: #e8a020; color: #e8a020; }
-    .si-qty  { font-size: .8rem; font-weight: 700; color: #ccc; min-width: 26px; text-align: center; }
-    .si-total { font-family: var(--font-head); font-weight: 700; font-size: .88rem; color: #e8a020; min-width: 55px; text-align: right; }
-    .si-del  { background: transparent; border: none; color: #252525; cursor: pointer; font-size: .8rem; padding: 3px; transition: color .15s; }
-    .si-del:hover { color: #ff4d4d; }
-
-    .totals-block { border-top: 2px solid #1a1a1a; padding: 9px 14px 0; flex-shrink: 0; }
-    .tot-row  { display: flex; justify-content: space-between; padding: 2px 0; font-size: .82rem; }
-    .tot-grand { padding-top: 7px; border-top: 1px solid #2a2a2a; margin-top: 5px; }
-    .tot-label { color: #555; }
-    .tot-val   { font-weight: 600; color: #ccc; }
-    .tot-grand-val { font-family: var(--font-head); font-weight: 800; font-size: 1.4rem; color: #e8a020; }
-
-    .pay-block   { padding: 9px 14px 12px; flex-shrink: 0; border-top: 1px solid #1a1a1a; }
-    .pay-title   { font-size: .62rem; text-transform: uppercase; letter-spacing: 1.5px; color: #3a3a3a; font-weight: 700; margin-bottom: 6px; }
-    .pay-methods { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; margin-bottom: 8px; }
-    .pay-btn  { background: #141414; border: 2px solid #1e1e1e; color: #555; padding: 7px 4px; border-radius: 7px; cursor: pointer; font-size: .68rem; font-weight: 700; text-align: center; transition: all .2s; line-height: 1.3; }
-    .pay-btn:hover { border-color: #333; color: #aaa; }
-    .pay-btn.sel   { border-color: #e8a020; color: #e8a020; background: rgba(232,160,32,.08); }
-    .cash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
-    .pay-input-label { font-size: .6rem; color: #3a3a3a; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
-    .pay-input { width: 100%; background: #111; border: 1px solid #2a2a2a; color: #E0E0E0; padding: 8px 10px; border-radius: 7px; font-size: .88rem; }
-    .pay-input:focus { outline: none; border-color: #e8a020; }
-    .change-box  { background: rgba(61,214,140,.06); border: 1px solid rgba(61,214,140,.2); border-radius: 7px; padding: 6px 10px; display: none; }
-    .change-box.show { display: block; }
-    .change-lbl  { font-size: .58rem; color: #444; text-transform: uppercase; }
-    .change-val  { font-family: var(--font-head); font-weight: 800; font-size: 1.1rem; color: #3DD68C; }
-    .change-val.neg { color: #ff4d4d; }
-    .credit-ref  { display: none; margin-bottom: 6px; }
-    .credit-ref.show { display: block; }
-    .action-row  { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
-    .process-btn { width: 100%; padding: 13px; background: linear-gradient(135deg,#8B0000,#c0392b,#e8a020); color: #fff; border: none; border-radius: 9px; font-family: var(--font-head); font-weight: 800; font-size: .95rem; cursor: pointer; transition: opacity .2s; }
-    .process-btn:hover    { opacity: .88; }
-    .process-btn:disabled { opacity: .3; cursor: not-allowed; }
-    .reprint-btn { background: #141414; border: 1px solid #2a2a2a; color: #444; padding: 13px 11px; border-radius: 9px; cursor: pointer; font-size: .85rem; transition: all .2s; }
-    .reprint-btn:hover:not(:disabled) { border-color: #555; color: #aaa; }
-    .reprint-btn:disabled { opacity: .3; cursor: not-allowed; }
-
-    /* ── Weight modal ────────────────────────────── */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.86); z-index: 400; display: none; align-items: center; justify-content: center; }
+    /* ── Cash Credit Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
-    .modal-box { background: #141414; border: 1px solid #2a2a2a; border-radius: 14px; padding: 22px; width: 300px; max-width: 90vw; }
-    .wt-name  { font-family: var(--font-head); font-weight: 800; font-size: 1.05rem; }
-    .wt-meta  { font-size: .78rem; color: #555; margin-bottom: 16px; margin-top: 2px; }
-    .wt-label { font-size: .68rem; color: #555; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
-    .wt-presets { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 12px; }
-    .wt-preset  { background: #1a1a1a; border: 1px solid #2a2a2a; color: #aaa; padding: 9px 4px; border-radius: 7px; cursor: pointer; font-size: .78rem; font-weight: 700; text-align: center; transition: all .15s; }
-    .wt-preset:hover, .wt-preset.sel { border-color: #e8a020; color: #e8a020; background: rgba(232,160,32,.08); }
-    .wt-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #E0E0E0; padding: 10px 12px; border-radius: 7px; font-size: 1.05rem; text-align: center; font-family: var(--font-head); }
-    .wt-input:focus { outline: none; border-color: #e8a020; }
-    .wt-total-display { text-align: center; margin: 10px 0; }
-    .wt-total-lbl { font-size: .7rem; color: #555; }
-    .wt-total-val { font-family: var(--font-head); font-weight: 800; font-size: 1.5rem; color: #e8a020; }
-    .wt-btns  { display: grid; grid-template-columns: 1fr 2fr; gap: 7px; margin-top: 14px; }
-    .wt-cancel  { background: transparent; border: 1px solid #2a2a2a; color: #555; padding: 11px; border-radius: 7px; cursor: pointer; font-size: .85rem; }
-    .wt-cancel:hover { border-color: #444; color: #aaa; }
-    .wt-confirm { background: linear-gradient(135deg,#c0392b,#e8a020); color: #fff; border: none; padding: 11px; border-radius: 7px; cursor: pointer; font-family: var(--font-head); font-weight: 800; font-size: .9rem; }
-
-    /* Receipt modal */
-    .receipt-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 500; display: none; align-items: center; justify-content: center; padding: 16px; }
-    .receipt-overlay.open { display: flex; }
-    .receipt-box { background: #111; border: 1px solid #2a2a2a; border-radius: 14px; width: 100%; max-width: 380px; max-height: 90vh; display: flex; flex-direction: column; }
-    .r-head { padding: 13px 18px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
-    .r-head h3 { font-family: var(--font-head); font-size: .9rem; margin: 0; color: #ccc; }
-    .r-body { padding: 14px 18px; flex: 1; overflow-y: auto; }
-    .receipt-pre { background: #fff; color: #000; padding: 12px; border-radius: 6px; font-family: 'Courier New',monospace; font-size: 10.5px; line-height: 1.5; white-space: pre; overflow-x: auto; }
-    .r-foot { padding: 12px 18px; border-top: 1px solid #1a1a1a; display: flex; gap: 8px; justify-content: flex-end; }
-    .r-close { background: transparent; border: 1px solid #2a2a2a; color: #555; padding: 8px 14px; border-radius: 7px; cursor: pointer; font-size: .8rem; }
-    .r-print { background: #e8a020; color: #000; border: none; padding: 8px 18px; border-radius: 7px; cursor: pointer; font-weight: 700; font-size: .82rem; }
-
-    @media print { body > *:not(#print-area) { display: none !important; } #print-area { display: block !important; } }
-    #print-area { display: none; }
+    .modal { background: #141414; border: 1px solid #2a2a2a; border-radius: 16px; width: 440px; max-width: calc(100vw - 32px); padding: 28px; }
+    .modal h2 { font-family: var(--font-head, sans-serif); font-size: 1.2rem; margin: 0 0 4px; color: #fff; }
+    .modal p { font-size: .82rem; color: #555; margin: 0 0 20px; }
+    .modal-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #555; margin-bottom: 6px; }
+    .modal-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #e0e0e0; padding: 10px 14px; border-radius: 8px; font-size: .95rem; box-sizing: border-box; outline: none; transition: border-color .15s; }
+    .modal-input:focus { border-color: #e8a020; }
+    .search-results { background: #0A0A0A; border: 1px solid #222; border-radius: 8px; margin-top: 6px; max-height: 160px; overflow-y: auto; display: none; }
+    .search-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #1a1a1a; transition: background .1s; }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: #1a1a1a; }
+    .sri-name { font-weight: 700; font-size: .9rem; color: #ddd; }
+    .sri-sub { font-size: .75rem; color: #555; }
+    .selected-customer { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; display: none; }
+    .sc-name { font-weight: 700; color: #fff; font-size: .95rem; }
+    .sc-balance { font-size: .82rem; color: #3DD68C; font-weight: 600; margin-top: 2px; }
+    .sc-ref { font-size: .75rem; color: #555; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-confirm { flex: 1; padding: 12px; border-radius: 8px; background: #22c55e; color: #000; font-weight: 800; font-size: .95rem; border: none; cursor: pointer; transition: background .15s; }
+    .modal-confirm:hover { background: #16a34a; }
+    .modal-confirm:disabled { background: #1a1a1a; color: #555; cursor: default; }
+    .modal-cancel { padding: 12px 18px; border-radius: 8px; background: #2a2a2a; color: #888; font-weight: 700; border: none; cursor: pointer; }
   </style>
 </head>
 <body>
-  <div id="toast-container"></div>
-  <div id="print-area"></div>
 
-  <!-- Weight Modal -->
-  <div class="modal-overlay" id="wt-modal">
-    <div class="modal-box">
-      <div class="wt-name" id="wt-name">—</div>
-      <div class="wt-meta" id="wt-meta"></div>
-      <div class="wt-label">Quick select</div>
-      <div class="wt-presets">
-        <div class="wt-preset" onclick="setWt(.25)">¼ kg</div>
-        <div class="wt-preset" onclick="setWt(.5)">½ kg</div>
-        <div class="wt-preset" onclick="setWt(1)">1 kg</div>
-        <div class="wt-preset" onclick="setWt(2)">2 kg</div>
-      </div>
-      <div class="wt-label">Custom (kg)</div>
-      <input class="wt-input" type="number" id="wt-input" placeholder="0.00" min="0.1" step="0.25" oninput="updateWtTotal()">
-      <div class="wt-total-display">
-        <div class="wt-total-lbl">Line Total</div>
-        <div class="wt-total-val" id="wt-total-val">R 0.00</div>
-      </div>
-      <div class="wt-btns">
-        <button class="wt-cancel" onclick="closeWt()">Cancel</button>
-        <button class="wt-confirm" onclick="confirmWt()">Add to Sale →</button>
-      </div>
+<div id="toast-container"></div>
+
+<!-- PIN Gate -->
+<div id="pin-screen" class="pin-wrap">
+  <div class="pin-box">
+    <div style="font-size:2rem;margin-bottom:12px">🧾</div>
+    <h2>Cashier Station</h2>
+    <p>The Peoples Butchery — Staff Access</p>
+    <input type="password" id="pin-input" class="pin-input" placeholder="Enter PIN" maxlength="30">
+    <div class="pin-err" id="pin-err"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="checkPin()">Unlock</button>
+  </div>
+</div>
+
+<!-- Cash Credit Modal -->
+<div class="modal-overlay" id="credit-modal">
+  <div class="modal">
+    <h2>💵 Cash Deposit — Add Credit</h2>
+    <p>Search for the customer, enter the cash amount received.</p>
+
+    <div style="margin-bottom:14px">
+      <div class="modal-label">Search Customer</div>
+      <input type="text" id="cust-search" class="modal-input" placeholder="Name, phone, email or ref number…" autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <div class="selected-customer" id="selected-customer">
+      <div class="sc-name" id="sc-name"></div>
+      <div class="sc-balance" id="sc-balance"></div>
+      <div class="sc-ref" id="sc-ref"></div>
+    </div>
+
+    <div style="margin-bottom:4px">
+      <div class="modal-label">Cash Amount Received (R)</div>
+      <input type="number" id="credit-amount" class="modal-input" placeholder="0.00" min="1" step="0.01">
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" id="credit-confirm-btn" onclick="applyCredit()" disabled>✓ Add Credit</button>
     </div>
   </div>
+</div>
 
-  <!-- Receipt Modal -->
-  <div class="receipt-overlay" id="receipt-modal">
-    <div class="receipt-box">
-      <div class="r-head"><h3>🧾 Receipt</h3><button class="r-close" onclick="closeReceipt()">✕</button></div>
-      <div class="r-body"><pre class="receipt-pre" id="receipt-pre"></pre></div>
-      <div class="r-foot">
-        <button class="r-close" onclick="closeReceipt()">Close</button>
-        <button class="r-print" onclick="doPrint()">🖨 Print</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Header -->
+<!-- Main Screen -->
+<div id="main-screen" style="display:none">
   <header class="stn-header">
     <div class="stn-title">
-      <img src="assets/img/logo-navbar.png" class="stn-logo" alt="" onerror="this.style.display='none'">
-      <h1>Cashier</h1>
-      <span class="stn-badge" id="mode-badge">Orders</span>
+      <span class="live-dot"></span>
+      <h1>Cashier Station</h1>
+      <span class="stn-badge">The Peoples Butchery</span>
     </div>
     <nav class="stn-nav">
-      <a href="cashier.html" class="active">💰 Cashier</a>
-      <a href="kitchen.html">🍳 Kitchen</a>
-      <a href="butcher.html">🥩 Butcher</a>
-      <a href="dispatch.html">🚚 Dispatch</a>
+      <a href="cashier.html" class="active">🧾 Cashier</a>
+      <a href="butcher.html">🔪 Butcher</a>
+      <a href="kitchen.html">🔥 Kitchen</a>
       <a href="admin.html">⚙️ Admin</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span class="live-dot"></span>
-      <span class="stn-clock" id="clock">—</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="cash-btn" onclick="openModal()">💵 Cash Deposit</button>
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+      <span class="stn-clock" id="clock"></span>
     </div>
   </header>
 
-  <div class="cashier-root">
-
-    <!-- ══ LEFT ══════════════════════════════════ -->
-    <div class="left-side">
-
-      <!-- Mode tabs -->
-      <div class="mode-tabs">
-        <button class="mode-tab active" data-m="orders" onclick="setMode('orders')">
-          <span class="mtab-icon">📦</span>
-          <span class="mtab-label">Orders</span>
-          <span class="mtab-count" id="mc-orders">0</span>
-        </button>
-        <button class="mode-tab" data-m="walkin" onclick="setMode('walkin')">
-          <span class="mtab-icon">🛒</span>
-          <span class="mtab-label">Walk-in</span>
-        </button>
-        <button class="mode-tab" data-m="credits" onclick="setMode('credits')">
-          <span class="mtab-icon">💳</span>
-          <span class="mtab-label">Credits</span>
-        </button>
-      </div>
-
-      <!-- Smart scanner (always visible) -->
-      <div class="scanner-strip">
-        <span class="scan-icon">⌦</span>
-        <input id="scan-field" class="scan-field" placeholder="Scan order # or customer REF…" autocomplete="off" spellcheck="false">
-        <span class="scan-hint" id="scan-hint">Ready</span>
-      </div>
-
-      <!-- PANEL: Orders -->
-      <div class="panel active" id="panel-orders">
-        <div class="order-filters">
-          <button class="of-btn active" data-f="all"      onclick="filterOrds(this)">All</button>
-          <button class="of-btn" data-f="packaging" onclick="filterOrds(this)">✅ Ready</button>
-          <button class="of-btn" data-f="braai"    onclick="filterOrds(this)">🔪 Prepping</button>
-          <button class="of-btn" data-f="pending"  onclick="filterOrds(this)">🆕 New</button>
-          <button class="of-btn" data-f="delivery" onclick="filterOrds(this)">🚴 Delivery</button>
-        </div>
-        <div class="orders-scroll" id="orders-list">
-          <div class="orders-empty"><div class="ei">⏳</div><p style="font-size:.8rem">Loading orders…</p></div>
-        </div>
-      </div>
-
-      <!-- PANEL: Walk-in -->
-      <div class="panel" id="panel-walkin">
-        <div class="cat-tabs" id="cat-tabs"></div>
-        <div class="tiles-wrap"><div class="tiles-grid" id="tiles-grid"></div></div>
-      </div>
-
-      <!-- PANEL: Credits -->
-      <div class="panel" id="panel-credits" style="overflow-y:auto">
-        <div class="cred-panel">
-          <div style="font-size:.65rem;color:#444;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:10px">Customer REF Lookup</div>
-          <div class="cred-search">
-            <input class="cred-input" id="cred-ref-input" placeholder="PB-XXXX…" spellcheck="false"
-              onkeydown="if(event.key==='Enter')lookupCustomer()">
-            <button class="cred-find" onclick="lookupCustomer()">Find</button>
-          </div>
-          <div id="cust-result">
-            <div style="text-align:center;padding:40px 20px;color:#252525;font-size:.8rem">
-              Enter a REF number or scan the customer's barcode
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /left-side -->
-
-    <!-- ══ RIGHT ══════════════════════════════════ -->
-    <div class="action-side">
-
-      <!-- ORDER DETAIL VIEW -->
-      <div class="action-view show" id="view-orders">
-        <div class="od-wrap" id="order-detail">
-          <div class="od-empty">
-            <div class="ei">📦</div>
-            <p>Select an order from the list<br>or scan a customer's REF barcode<br>to pull it up instantly</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- WALK-IN SALE VIEW -->
-      <div class="action-view" id="view-walkin">
-        <div class="sale-header">
-          <div class="sale-title">Current Sale</div>
-          <button class="clear-btn" onclick="clearSale()">Clear ✕</button>
-        </div>
-        <div class="sale-items-wrap" id="sale-items">
-          <div class="sale-empty"><div class="ei">🧾</div><p style="font-size:.78rem">Tap a product or scan a barcode</p></div>
-        </div>
-        <div class="totals-block">
-          <div class="tot-row"><span class="tot-label">Subtotal</span><span class="tot-val" id="tot-sub">R0.00</span></div>
-          <div class="tot-row"><span class="tot-label">VAT (15%)</span><span class="tot-val" id="tot-vat">R0.00</span></div>
-          <div class="tot-row tot-grand">
-            <span class="tot-label" style="font-weight:700;color:#ccc">TOTAL</span>
-            <span class="tot-grand-val" id="tot-grand">R0.00</span>
-          </div>
-        </div>
-        <div class="pay-block">
-          <div class="pay-title">Payment Method</div>
-          <div class="pay-methods">
-            <div class="pay-btn sel" data-method="cash"   onclick="selPay(this)">💵<br>Cash</div>
-            <div class="pay-btn"    data-method="card"   onclick="selPay(this)">💳<br>Card</div>
-            <div class="pay-btn"    data-method="eft"    onclick="selPay(this)">📲<br>EFT</div>
-            <div class="pay-btn"    data-method="credit" onclick="selPay(this)">📝<br>Account</div>
-          </div>
-          <div class="cash-row" id="cash-row">
-            <div>
-              <div class="pay-input-label">Tendered</div>
-              <input class="pay-input" id="cash-tendered" type="number" min="0" placeholder="0.00" oninput="calcChange()">
-            </div>
-            <div id="change-box" class="change-box">
-              <div class="change-lbl">Change</div>
-              <div class="change-val" id="change-val">R0.00</div>
-            </div>
-          </div>
-          <div class="credit-ref" id="credit-ref">
-            <div class="pay-input-label">Customer REF</div>
-            <input class="pay-input" id="cust-ref-field" type="text" placeholder="PB-XXXX">
-          </div>
-          <div class="action-row">
-            <button class="process-btn" id="process-btn" onclick="processSale()" disabled>Process Sale</button>
-            <button class="reprint-btn" id="reprint-btn" onclick="reprintLast()" disabled title="Reprint last">🖨</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- CREDITS VIEW (just the customer result mirrored) -->
-      <div class="action-view" id="view-credits">
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:30px;text-align:center;color:#252525">
-          <div style="font-size:3rem;margin-bottom:12px">💳</div>
-          <p style="font-size:.8rem;line-height:1.7;color:#2a2a2a">Look up a customer by REF on the left<br>to view their balance and add credit</p>
-        </div>
-      </div>
-
-    </div><!-- /action-side -->
+  <div class="stats-bar">
+    <div class="stat-chip">
+      <div class="stat-num red" id="cnt-new">0</div>
+      <div class="stat-lbl">New Orders</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num amber" id="cnt-prog">0</div>
+      <div class="stat-lbl">In Progress</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num purple" id="cnt-pack">0</div>
+      <div class="stat-lbl">Packaging</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num green" id="cnt-collect">0</div>
+      <div class="stat-lbl">Ready to Collect</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num blue" id="cnt-dispatch">0</div>
+      <div class="stat-lbl">Out for Delivery</div>
+    </div>
   </div>
 
-  <script src="js/app.js"></script>
-  <script>
-  /* ─────────────────────────────────────────────
-     Cashier Station — Full POS + Orders + Credits
-  ───────────────────────────────────────────── */
+  <div id="overdue-alert" style="display:none;padding:8px 16px;background:#0A0A0A;border-bottom:1px solid #1a1a1a"></div>
 
-  // ── State ──────────────────────────────────────
-  let _mode    = 'orders';
-  let _orders  = [];
-  let _ordFilt = 'all';
-  let _selId   = null;
-  let _prods   = [];
-  let _sale    = [];
-  let _pay     = 'cash';
-  let _activeCat = 'All';
-  let _lastReceipt = null;
-  let _wtProd  = null;
-  let _fb      = null;
-
-  // ── Clock ──────────────────────────────────────
-  function tick(){ document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
-  setInterval(tick,1000); tick();
-
-  // ── Firebase lazy-load ─────────────────────────
-  async function fb(){
-    if(_fb) return _fb;
-    const [cfg,fs] = await Promise.all([
-      import('./js/firebase-config.js'),
-      import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')
-    ]);
-    _fb = {db: cfg.db, ...fs};
-    return _fb;
-  }
-
-  // ── Mode switching ─────────────────────────────
-  function setMode(m){
-    _mode = m;
-    document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.m === m));
-    ['orders','walkin','credits'].forEach(p => {
-      document.getElementById('panel-'+p).classList.toggle('active', p === m);
-      document.getElementById('view-'+p).classList.toggle('show', p === m);
-    });
-    const labels = {orders:'Orders', walkin:'Walk-in', credits:'Credits'};
-    document.getElementById('mode-badge').textContent = labels[m];
-    const hints = {orders:'Find order', walkin:'Add product', credits:'Find customer'};
-    document.getElementById('scan-hint').textContent = hints[m];
-    const ph = {
-      orders:  'Scan REF barcode or order # …',
-      walkin:  'Scan product barcode …',
-      credits: 'Scan or type customer REF …'
-    };
-    document.getElementById('scan-field').placeholder = ph[m];
-    document.getElementById('scan-field').focus();
-  }
-
-  // ── Smart scanner ──────────────────────────────
-  (function initScanner(){
-    const el = document.getElementById('scan-field');
-    el.addEventListener('keydown', e => {
-      if(e.key !== 'Enter') return;
-      const v = el.value.trim();
-      if(!v) return;
-      handleScan(v);
-      el.value = '';
-    });
-    // Route physical scanner keystrokes to field
-    document.addEventListener('keydown', e => {
-      const tag = document.activeElement?.tagName;
-      if(['INPUT','TEXTAREA','SELECT'].includes(tag) && document.activeElement !== el) return;
-      if(e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) el.focus();
-    });
-  })();
-
-  function flashHint(){
-    const h = document.getElementById('scan-hint');
-    h.classList.add('flash');
-    setTimeout(()=>h.classList.remove('flash'), 600);
-  }
-
-  function handleScan(code){
-    flashHint();
-    if(_mode === 'walkin'){
-      const p = _prods.find(x => x.stock_code === code || x.id === code);
-      if(p){ tapTile(p.id); }
-      else { showToast('Product not found: '+code,'warning'); }
-
-    } else if(_mode === 'orders'){
-      const upper = code.toUpperCase();
-      // Match by last 5-8 chars of order ID, full ID, or customer REF
-      let match = _orders.find(o =>
-        o.id.slice(-5).toUpperCase() === upper ||
-        o.id.slice(-8).toUpperCase() === upper ||
-        o.id.toUpperCase() === upper
-      );
-      if(!match){
-        // Try as customer REF — show first pending order for that customer
-        const byRef = _orders.filter(o =>
-          (o.userRef||'').toUpperCase() === upper ||
-          (o.userName||'').toUpperCase().includes(upper)
-        );
-        if(byRef.length){ match = byRef[0]; showToast(byRef.length+' order(s) found','success'); }
-      }
-      if(match){ selectOrder(match.id); }
-      else { showToast('No order found: '+code,'warning'); }
-
-    } else if(_mode === 'credits'){
-      document.getElementById('cred-ref-input').value = code;
-      lookupCustomer();
-    }
-  }
-
-  // ── ORDERS ─────────────────────────────────────
-  function toDate(v){ return v?.toDate ? v.toDate() : v ? new Date(v) : null; }
-  function minsAgo(d){ return d ? Math.floor((Date.now()-d.getTime())/60000) : 0; }
-  function fmtAgo(d){
-    const m = minsAgo(d);
-    if(m < 1) return 'Just now';
-    if(m < 60) return m+'m ago';
-    return Math.floor(m/60)+'h ago';
-  }
-
-  async function loadOrders(){
-    try {
-      const {db,collection,getDocs,query,where} = await fb();
-      const snap = await getDocs(query(collection(db,'orders'), where('status','in',['pending','braai','packaging'])));
-      _orders = snap.docs.map(d=>({id:d.id,...d.data()}))
-        .sort((a,b)=>(toDate(a.createdAt)||0)-(toDate(b.createdAt)||0));
-      renderOrders();
-      const ct = document.getElementById('mc-orders');
-      ct.textContent = _orders.length;
-      ct.classList.toggle('show', _orders.length > 0);
-      ct.classList.toggle('green', _orders.some(o=>o.status==='packaging'));
-    } catch(e){
-      showToast('Orders error: '+e.message,'error');
-    }
-  }
-
-  function filterOrds(btn){
-    document.querySelectorAll('.of-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    _ordFilt = btn.dataset.f;
-    renderOrders();
-  }
-
-  function renderOrders(){
-    let list = _orders;
-    if(_ordFilt !== 'all'){
-      if(_ordFilt === 'delivery') list = list.filter(o=>o.deliveryMethod==='delivery');
-      else list = list.filter(o=>o.status===_ordFilt);
-    }
-    const el = document.getElementById('orders-list');
-    if(!list.length){
-      el.innerHTML = `<div class="orders-empty"><div class="ei">📭</div><p style="font-size:.78rem">${_ordFilt==='all'?'No active orders':'No orders here'}</p></div>`;
-      return;
-    }
-    el.innerHTML = list.map(o => {
-      const mins = minsAgo(toDate(o.createdAt));
-      const late = mins > 25;
-      const sc = {pending:'s-pending',braai:'s-braai',packaging:'s-packaging'}[o.status]||'s-pending';
-      const badge = {
-        pending:   '<span class="oc-badge badge-new">🆕 New</span>',
-        braai:     '<span class="oc-badge badge-prep">🔪 Prepping</span>',
-        packaging: '<span class="oc-badge badge-ready">📦 Ready</span>'
-      }[o.status]||'';
-      const items = o.items||[];
-      const preview = items.slice(0,2).map(i=>i.name||i.productId).join(', ')+(items.length>2?` +${items.length-2}`:'');
-      const isDelivery = o.deliveryMethod==='delivery';
-      return `
-        <div class="ord-card ${sc}${o.id===_selId?' sel':''}" data-id="${o.id}" onclick="selectOrder('${o.id}')">
-          <div class="oc-top">
-            <div>
-              <div class="oc-num">#${o.id.slice(-5).toUpperCase()}</div>
-              <div class="oc-name">${o.userName||o.userEmail||'Walk-in'}</div>
-            </div>
-            <div class="oc-meta">
-              ${badge}
-              <div class="oc-time" style="${late?'color:#ff4d4d':''}">${fmtAgo(toDate(o.createdAt))}${late?' ⚠':''}
-              </div>
-            </div>
-          </div>
-          <div class="oc-preview">${preview||'—'}</div>
-          <div class="oc-footer">
-            <span class="oc-total">R${parseFloat(o.total||0).toFixed(2)}</span>
-            <span class="oc-dtype">${isDelivery?'🚴 Delivery':'🏪 Collect'}</span>
-          </div>
-        </div>`;
-    }).join('');
-  }
-
-  function selectOrder(id){
-    _selId = id;
-    renderOrders();
-    const o = _orders.find(x=>x.id===id);
-    if(!o) return;
-
-    const isDelivery = o.deliveryMethod==='delivery';
-    const steps = ['📥 Received','🔪 Prepping','📦 Ready','✅ Done'];
-    const si = {pending:0,braai:1,packaging:2}[o.status]??0;
-    const stepsHtml = steps.map((s,i)=>`<div class="od-step ${i<si?'done':i===si?'current':''}">${s}</div>`).join('');
-
-    const items = (o.items||[]);
-    const itemsHtml = items.map(it=>`
-      <div class="od-item">
-        <div>
-          <div class="od-iname">${it.name||it.productId}</div>
-          <div class="od-isub">${it.qty}${it.unit&&it.unit!=='each'?' '+it.unit:'×'} @ R${parseFloat(it.price||0).toFixed(2)}</div>
-        </div>
-        <div class="od-iprice">R${(parseFloat(it.price||0)*parseFloat(it.qty||1)).toFixed(2)}</div>
-      </div>`).join('');
-
-    const routedTo = o.routedTo||[];
-    const routeHtml = routedTo.length ? `
-      <div class="od-route-tags">
-        ${routedTo.includes('kitchen')?'<span class="route-tag rt-kitchen">🍳 Kitchen</span>':''}
-        ${routedTo.includes('butcher')?'<span class="route-tag rt-butcher">🥩 Butcher</span>':''}
-      </div>` : '';
-
-    // Action buttons based on status
-    const actionHtml = o.status === 'packaging'
-      ? (isDelivery
-          ? `<button class="btn-driver" onclick="dispatchOrder('${o.id}','delivery')">🚴 Send to Driver</button>`
-          : `<button class="btn-collect" onclick="dispatchOrder('${o.id}','collect')">✅ Confirm Collected</button>`)
-      : o.status === 'braai'
-      ? `<button class="btn-mark-ready" onclick="setOrdStatus('${o.id}','packaging')">📦 Mark Ready for Collection</button>`
-      : `<button class="btn-start-prep" onclick="setOrdStatus('${o.id}','braai')">🔪 Start Prepping</button>`;
-
-    document.getElementById('order-detail').innerHTML = `
-      <div class="od-num">#${o.id.slice(-5).toUpperCase()}</div>
-      <div class="od-status-bar">${stepsHtml}</div>
-
-      <div class="od-cust-row">
-        <div>
-          <div class="od-cust-name">${o.userName||o.userEmail||'Walk-in'}</div>
-          <div class="od-cust-sub">${isDelivery&&o.deliveryAddress ? o.deliveryAddress.split(',')[0] : '76 Meeu St, East Lynne'}</div>
-        </div>
-        <span class="od-dtype-tag ${isDelivery?'type-delivery':'type-collect'}">${isDelivery?'🚴 Delivery':'🏪 Collect'}</span>
+  <div class="cashier-cols">
+    <!-- Left: New Orders -->
+    <div class="col">
+      <div class="col-head">
+        <h2>🔔 New Orders</h2>
+        <span class="col-cnt" id="badge-new">0</span>
       </div>
-
-      ${routeHtml}
-
-      <div class="od-items-hdr">Order Items</div>
-      <div style="margin-bottom:12px">${itemsHtml||'<div style="color:#2a2a2a;font-size:.82rem;padding:8px 0">No items</div>'}</div>
-
-      <div class="od-total-row">
-        <span class="od-total-lbl">Order Total</span>
-        <span class="od-total-val">R${parseFloat(o.total||0).toFixed(2)}</span>
+      <div class="col-scroll" id="new-orders">
+        <div class="empty-col"><div class="ei">📋</div>No new orders</div>
       </div>
-      <div class="od-paid-chip">✓ Paid — Credit Balance</div>
+    </div>
 
-      <div class="od-actions">
-        ${actionHtml}
-        <button class="btn-print-slip" onclick="printOrderSlip('${o.id}')">🖨 Print Order Slip</button>
-      </div>`;
+    <!-- Right: In Progress + Dispatch + Collection -->
+    <div class="col">
+      <div class="col-head">
+        <h2>⚙️ In Progress &amp; Dispatch</h2>
+        <span class="col-cnt" id="badge-prog">0</span>
+      </div>
+      <div class="col-scroll" id="progress-orders">
+        <div class="empty-col"><div class="ei">✅</div>All clear</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script type="module">
+  import { supabase } from './js/supabase-config.js';
+  const ADMIN_PIN = 'peoplesV2_2024';
+  const SUPER_PIN = 'yType_Dev_2026';
+
+  let _orders = [], _users = [], _products = [];
+  let _selectedUser = null;
+
+  // Clock
+  function tick() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
+  tick(); setInterval(tick, 1000);
 
-  async function setOrdStatus(id, status){
-    try {
-      const {db,doc,updateDoc,serverTimestamp} = await fb();
-      await updateDoc(doc(db,'orders',id), {status, updatedAt:serverTimestamp()});
-      showToast({braai:'🔪 Prepping started',packaging:'📦 Marked ready'}[status]||'Updated','success');
-      await loadOrders();
-      selectOrder(id);
-    } catch(e){ showToast('Error: '+e.message,'error'); }
-  }
-
-  async function dispatchOrder(id, type){
-    try {
-      const {db,doc,updateDoc,serverTimestamp} = await fb();
-      const newStatus = type==='delivery' ? 'dispatched' : 'collected';
-      await updateDoc(doc(db,'orders',id), {status:newStatus, completedAt:serverTimestamp(), updatedAt:serverTimestamp()});
-      showToast(type==='delivery'?'🚴 Dispatched to driver!':'✅ Collected!','success');
-      _selId = null;
-      document.getElementById('order-detail').innerHTML = `
-        <div class="od-empty">
-          <div class="ei">${type==='delivery'?'🚴':'✅'}</div>
-          <p>Order ${type==='delivery'?'dispatched to driver':'confirmed as collected'}</p>
-        </div>`;
-      await loadOrders();
-    } catch(e){ showToast('Error: '+e.message,'error'); }
-  }
-
-  function printOrderSlip(id){
-    const o = _orders.find(x=>x.id===id);
-    if(!o) return;
-    const W = 32;
-    const items = (o.items||[]).map(it=>`  ${(it.name||it.productId).slice(0,22).padEnd(22)} x${it.qty}`).join('\n');
-    const text = [
-      'THE PEOPLES BUTCHERY'.padStart(Math.floor((W+20)/2)),
-      '76 Meeu St, East Lynne'.padStart(Math.floor((W+22)/2)),
-      'Tel: 0722419751'.padStart(Math.floor((W+15)/2)),
-      '─'.repeat(W),
-      `ORDER:  #${o.id.slice(-5).toUpperCase()}`,
-      `TYPE:   ${(o.deliveryMethod||'collect').toUpperCase()}`,
-      `CUST:   ${(o.userName||o.userEmail||'Walk-in').slice(0,22)}`,
-      `STATUS: ${(o.status||'').toUpperCase()}`,
-      '─'.repeat(W),
-      items,
-      '─'.repeat(W),
-      `${'TOTAL:'.padEnd(W-('R'+parseFloat(o.total||0).toFixed(2)).length)}R${parseFloat(o.total||0).toFixed(2)}`,
-      '─'.repeat(W),
-    ].join('\n');
-    _printRaw(text);
-  }
-
-  // ── WALK-IN ────────────────────────────────────
-  async function loadProducts(){
-    try {
-      const {db,collection,getDocs,query,where} = await fb();
-      const snap = await getDocs(query(collection(db,'products'), where('is_active','==',true)));
-      if(snap.size > 0){
-        _prods = snap.docs.map(d=>({id:d.id,...d.data()}));
-      } else { throw new Error('empty'); }
-    } catch {
-      const {LOCAL_CATALOG,mapToProduct} = await import('./js/catalog.js');
-      _prods = LOCAL_CATALOG.map(mapToProduct);
+  // PIN
+  window.checkPin = function() {
+    const val = document.getElementById('pin-input').value;
+    if (val === ADMIN_PIN || val === SUPER_PIN) {
+      document.getElementById('pin-screen').style.display = 'none';
+      document.getElementById('main-screen').style.display = 'block';
+      loadData();
+    } else {
+      document.getElementById('pin-err').textContent = 'Incorrect PIN';
+      document.getElementById('pin-input').value = '';
     }
-    buildCatTabs();
-    renderTiles('All');
+  };
+  document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') window.checkPin(); });
+
+  // ── Data ────────────────────────────────────────
+  window.loadData = async function() {
+    try {
+      const [ordRes, usrRes, proRes] = await Promise.all([
+        supabase.from('orders').select('*').not('status', 'in', '("delivered","collected","cancelled")').order('created_at', { ascending: false }),
+        supabase.from('users').select('id,name,surname,phone,email,credit_balance,ref_number'),
+        supabase.from('products').select('id,name,unit')
+      ]);
+      if (!ordRes.error) _orders = ordRes.data || [];
+      if (!usrRes.error) _users = usrRes.data || [];
+      if (!proRes.error) _products = proRes.data || [];
+      render();
+    } catch(e) {
+      showToast('Load failed: ' + e.message, 'error');
+    }
+  };
+
+  function getUser(o) {
+    return _users.find(u => u.id === o.user_id || u.email === o.user_email) || {};
+  }
+  function getProdName(id) {
+    const p = _products.find(p => String(p.id) === String(id));
+    return p ? p.name : `#${id}`;
+  }
+  function fmtTime(ts) {
+    return ts ? new Date(ts).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '';
   }
 
-  function buildCatTabs(){
-    const raw = _prods.map(p=>p.categoryLabel||p.category||'Other');
-    const uniq = ['All', ...new Set(raw)];
-    document.getElementById('cat-tabs').innerHTML = uniq.map(c => {
-      const cnt = c==='All' ? _prods.length : _prods.filter(p=>(p.categoryLabel||p.category)===c).length;
-      return `<button class="cat-tab${c==='All'?' active':''}" onclick="renderTiles('${c}',this)">${c}<span class="cnt-badge">${cnt}</span></button>`;
+  // Thresholds (minutes) per status before "overdue"
+  const OVERDUE_MINS = { pending: 5, butchering: 20, braai: 20, packaging: 10, ready: 30, dispatched: 45 };
+
+  function elapsedMins(o) {
+    const ts = o.updated_at || o.created_at;
+    return Math.floor((Date.now() - new Date(ts)) / 60000);
+  }
+
+  function waitBadge(o) {
+    const mins = elapsedMins(o);
+    const threshold = OVERDUE_MINS[o.status] || 15;
+    let cls, label;
+    if (mins < 1) { cls = 'wait-ok'; label = 'Just now'; }
+    else if (mins < 60) { label = `${mins}m`; cls = mins >= threshold ? 'wait-over' : mins >= threshold * 0.6 ? 'wait-warn' : 'wait-ok'; }
+    else { const h = Math.floor(mins/60); label = `${h}h ${mins%60}m`; cls = 'wait-over'; }
+    return `<span class="wait-badge ${cls}">⏱ ${label}</span>`;
+  }
+
+  function isOverdue(o) {
+    return elapsedMins(o) >= (OVERDUE_MINS[o.status] || 15);
+  }
+  function itemsHtml(items) {
+    if (!Array.isArray(items) || !items.length) return '<span style="color:#333">—</span>';
+    return items.map(i => {
+      const name = getProdName(i.productId || i.product_id);
+      const qty = i.quantity || i.qty || 1;
+      let tags = '';
+      if (i.braai) tags += '<span class="item-braai">🔥 BRAAI</span>';
+      if (i.pap > 0) tags += `<span class="item-pap">🍚 ×${i.pap} PAP</span>`;
+      return `<div class="item-line">${qty}× <strong>${name}</strong>${tags}</div>`;
     }).join('');
   }
-
-  function renderTiles(cat, btn){
-    _activeCat = cat;
-    if(btn){
-      document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
-      btn.classList.add('active');
-    }
-    const list = cat==='All' ? _prods : _prods.filter(p=>(p.categoryLabel||p.category)===cat);
-    const sorted = [...list.filter(p=>p.category==='cooked'), ...list.filter(p=>p.category!=='cooked')];
-    document.getElementById('tiles-grid').innerHTML = sorted.map(p => {
-      const isKg = (p.unit||'').includes('kg');
-      const isCooked = p.category==='cooked';
-      const dotCls = isCooked ? 'dot-cooked' : p.category==='raw' ? 'dot-raw' : 'dot-other';
-      const badge = isKg
-        ? '<span class="tile-badge badge-kg">per kg</span>'
-        : isCooked ? '<span class="tile-badge badge-plate">plate</span>' : '';
-      return `
-        <div class="prod-tile${isCooked?' cooked':''}" onclick="tapTile('${p.id}')" id="tile-${p.id}">
-          <div class="tile-dot ${dotCls}"></div>
-          <div class="tile-name">${p.name}</div>
-          ${badge}
-          <div class="tile-price">R${parseFloat(p.price||0).toFixed(2)}</div>
-          <div class="tile-unit">${p.unit||''}</div>
-        </div>`;
-    }).join('');
+  function statusBadge(s) {
+    const map = { pending:'st-pending', butchering:'st-butchering', braai:'st-braai', packaging:'st-packaging', ready:'st-ready', dispatched:'st-dispatched' };
+    return `<span class="ocard-status ${map[s]||'st-pending'}">${s}</span>`;
+  }
+  function cardClass(s) {
+    const m = { pending:'new-order', butchering:'butchering', braai:'braai', packaging:'packaging', ready:'ready', dispatched:'dispatched' };
+    return m[s] || '';
   }
 
-  function tapTile(id){
-    const p = _prods.find(x=>x.id===id);
-    if(!p) return;
-    const tile = document.getElementById('tile-'+id);
-    tile?.classList.remove('added'); void tile?.offsetWidth; tile?.classList.add('added');
-    if((p.unit||'').includes('kg')){ openWt(p); return; }
-    addToSale(id, 1, p);
-  }
-
-  function addToSale(id, qty, p){
-    p = p || _prods.find(x=>x.id===id);
-    if(!p) return;
-    const ex = _sale.find(s=>s.sid===id);
-    if(ex){ ex.qty += qty; }
-    else { _sale.push({sid:id, name:p.name, price:p.price, unit:p.unit||'each', qty, isKg:false}); }
-    renderSale();
-  }
-
-  function addKgToSale(id, kg){
-    const p = _prods.find(x=>x.id===id);
-    if(!p) return;
-    const sid = id+'_'+Date.now();
-    _sale.push({sid, name:p.name, price:p.price, unit:'per kg', qty:kg, isKg:true});
-    renderSale();
-  }
-
-  function changeQty(sid, delta){
-    const idx = _sale.findIndex(s=>s.sid===sid);
-    if(idx<0) return;
-    _sale[idx].qty += delta;
-    if(_sale[idx].qty <= 0) _sale.splice(idx,1);
-    renderSale();
-  }
-
-  function clearSale(){ _sale=[]; renderSale(); }
-
-  function renderSale(){
-    const el = document.getElementById('sale-items');
-    if(!_sale.length){
-      el.innerHTML = '<div class="sale-empty"><div class="ei">🧾</div><p style="font-size:.78rem">Tap a product or scan a barcode</p></div>';
-      document.getElementById('process-btn').disabled = true;
-      ['tot-sub','tot-vat','tot-grand'].forEach(id => document.getElementById(id).textContent='R0.00');
-      document.getElementById('change-box').classList.remove('show');
-      return;
-    }
-    el.innerHTML = _sale.map(s=>`
-      <div class="sale-item">
+  // ── Card builders ───────────────────────────────
+  function newOrderCard(o) {
+    const u = getUser(o);
+    const isDeliv = o.delivery_method === 'delivery';
+    const over = isOverdue(o);
+    return `<div class="ocard ${cardClass(o.status)}${over ? ' overdue' : ''}" id="oc-${o.id}">
+      <div class="ocard-head">
         <div>
-          <div class="si-name">${s.name}</div>
-          <div class="si-sub">${s.isKg?s.qty+'kg':s.qty+'×'} @ R${s.price.toFixed(2)}</div>
+          <div class="ocard-id">#${o.id.slice(-8).toUpperCase()}</div>
+          <div class="ocard-time">${fmtTime(o.created_at)}</div>
         </div>
-        <div class="si-qty-ctrl">
-          <button class="si-q-btn" onclick="changeQty('${s.sid}',${s.isKg?-0.25:-1})">−</button>
-          <span class="si-qty">${s.isKg?s.qty+'kg':s.qty}</span>
-          <button class="si-q-btn" onclick="changeQty('${s.sid}',${s.isKg?0.25:1})">+</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${statusBadge(o.status)}${waitBadge(o)}</div>
+      </div>
+      ${over ? `<div class="overdue-banner">⚠️ Waiting ${elapsedMins(o)}m — needs attention</div>` : ''}
+      <div class="ocard-body">
+        <div class="ocard-customer">${u.name || ''} ${u.surname || ''}</div>
+        <div class="ocard-phone">${u.phone || o.user_email || ''}</div>
+        <div class="ocard-items">${itemsHtml(o.items)}</div>
+        <div class="ocard-delivery">${isDeliv ? '🚗 Delivery — ' + (o.delivery_address||'No address') : '🏪 Collection'}</div>
+        <div class="ocard-total">${formatCurrency(o.total)}</div>
+      </div>
+      <div class="ocard-actions">
+        <button class="act-btn btn-butcher" onclick="allocate('${o.id}','butchering',this)">🔪 Butcher</button>
+        <button class="act-btn btn-kitchen" onclick="allocate('${o.id}','braai',this)">🔥 Kitchen</button>
+        <button class="act-btn btn-cancel" onclick="allocate('${o.id}','cancelled',this)">✕ Cancel</button>
+      </div>
+    </div>`;
+  }
+
+  function progressCard(o) {
+    const u = getUser(o);
+    const isDeliv = o.delivery_method === 'delivery';
+    const over = isOverdue(o);
+    let actions = '';
+    if (o.status === 'packaging') {
+      actions = isDeliv
+        ? `<button class="act-btn btn-dispatch" onclick="allocate('${o.id}','dispatched',this)">🚗 Send to Driver</button>`
+        : `<button class="act-btn btn-ready" onclick="allocate('${o.id}','ready',this)">✅ Mark Ready</button>`;
+    } else if (o.status === 'ready') {
+      actions = `<button class="act-btn btn-collected" onclick="finalise('${o.id}','collected',this)">✓ COLLECTED — Customer Picked Up</button>`;
+    } else if (o.status === 'dispatched') {
+      actions = `<button class="act-btn btn-delivered" onclick="finalise('${o.id}','delivered',this)">✓ DELIVERED — Driver Returned</button>`;
+    }
+    return `<div class="ocard ${cardClass(o.status)}${over ? ' overdue' : ''}">
+      <div class="ocard-head">
+        <div>
+          <div class="ocard-id">#${o.id.slice(-8).toUpperCase()}</div>
+          <div class="ocard-time">${fmtTime(o.created_at)}</div>
         </div>
-        <div class="si-total">R${(s.price*s.qty).toFixed(2)}</div>
-        <button class="si-del" onclick="changeQty('${s.sid}',-9999)">✕</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${statusBadge(o.status)}${waitBadge(o)}</div>
+      </div>
+      ${over ? `<div class="overdue-banner">⚠️ ${elapsedMins(o)}m in ${o.status}</div>` : ''}
+      <div class="ocard-body">
+        <div class="ocard-customer">${u.name || ''} ${u.surname || ''}</div>
+        <div class="ocard-phone">${u.phone || o.user_email || ''}</div>
+        <div class="ocard-items">${itemsHtml(o.items)}</div>
+        ${(o.status === 'dispatched' && o.delivery_address) ? `<div class="ocard-address">📍 ${o.delivery_address}</div>` : ''}
+        <div class="ocard-total">${formatCurrency(o.total)}</div>
+      </div>
+      ${actions ? `<div class="ocard-actions">${actions}</div>` : ''}
+    </div>`;
+  }
+
+  // ── Render ──────────────────────────────────────
+  function render() {
+    const newOrders = _orders.filter(o => o.status === 'pending');
+    const inProg    = _orders.filter(o => ['butchering','braai'].includes(o.status));
+    const packaging = _orders.filter(o => o.status === 'packaging');
+    const collecting = _orders.filter(o => o.status === 'ready');
+    const delivering = _orders.filter(o => o.status === 'dispatched');
+
+    document.getElementById('cnt-new').textContent = newOrders.length;
+    document.getElementById('cnt-prog').textContent = inProg.length;
+    document.getElementById('cnt-pack').textContent = packaging.length;
+    document.getElementById('cnt-collect').textContent = collecting.length;
+    document.getElementById('cnt-dispatch').textContent = delivering.length;
+
+    const badgeNew = document.getElementById('badge-new');
+    badgeNew.textContent = newOrders.length;
+    badgeNew.className = 'col-cnt' + (newOrders.length ? ' has-items' : '');
+
+    const progAll = [...inProg, ...packaging, ...collecting, ...delivering];
+    const badgeProg = document.getElementById('badge-prog');
+    badgeProg.textContent = progAll.length;
+    badgeProg.className = 'col-cnt' + (progAll.length ? ' has-items' : '');
+
+    // Overdue alert bar
+    const allOverdue = _orders.filter(o => !['delivered','collected','cancelled'].includes(o.status) && isOverdue(o));
+    const alertBar = document.getElementById('overdue-alert');
+    if (allOverdue.length) {
+      alertBar.innerHTML = `<div class="section-alert">⚠️ ${allOverdue.length} order${allOverdue.length>1?'s':''} overdue — check highlighted cards</div>`;
+      alertBar.style.display = 'block';
+    } else {
+      alertBar.style.display = 'none';
+    }
+
+    document.getElementById('new-orders').innerHTML = newOrders.length
+      ? newOrders.map(newOrderCard).join('')
+      : '<div class="empty-col"><div class="ei">🎉</div>No new orders</div>';
+
+    document.getElementById('progress-orders').innerHTML = progAll.length
+      ? progAll.map(progressCard).join('')
+      : '<div class="empty-col"><div class="ei">✅</div>All clear</div>';
+  }
+
+  // Re-render timers every 30s without a network call
+  setInterval(() => { if (_orders.length) render(); }, 30000);
+
+  // ── Actions ─────────────────────────────────────
+  window.allocate = async function(orderId, newStatus, btn) {
+    btn.disabled = true;
+    try {
+      const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
+      if (error) throw error;
+      await loadData();
+      showToast(`Order → ${newStatus}`, 'success');
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+      btn.disabled = false;
+    }
+  };
+
+  window.finalise = async function(orderId, newStatus, btn) {
+    btn.disabled = true;
+    try {
+      const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
+      if (error) throw error;
+      await loadData();
+      showToast(newStatus === 'collected' ? '✅ Collected!' : '✅ Delivered!', 'success');
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+      btn.disabled = false;
+    }
+  };
+
+  // ── Cash Credit Modal ────────────────────────────
+  window.openModal = function() {
+    _selectedUser = null;
+    document.getElementById('cust-search').value = '';
+    document.getElementById('credit-amount').value = '';
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('selected-customer').style.display = 'none';
+    document.getElementById('credit-confirm-btn').disabled = true;
+    document.getElementById('credit-modal').classList.add('open');
+    setTimeout(() => document.getElementById('cust-search').focus(), 50);
+  };
+
+  window.closeModal = function() {
+    document.getElementById('credit-modal').classList.remove('open');
+  };
+
+  document.getElementById('credit-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('credit-modal')) closeModal();
+  });
+
+  // Customer search
+  document.getElementById('cust-search').addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    const resultsEl = document.getElementById('search-results');
+    if (q.length < 2) { resultsEl.style.display = 'none'; return; }
+    const matches = _users.filter(u =>
+      (u.name||'').toLowerCase().includes(q) ||
+      (u.surname||'').toLowerCase().includes(q) ||
+      (u.email||'').toLowerCase().includes(q) ||
+      (u.phone||'').includes(q) ||
+      (u.ref_number||'').toLowerCase().includes(q)
+    ).slice(0, 6);
+    if (!matches.length) { resultsEl.innerHTML = '<div class="search-result-item"><div class="sri-name" style="color:#555">No customers found</div></div>'; resultsEl.style.display = 'block'; return; }
+    resultsEl.innerHTML = matches.map(u => `
+      <div class="search-result-item" onclick="selectCustomer('${u.id}')">
+        <div class="sri-name">${u.name} ${u.surname||''}</div>
+        <div class="sri-sub">${u.phone||''} · ${u.email||''} · Ref: ${u.ref_number||'—'} · Balance: ${formatCurrency(u.credit_balance||0)}</div>
       </div>`).join('');
+    resultsEl.style.display = 'block';
+  });
 
-    const sub = _sale.reduce((a,s)=>a+s.price*s.qty, 0);
-    const vat = sub * 0.15;
-    document.getElementById('tot-sub').textContent   = 'R'+sub.toFixed(2);
-    document.getElementById('tot-vat').textContent   = 'R'+vat.toFixed(2);
-    document.getElementById('tot-grand').textContent = 'R'+(sub+vat).toFixed(2);
-    document.getElementById('process-btn').disabled  = false;
-    calcChange();
-  }
+  window.selectCustomer = function(userId) {
+    const u = _users.find(u => u.id === userId);
+    if (!u) return;
+    _selectedUser = u;
+    document.getElementById('cust-search').value = `${u.name} ${u.surname||''}`;
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('sc-name').textContent = `${u.name} ${u.surname||''}`;
+    document.getElementById('sc-balance').textContent = `Current balance: ${formatCurrency(u.credit_balance||0)}`;
+    document.getElementById('sc-ref').textContent = `Ref: ${u.ref_number||'—'} · ${u.email||''}`;
+    document.getElementById('selected-customer').style.display = 'block';
+    document.getElementById('credit-confirm-btn').disabled = false;
+    document.getElementById('credit-amount').focus();
+  };
 
-  function selPay(el){
-    document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('sel'));
-    el.classList.add('sel');
-    _pay = el.dataset.method;
-    document.getElementById('cash-row').style.display   = _pay==='cash' ? 'grid' : 'none';
-    document.getElementById('credit-ref').classList.toggle('show', _pay==='credit');
-    document.getElementById('change-box').classList.remove('show');
-  }
+  window.applyCredit = async function() {
+    if (!_selectedUser) return;
+    const amountRaw = parseFloat(document.getElementById('credit-amount').value);
+    if (!amountRaw || amountRaw <= 0) { showToast('Enter a valid amount', 'error'); return; }
 
-  function calcChange(){
-    const grand = _sale.reduce((a,s)=>a+s.price*s.qty,0)*1.15;
-    const ten = parseFloat(document.getElementById('cash-tendered').value)||0;
-    const box = document.getElementById('change-box');
-    const val = document.getElementById('change-val');
-    if(ten > 0){
-      const ch = ten - grand;
-      box.classList.add('show');
-      val.textContent = 'R'+Math.abs(ch).toFixed(2);
-      val.className = 'change-val'+(ch<0?' neg':'');
-    } else { box.classList.remove('show'); }
-  }
+    const btn = document.getElementById('credit-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
 
-  // Weight modal
-  function openWt(p){
-    _wtProd = p;
-    document.getElementById('wt-name').textContent = p.name;
-    document.getElementById('wt-meta').textContent = 'R'+p.price.toFixed(2)+' '+(p.unit||'per kg');
-    document.getElementById('wt-input').value = '1';
-    document.querySelectorAll('.wt-preset').forEach(b=>b.classList.remove('sel'));
-    updateWtTotal();
-    document.getElementById('wt-modal').classList.add('open');
-  }
-  function closeWt(){ document.getElementById('wt-modal').classList.remove('open'); _wtProd=null; }
-  function setWt(kg){
-    document.getElementById('wt-input').value = kg;
-    document.querySelectorAll('.wt-preset').forEach(b=>b.classList.toggle('sel',
-      (kg===.25&&b.textContent==='¼ kg')||(kg===.5&&b.textContent==='½ kg')||(kg===1&&b.textContent==='1 kg')||(kg===2&&b.textContent==='2 kg')
-    ));
-    updateWtTotal();
-  }
-  function updateWtTotal(){
-    if(!_wtProd) return;
-    const kg = parseFloat(document.getElementById('wt-input').value)||0;
-    document.getElementById('wt-total-val').textContent = 'R'+(kg*_wtProd.price).toFixed(2);
-  }
-  function confirmWt(){
-    if(!_wtProd) return;
-    const kg = parseFloat(document.getElementById('wt-input').value)||0;
-    if(kg<=0){ showToast('Enter a valid weight','warning'); return; }
-    addKgToSale(_wtProd.id, kg);
-    const tile = document.getElementById('tile-'+_wtProd.id);
-    tile?.classList.remove('added'); void tile?.offsetWidth; tile?.classList.add('added');
-    closeWt();
-  }
-
-  // Process walk-in sale
-  async function processSale(){
-    if(!_sale.length) return;
-    const btn = document.getElementById('process-btn');
-    btn.disabled=true; btn.textContent='Processing…';
     try {
-      const {db,collection,addDoc,serverTimestamp} = await fb();
-      const sub   = _sale.reduce((a,s)=>a+s.price*s.qty,0);
-      const total = sub*1.15;
-      const custRef = document.getElementById('cust-ref-field').value.trim();
-      const d = {
-        items:    _sale.map(s=>({name:s.name,qty:s.qty,price:s.price,unit:s.unit})),
-        subtotal: sub, total, payMethod:_pay,
-        source:   'walkin', status:'collected',
-        customerRef: custRef||null,
-        routedTo: [],
-        createdAt: serverTimestamp()
-      };
-      await addDoc(collection(db,'orders'), d);
-      showToast('✅ Sale R'+total.toFixed(2)+' processed!','success');
-      _lastReceipt = {...d, items:[..._sale], createdAt:new Date()};
-      document.getElementById('reprint-btn').disabled = false;
-      showReceiptModal(_lastReceipt);
-      clearSale();
-      document.getElementById('cash-tendered').value='';
-      await loadOrders();
-    } catch(e){ showToast('Error: '+e.message,'error'); }
-    btn.disabled=false; btn.textContent='Process Sale';
-  }
+      const newBalance = parseFloat(_selectedUser.credit_balance || 0) + amountRaw;
 
-  // Receipt
-  function showReceiptModal(d){
-    document.getElementById('receipt-pre').textContent = buildReceipt(d);
-    document.getElementById('receipt-modal').classList.add('open');
-  }
-  function closeReceipt(){ document.getElementById('receipt-modal').classList.remove('open'); }
-  function reprintLast(){ if(_lastReceipt) showReceiptModal(_lastReceipt); }
-  function doPrint(){ if(_lastReceipt) _printRaw(buildReceipt(_lastReceipt)); }
+      const { error } = await supabase.from('users')
+        .update({ credit_balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('id', _selectedUser.id);
+      if (error) throw error;
 
-  function buildReceipt(d){
-    const W = 32;
-    const c = s => ' '.repeat(Math.max(0,Math.floor((W-s.length)/2)))+s;
-    const div = '─'.repeat(W);
-    const lines = [
-      c('THE PEOPLES BUTCHERY'), c('76 Meeu St, East Lynne'), c('Tel: 0722419751'), div,
-      'Date: '+(d.createdAt instanceof Date ? d.createdAt.toLocaleString('en-ZA') : new Date().toLocaleString('en-ZA')),
-      'Payment: '+(d.payMethod||'').toUpperCase(), div
-    ];
-    (d.items||[]).forEach(s=>{
-      const label = s.name.slice(0,18);
-      const price = 'R'+(parseFloat(s.price)*parseFloat(s.qty)).toFixed(2);
-      const qty   = (s.isKg||(s.unit||'').includes('kg')) ? s.qty+'kg' : s.qty+'x';
-      lines.push(label.padEnd(W-price.length)+price);
-      lines.push('  '+qty+' @ R'+parseFloat(s.price).toFixed(2));
-    });
-    const total = 'R'+parseFloat(d.total||0).toFixed(2);
-    lines.push(div, 'TOTAL'.padEnd(W-total.length)+total, div, c('Thank you! Come again.'), c('0722419751'));
-    return lines.join('\n');
-  }
-
-  function _printRaw(text){
-    const pa = document.getElementById('print-area');
-    pa.innerHTML = `<pre style="font-family:'Courier New',monospace;font-size:11px;line-height:1.5;white-space:pre">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</pre>`;
-    window.print();
-  }
-
-  // ── CREDITS ────────────────────────────────────
-  async function lookupCustomer(){
-    const ref = document.getElementById('cred-ref-input').value.trim().toUpperCase();
-    if(!ref) return;
-    const res = document.getElementById('cust-result');
-    res.innerHTML = '<div style="color:#555;font-size:.8rem;padding:10px 0">Searching…</div>';
-    try {
-      const {db,collection,getDocs,query,where} = await fb();
-      const snap = await getDocs(query(collection(db,'users'), where('refNumber','==',ref)));
-      if(snap.empty){ res.innerHTML=`<div style="color:#ff4d4d;font-size:.8rem;padding:10px 0">No customer found for REF: ${ref}</div>`; return; }
-      const u = {id:snap.docs[0].id,...snap.docs[0].data()};
-      const bal = parseFloat(u.creditBalance||u.credit_balance||0);
-      res.innerHTML = `
-        <div class="cust-card">
-          <div class="cust-name">${u.name||''} ${u.surname||''}</div>
-          <div class="cust-ref">REF: ${u.refNumber||ref}</div>
-          <div class="cust-bal-lbl">Credit Balance</div>
-          <div class="cust-bal" style="color:${bal>=0?'#3DD68C':'#ff4d4d'}">R${bal.toFixed(2)}</div>
-          <div class="cred-add">
-            <input class="cred-amt" id="cred-add-amt" type="number" min="0" step="10" placeholder="Amount…">
-            <button class="cred-add-btn" onclick="addCredit('${u.id}','${ref}')">+ Add</button>
-          </div>
-          <div style="font-size:.7rem;color:#444;margin-top:8px">Credit is added immediately and logged.</div>
-        </div>`;
-    } catch(e){ res.innerHTML=`<div style="color:#ff4d4d;font-size:.8rem">Error: ${e.message}</div>`; }
-  }
-
-  async function addCredit(userId, ref){
-    const amt = parseFloat(document.getElementById('cred-add-amt')?.value)||0;
-    if(amt<=0){ showToast('Enter a valid amount','warning'); return; }
-    try {
-      const {db,doc,updateDoc,increment,collection,addDoc,serverTimestamp} = await fb();
-      await updateDoc(doc(db,'users',userId), {creditBalance:increment(amt), updatedAt:serverTimestamp()});
-      await addDoc(collection(db,'transactions'),{
-        userId, type:'deposit', amount:amt,
-        note:'Cashier credit — REF '+ref,
-        createdAt:serverTimestamp()
+      await supabase.from('transactions').insert({
+        user_id: _selectedUser.id,
+        user_email: _selectedUser.email || '',
+        amount: amountRaw,
+        type: 'credit',
+        notes: `Cash deposit at till`,
+        status: 'completed'
       });
-      showToast('R'+amt.toFixed(2)+' credit added ✓','success');
-      lookupCustomer();
-    } catch(e){ showToast('Error: '+e.message,'error'); }
-  }
 
-  // ── Boot ───────────────────────────────────────
-  loadOrders();
-  loadProducts();
-  setInterval(loadOrders, 20000);
-  </script>
+      // Refresh local user list so balance shows correctly on next search
+      const idx = _users.findIndex(u => u.id === _selectedUser.id);
+      if (idx !== -1) _users[idx].credit_balance = newBalance;
+
+      showToast(`✅ R${amountRaw.toFixed(2)} credited to ${_selectedUser.name}`, 'success');
+      closeModal();
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '✓ Add Credit';
+    }
+  };
+
+  setInterval(loadData, 15000);
+</script>
 </body>
 </html>

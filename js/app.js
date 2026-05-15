@@ -106,27 +106,27 @@ const Auth = {
   TOKEN_KEY: 'peoples_token',
 
   login(user, token = null) {
-    sessionStorage.setItem(this.SESSION_KEY, JSON.stringify({
+    localStorage.setItem(this.SESSION_KEY, JSON.stringify({
       id: user.id,
       isAdmin: user.isAdmin || user.is_admin || false,
       name: user.name,
       surname: user.surname,
       email: user.email,
-      phone: user.phone || '',
-      refNumber: user.refNumber || user.ref_number
+      refNumber: user.refNumber || user.ref_number,
+      creditBalance: parseFloat(user.creditBalance || user.credit_balance || 0)
     }));
-    if (token) sessionStorage.setItem(this.TOKEN_KEY, token);
+    if (token) localStorage.setItem(this.TOKEN_KEY, token);
   },
   logout() {
-    sessionStorage.removeItem(this.SESSION_KEY);
-    sessionStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.SESSION_KEY);
+    localStorage.removeItem(this.TOKEN_KEY);
     window.location.href = 'login.html';
   },
   getToken() {
-    return sessionStorage.getItem(this.TOKEN_KEY);
+    return localStorage.getItem(this.TOKEN_KEY);
   },
   getSession() {
-    try { return JSON.parse(sessionStorage.getItem(this.SESSION_KEY)); }
+    try { return JSON.parse(localStorage.getItem(this.SESSION_KEY)); }
     catch { return null; }
   },
   isLoggedIn() { return !!this.getSession(); },
@@ -221,15 +221,6 @@ const API = {
       return { user };
     }
     
-    // --- USER REGISTRATION ---
-    if (path === '/users' && options.method === 'POST') {
-      const body = JSON.parse(options.body);
-      const users = DB.getUsers();
-      users.push(body);
-      DB.saveUsers(users);
-      return { user: body };
-    }
-
     // --- ORDERS ---
     if (path === '/orders' && (!options.method || options.method === 'GET')) {
       if (!currentUser) throw new Error('Not logged in');
@@ -405,63 +396,82 @@ function initNavbar() {
   if (!nav) return;
   window.addEventListener('scroll', () => {
     nav.classList.toggle('scrolled', window.scrollY > 40);
-  });
-  // Hamburger
+  }, { passive: true });
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+
   const hamburger = document.getElementById('hamburger');
   const navMenu = document.getElementById('nav-menu');
   if (hamburger && navMenu) {
-    hamburger.addEventListener('click', () => navMenu.classList.toggle('open'));
+    hamburger.addEventListener('click', () => {
+      const isOpen = navMenu.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    });
+    // Close on nav link tap (mobile)
+    navMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        navMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
   }
 }
 
 // ── Dynamic Navbar ────────────────────────────
 function renderNavbar({ active = '', showCart = false, showOrderNow = false } = {}) {
-  const target = document.getElementById('app-navbar') || document.querySelector('.navbar');
-  if (!target) return;
+  const placeholder = document.getElementById('app-navbar');
+  if (!placeholder) return;
 
   const isLoggedIn = Auth.isLoggedIn();
   const isAdmin = Auth.isAdmin();
   const accountHref = isAdmin ? 'admin.html' : 'dashboard.html';
-  const accountLabel = isAdmin ? 'Admin Panel' : 'My Account';
+  const sess = Auth.getSession();
+  const navLabel = isLoggedIn && sess
+    ? (sess.name ? `Hi, ${sess.name}` : 'My Account')
+    : 'My Account';
+  const balanceChip = isLoggedIn && sess && !isAdmin && sess.creditBalance > 0
+    ? `<span style="font-size:.75rem;color:var(--success);font-weight:700;margin-left:4px">R${Number(sess.creditBalance).toFixed(2)}</span>`
+    : '';
 
   const homeOnlyLinks = active === 'home' ? `
         <li><a href="#about" class="nav-link">About</a></li>
         <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
         <li><a href="#contact" class="nav-link">Contact</a></li>` : '';
 
-  // These appear in the hamburger on mobile only
-  const mobileOnlyActions = `
-        <li class="nav-divider mobile-menu-only" role="separator"></li>
-        ${!isLoggedIn
-          ? `<li class="mobile-menu-only"><a href="login.html" class="nav-link">Login</a></li>
-        <li class="mobile-menu-only"><a href="register.html" class="nav-link" style="color:var(--gold);font-weight:700">Register Free →</a></li>`
-          : `<li class="mobile-menu-only"><a href="${accountHref}" class="nav-link">${accountLabel}</a></li>`
-        }
-        ${showOrderNow ? `<li class="mobile-menu-only"><a href="shop.html" class="nav-link">Order Now</a></li>` : ''}
-        ${isLoggedIn ? `<li class="mobile-menu-only"><button class="nav-link mobile-logout-btn" id="mobile-logout-btn">Logout</button></li>` : ''}`;
-
   const cartBtn = showCart
     ? `<button class="btn btn-outline btn-sm btn-icon cart-btn" id="nav-cart-btn" aria-label="Cart">🛒<span class="cart-count" id="nav-cart-count" style="display:none">0</span></button>`
     : '';
 
-  const orderNowBtn = showOrderNow ? `<a href="shop.html" class="btn btn-gold btn-sm desktop-action">Order Now</a>` : '';
+  const orderNowBtn = showOrderNow ? `<a href="shop.html" class="btn btn-gold btn-sm">Order Now</a>` : '';
 
-  target.outerHTML = `
+  const mobileActions = `
+    <li class="mobile-actions">
+      ${!isLoggedIn ? `<a href="login.html" class="btn btn-ghost">Login</a><a href="register.html" class="btn btn-primary" style="font-weight:700">Register Free</a>` : ''}
+      ${isLoggedIn ? `<a href="${accountHref}" class="btn btn-primary">${navLabel}${balanceChip}</a>` : ''}
+      ${isLoggedIn ? `<button class="btn btn-ghost" id="nav-logout-btn-mobile">Logout</button>` : ''}
+      ${orderNowBtn ? `<a href="shop.html" class="btn btn-gold">Order Now</a>` : ''}
+    </li>`;
+
+  placeholder.outerHTML = `
   <nav class="navbar" role="navigation">
     <div class="navbar-inner">
       <a href="index.html" class="navbar-brand">
-        <img src="assets/img/logo-navbar.png" class="navbar-logo" alt="The Peoples Butchery">
+        <div class="brand-logo">🥩</div>
+        <span class="brand-name">The Peoples <span>Butchery</span></span>
       </a>
       <ul class="navbar-nav" id="nav-menu">
         <li><a href="index.html" class="nav-link${active === 'home' ? ' active' : ''}">Home</a></li>
-        <li><a href="shop.html" class="nav-link${active === 'shop' ? ' active' : ''}">Shop</a></li>${homeOnlyLinks}${mobileOnlyActions}
+        <li><a href="shop.html" class="nav-link${active === 'shop' ? ' active' : ''}">Shop</a></li>${homeOnlyLinks}
+        <li${isLoggedIn ? '' : ' class="hidden"'}><a href="${accountHref}" class="nav-link">My Account</a></li>
+        ${mobileActions}
       </ul>
       <div class="navbar-actions">
-        <a href="login.html" class="btn btn-ghost btn-sm desktop-action${isLoggedIn ? ' hidden' : ''}" id="nav-login-btn">Login</a>
-        <a href="register.html" class="btn btn-primary btn-sm desktop-action${isLoggedIn ? ' hidden' : ''}" id="nav-register-btn">Register Free</a>
-        <a href="${accountHref}" class="btn btn-primary btn-sm desktop-action${isLoggedIn ? '' : ' hidden'}" id="nav-dash-btn">${accountLabel}</a>
+        <a href="login.html" class="btn btn-ghost btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-login-btn">Login</a>
+        <a href="register.html" class="btn btn-primary btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-register-btn">Register Free</a>
+        <a href="${accountHref}" class="btn btn-primary btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-dash-btn">${navLabel}${balanceChip}</a>
         ${orderNowBtn}${cartBtn}
-        <button class="btn btn-ghost btn-sm desktop-action${isLoggedIn ? '' : ' hidden'}" id="nav-logout-btn">Logout</button>
+        <button class="btn btn-ghost btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-logout-btn">Logout</button>
         <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -469,14 +479,9 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
 
   initNavbar();
 
-  document.getElementById('nav-logout-btn')?.addEventListener('click', () => {
-    Auth.logout();
-    window.location.href = 'index.html';
-  });
-  document.getElementById('mobile-logout-btn')?.addEventListener('click', () => {
-    Auth.logout();
-    window.location.href = 'index.html';
-  });
+  const logoutHandler = () => { Auth.logout(); window.location.href = 'index.html'; };
+  document.getElementById('nav-logout-btn')?.addEventListener('click', logoutHandler);
+  document.getElementById('nav-logout-btn-mobile')?.addEventListener('click', logoutHandler);
 }
 
 // ── Tabs ──────────────────────────────────────
