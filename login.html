@@ -302,6 +302,14 @@
         let userData;
         if (snap.exists()) {
           userData = snap.data();
+          // Backfill missing REF for existing Google users
+          if (!userData.refNumber) {
+            const _parts = (fbUser.displayName || userData.name + ' ' + (userData.surname || '')).split(' ');
+            const _initials = ((_parts[0]?.[0] || '') + (_parts[1]?.[0] || '')).toUpperCase() || 'GG';
+            const _suffix = fbUser.uid.slice(-4).toUpperCase();
+            userData.refNumber = _initials + _suffix;
+            await setDoc(doc(db, 'users', fbUser.uid), { refNumber: userData.refNumber }, { merge: true });
+          }
         } else {
           const parts = (fbUser.displayName || '').split(' ');
           const initials = ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'XX';
