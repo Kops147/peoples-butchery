@@ -1,0 +1,8 @@
+node_modules/
+backend/serviceAccountKey.json.json
+backend/serviceAccountKey.json
+.env
+*.env
+.agents/
+skills-lock.json
+qr_path.txt

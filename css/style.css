@@ -308,7 +308,31 @@ h6 {
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  text-decoration: none;
+}
+
+.navbar-logo {
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+  transition: 0.3s ease;
+  filter:
+    drop-shadow(0 0 8px rgba(255, 80, 20, 0.35))
+    drop-shadow(0 0 16px rgba(255, 120, 0, 0.2));
+}
+
+.navbar-logo:hover {
+  transform: scale(1.03);
+  filter:
+    drop-shadow(0 0 10px rgba(255, 90, 30, 0.6))
+    drop-shadow(0 0 20px rgba(255, 120, 0, 0.4));
+}
+
+@media (max-width: 768px) {
+  .navbar-logo {
+    height: 52px;
+    max-width: 220px;
+  }
 }
 
 .brand-logo {
@@ -421,9 +445,40 @@ h6 {
   transition: var(--transition);
 }
 
+/* Mobile-only nav items: hidden on desktop, shown in hamburger */
+.mobile-menu-only {
+  display: none;
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 4px;
+  list-style: none;
+}
+
+.mobile-logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+}
+
 @media(max-width:768px) {
   .hamburger {
     display: flex;
+  }
+
+  /* Hide desktop action buttons; they move into the hamburger menu */
+  .desktop-action {
+    display: none !important;
+  }
+
+  .mobile-menu-only {
+    display: block;
   }
 
   .navbar-nav {
@@ -443,6 +498,8 @@ h6 {
     border-bottom: 1px solid var(--border);
     padding: 16px;
     gap: 4px;
+    max-height: calc(100vh - var(--navbar-h));
+    overflow-y: auto;
   }
 }
 

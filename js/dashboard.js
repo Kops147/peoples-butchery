@@ -62,15 +62,15 @@ function showTab(tab) {
 // ── Sidebar User Info ─────────────────────────
 function renderSidebarUser() {
   document.getElementById('sb-name').textContent = `${currentUser.name} ${currentUser.surname}`;
-  document.getElementById('sb-ref').textContent = currentUser.ref_number || '';
-  document.getElementById('sb-balance').textContent = formatCurrency(currentUser.credit_balance);
+  document.getElementById('sb-ref').textContent = currentUser.refNumber || currentUser.ref_number || '';
+  document.getElementById('sb-balance').textContent = formatCurrency(currentUser.creditBalance ?? currentUser.credit_balance);
   document.getElementById('sb-avatar').textContent = (currentUser.name || '?')[0].toUpperCase();
 }
 
 // ── Overview Tab ──────────────────────────────
 function renderOverview() {
-  document.getElementById('ov-balance').textContent = formatCurrency(currentUser.credit_balance);
-  document.getElementById('ov-ref').textContent = currentUser.ref_number || '';
+  document.getElementById('ov-balance').textContent = formatCurrency(currentUser.creditBalance ?? currentUser.credit_balance);
+  document.getElementById('ov-ref').textContent = currentUser.refNumber || currentUser.ref_number || '';
 
   document.getElementById('ov-total-orders').textContent = userOrders.length;
   const pending = userOrders.filter(o => ['pending', 'processing', 'delivering', 'braai', 'packaging'].includes(o.status));
@@ -192,7 +192,7 @@ async function renderTransactions() {
 document.addEventListener('DOMContentLoaded', () => {
   const copyRef = document.getElementById('copy-ref-btn');
   if (copyRef) {
-    copyRef.addEventListener('click', () => copyToClipboard(currentUser?.ref_number || '', copyRef));
+    copyRef.addEventListener('click', () => copyToClipboard(currentUser?.refNumber || currentUser?.ref_number || '', copyRef));
   }
 });
 

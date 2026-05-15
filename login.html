@@ -74,6 +74,27 @@
 <body>
   <div id="toast-container"></div>
 
+  <!-- Phone collection modal (shown when Google account has no phone) -->
+  <div id="phone-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);padding:40px 36px;max-width:440px;width:100%;box-shadow:var(--shadow-lg)">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:2.5rem;margin-bottom:12px">📱</div>
+        <h2 style="font-family:var(--font-head);font-weight:800;font-size:1.4rem;margin-bottom:8px">One more thing</h2>
+        <p style="color:var(--text-secondary);font-size:0.9rem">Your Google account doesn't have a cellphone number. Please add one so we can reach you about your orders.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="modal-phone">Cellphone Number *</label>
+        <div class="input-group">
+          <span class="input-icon">📞</span>
+          <input type="tel" id="modal-phone" class="form-control" placeholder="e.g. 072 123 4567" autocomplete="tel" inputmode="tel">
+        </div>
+        <div id="modal-phone-error" class="form-error hidden">Please enter a valid SA cellphone number</div>
+      </div>
+      <button type="button" id="modal-phone-submit" class="btn btn-primary btn-full" style="margin-top:8px">Save & Continue</button>
+      <button type="button" id="modal-phone-skip" class="btn btn-ghost btn-full btn-sm" style="margin-top:10px;color:var(--text-muted)">Skip for now</button>
+    </div>
+  </div>
+
   <div class="auth-page">
     <!-- Left: Form -->
     <div class="auth-left"
@@ -193,6 +214,80 @@
     import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { auth, db } from './js/firebase-config.js';
 
+    // Pending state while phone modal is open
+    let _pendingUserData = null;
+    let _pendingToken = null;
+
+    function formatSAPhone(raw) {
+      const digits = raw.replace(/\D/g, '');
+      if (digits.startsWith('27')) return '+' + digits;
+      if (digits.startsWith('0')) return '+27' + digits.slice(1);
+      return '+27' + digits;
+    }
+
+    function isValidSAPhone(raw) {
+      const digits = raw.replace(/\D/g, '');
+      return digits.length >= 9 && digits.length <= 12;
+    }
+
+    function showPhoneModal(userData, token) {
+      _pendingUserData = userData;
+      _pendingToken = token;
+      const modal = document.getElementById('phone-modal');
+      modal.style.display = 'flex';
+      setTimeout(() => document.getElementById('modal-phone')?.focus(), 100);
+    }
+
+    function proceedAfterLogin(userData, token) {
+      Auth.login(userData, token);
+      showToast('Welcome, ' + (userData.name || 'there') + '! 🎉', 'success');
+      const params = new URLSearchParams(window.location.search);
+      setTimeout(() => {
+        window.location.href = userData.isAdmin ? 'admin.html' : (params.get('redirect') || 'dashboard.html');
+      }, 800);
+    }
+
+    // ── Phone modal handlers ──────────────────────
+    document.getElementById('modal-phone-submit').addEventListener('click', async () => {
+      const raw = document.getElementById('modal-phone').value.trim();
+      const errEl = document.getElementById('modal-phone-error');
+      if (!raw || !isValidSAPhone(raw)) {
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+
+      const btn = document.getElementById('modal-phone-submit');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Saving...';
+
+      const phone = formatSAPhone(raw);
+      _pendingUserData.phone = phone;
+
+      // Establish session first so API.put can authenticate the request
+      Auth.login(_pendingUserData, _pendingToken);
+      try {
+        await API.put('/users/me', { phone });
+      } catch (_) { /* non-critical — phone can be updated later from profile */ }
+
+      document.getElementById('phone-modal').style.display = 'none';
+      // Session already set above; just redirect
+      showToast('Welcome, ' + (_pendingUserData.name || 'there') + '! 🎉', 'success');
+      const params = new URLSearchParams(window.location.search);
+      setTimeout(() => {
+        window.location.href = _pendingUserData.isAdmin ? 'admin.html' : (params.get('redirect') || 'dashboard.html');
+      }, 800);
+    });
+
+    document.getElementById('modal-phone-skip').addEventListener('click', () => {
+      document.getElementById('phone-modal').style.display = 'none';
+      proceedAfterLogin(_pendingUserData, _pendingToken);
+    });
+
+    document.getElementById('modal-phone').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('modal-phone-submit').click();
+    });
+
     // ── Google Sign-In ────────────────────────────
     document.getElementById('google-signin-btn').addEventListener('click', async () => {
       const btn = document.getElementById('google-signin-btn');
@@ -209,6 +304,8 @@
           userData = snap.data();
         } else {
           const parts = (fbUser.displayName || '').split(' ');
+          const initials = ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'XX';
+          const counter = String(Date.now()).slice(-4);
           userData = {
             id: fbUser.uid,
             name: parts[0] || '',
@@ -218,18 +315,24 @@
             address: '', suburb: '',
             creditBalance: 0, isAdmin: false,
             phoneVerified: !!fbUser.phoneNumber,
-            refNumber: ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() + fbUser.uid.slice(-4).toUpperCase(),
+            refNumber: initials + counter,
             createdAt: new Date().toISOString()
           };
           await setDoc(doc(db, 'users', fbUser.uid), userData);
+          const _users = DB.getUsers();
+          _users.push(userData);
+          DB.saveUsers(_users);
         }
 
-        Auth.login(userData, token);
-        showToast('Welcome, ' + (userData.name || 'there') + '! 🎉', 'success');
-        const params = new URLSearchParams(window.location.search);
-        setTimeout(() => {
-          window.location.href = userData.isAdmin ? 'admin.html' : (params.get('redirect') || 'dashboard.html');
-        }, 800);
+        // If no phone number on the account, prompt before proceeding
+        if (!userData.phone) {
+          btn.disabled = false;
+          btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google"> Continue with Google';
+          showPhoneModal(userData, token);
+          return;
+        }
+
+        proceedAfterLogin(userData, token);
       } catch (err) {
         if (err.code !== 'auth/popup-closed-by-user') {
           showToast('Google sign-in failed: ' + err.message, 'error');

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#120a02" rx="12"/>
+<ellipse cx="100" cy="167" rx="70" ry="9" fill="#000" opacity=".35"/>
+<!-- plate -->
+<circle cx="100" cy="108" r="76" fill="#e8e2cc" stroke="#ccc5aa" stroke-width="3"/>
+<circle cx="100" cy="108" r="66" fill="#f5f0e0"/>
+<!-- dividing line across plate -->
+<line x1="100" y1="43" x2="100" y2="173" stroke="#ccc5aa" stroke-width="1.5" opacity=".5"/>
+<!-- LEFT side: pens & pooitjies (brownish tripe) -->
+<ellipse cx="72" cy="110" rx="26" ry="24" fill="#7a4018" opacity=".9"/>
+<path d="M54 104 C59 100 64 104 69 100 C74 96 79 100 84 96" fill="none" stroke="#5a2a08" stroke-width="2" stroke-linecap="round"/>
+<path d="M54 111 C59 107 64 111 69 107 C74 103 79 107 84 103" fill="none" stroke="#5a2a08" stroke-width="2" stroke-linecap="round"/>
+<path d="M54 118 C59 114 64 118 69 114 C74 110 79 114 84 110" fill="none" stroke="#5a2a08" stroke-width="2" stroke-linecap="round"/>
+<path d="M56 124 C61 120 66 124 71 120 C76 116 81 120 86 116" fill="none" stroke="#5a2a08" stroke-width="2" stroke-linecap="round"/>
+<!-- RIGHT side: salad (green leaves) -->
+<ellipse cx="128" cy="110" rx="26" ry="24" fill="#2a7a18" opacity=".85"/>
+<ellipse cx="120" cy="106" rx="9" ry="7" fill="#3a9820" transform="rotate(-20 120 106)"/>
+<ellipse cx="134" cy="104" rx="9" ry="7" fill="#2a8a14" transform="rotate(15 134 104)"/>
+<ellipse cx="126" cy="118" rx="8" ry="6" fill="#3aac24" transform="rotate(-10 126 118)"/>
+<ellipse cx="138" cy="116" rx="7" ry="6" fill="#2a9018" transform="rotate(25 138 116)"/>
+<!-- tomato on salad -->
+<circle cx="124" cy="114" r="5" fill="#d43030"/>
+<circle cx="135" cy="108" r="4" fill="#e04040"/>
+<!-- steam -->
+<path d="M80 52 C78 45 80 38 78 31" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100 50 C98 43 100 36 98 29" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M120 52 C118 45 120 38 118 31" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="46" y="16" width="108" height="22" rx="11" fill="#5a2a08" opacity=".9"/>
+<text x="100" y="31" font-family="Arial" font-size="10" font-weight="700" fill="#f5d08a" text-anchor="middle">PENS &amp; POOITJIES</text>
+</svg>

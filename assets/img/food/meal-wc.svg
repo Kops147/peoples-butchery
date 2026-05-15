@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#120a02" rx="12"/>
+<ellipse cx="100" cy="167" rx="70" ry="9" fill="#000" opacity=".35"/>
+<circle cx="100" cy="108" r="76" fill="#e8e2cc" stroke="#ccc5aa" stroke-width="3"/>
+<circle cx="100" cy="108" r="66" fill="#f5f0e0"/>
+<!-- pap mound -->
+<ellipse cx="64" cy="123" rx="23" ry="14" fill="#dfd7b6"/>
+<ellipse cx="64" cy="115" rx="17" ry="13" fill="#ebe6ce"/>
+<ellipse cx="64" cy="108" rx="11" ry="9" fill="#f8f5e8"/>
+<!-- chicken drumstick (rotated) -->
+<g transform="rotate(-20 120 100)">
+  <ellipse cx="120" cy="108" rx="14" ry="21" fill="#c08020"/>
+  <ellipse cx="120" cy="106" rx="10" ry="16" fill="#d4982e"/>
+  <rect x="116" y="83" width="7" height="16" rx="3.5" fill="#f0ead8" stroke="#d8d0b8" stroke-width="1"/>
+  <circle cx="119.5" cy="82" r="5.5" fill="#f0ead8" stroke="#d8d0b8" stroke-width="1"/>
+</g>
+<!-- wors coil (shifted right) -->
+<path d="M94 135 C100 129 111 129 115 136 C119 143 115 150 109 152 C103 154 95 150 94 143 C93 137 99 132 105 134" fill="none" stroke="#7a5010" stroke-width="8" stroke-linecap="round"/>
+<circle cx="94.5" cy="135.5" r="3.5" fill="#7a5010"/>
+<!-- gravy pool -->
+<ellipse cx="104" cy="131" rx="35" ry="9" fill="#3a1a06" opacity=".3"/>
+<!-- steam -->
+<path d="M80 53 C78 46 80 39 78 32" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100 50 C98 43 100 36 98 29" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M120 53 C118 46 120 39 118 32" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#120a02" rx="12"/>
+<ellipse cx="100" cy="168" rx="62" ry="8" fill="#000" opacity=".4"/>
+<!-- bowl outer -->
+<path d="M30 100 Q28 148 100 160 Q172 148 170 100 Z" fill="#8a6030" stroke="#704e22" stroke-width="2"/>
+<!-- bowl inner fill (mogodu / pap split) -->
+<path d="M36 100 Q34 144 100 156 Q166 144 164 100 Z" fill="#f5f0e0"/>
+<!-- dividing line (pap left, mogodu right) -->
+<line x1="100" y1="100" x2="100" y2="155" stroke="#ccc5a8" stroke-width="1.5" stroke-dasharray="4 3" opacity=".6"/>
+<!-- pap side (left) -->
+<ellipse cx="72" cy="128" rx="22" ry="14" fill="#e0d8b8"/>
+<ellipse cx="72" cy="120" rx="16" ry="12" fill="#ede8d0"/>
+<ellipse cx="72" cy="113" rx="10" ry="8" fill="#f8f5e8"/>
+<!-- mogodu texture (right side) - honeycomb-ish pattern -->
+<ellipse cx="128" cy="128" rx="28" ry="20" fill="#8B4513" opacity=".85"/>
+<!-- mogodu wavy lines (tripe texture) -->
+<path d="M108 120 C113 116 118 120 123 116 C128 112 133 116 138 112" fill="none" stroke="#6B3010" stroke-width="2" stroke-linecap="round"/>
+<path d="M108 127 C113 123 118 127 123 123 C128 119 133 123 138 119" fill="none" stroke="#6B3010" stroke-width="2" stroke-linecap="round"/>
+<path d="M108 134 C113 130 118 134 123 130 C128 126 133 130 138 126" fill="none" stroke="#6B3010" stroke-width="2" stroke-linecap="round"/>
+<path d="M110 141 C115 137 120 141 125 137 C130 133 135 137 140 133" fill="none" stroke="#6B3010" stroke-width="2" stroke-linecap="round"/>
+<!-- bowl rim -->
+<ellipse cx="100" cy="100" rx="70" ry="15" fill="none" stroke="#8a6030" stroke-width="3"/>
+<ellipse cx="55" cy="125" rx="5" ry="14" fill="#fff" opacity=".07" transform="rotate(-15 55 125)"/>
+<!-- steam -->
+<path d="M80 68 C78 61 80 54 78 47" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100 65 C98 58 100 51 98 44" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M120 68 C118 61 120 54 118 47" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="58" y="16" width="84" height="22" rx="11" fill="#6a4020" opacity=".9"/>
+<text x="100" y="31" font-family="Arial" font-size="11" font-weight="700" fill="#f5d08a" text-anchor="middle">PAP &amp; MOGODU</text>
+</svg>

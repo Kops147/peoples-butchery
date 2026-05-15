@@ -370,7 +370,7 @@
   <script src="js/app.js"></script>
   <script type="module">
     import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { auth, db } from './js/firebase-config.js';
 
     // ── Google Sign-In state ──────────────────────
@@ -385,13 +385,31 @@
         googleUser = result.user;
         const token = await googleUser.getIdToken();
 
-        // If profile already exists → login directly
+        // If profile already exists with a phone → login directly
         const snap = await getDoc(doc(db, 'users', googleUser.uid));
         if (snap.exists()) {
           const userData = snap.data();
-          Auth.login(userData, token);
-          showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
-          setTimeout(() => { window.location.href = userData.isAdmin ? 'admin.html' : 'dashboard.html'; }, 800);
+          if (userData.phone) {
+            Auth.login(userData, token);
+            showToast('Welcome back, ' + (userData.name || 'there') + '! 🎉', 'success');
+            setTimeout(() => { window.location.href = userData.isAdmin ? 'admin.html' : 'dashboard.html'; }, 800);
+            return;
+          }
+          // Profile exists but no phone — pre-fill and send to step 2
+          const existingParts = (userData.name + ' ' + userData.surname).trim().split(' ');
+          document.getElementById('r-name').value = userData.name || '';
+          document.getElementById('r-surname').value = userData.surname || '';
+          document.getElementById('r-email').value = userData.email || '';
+          document.getElementById('r-email').readOnly = true;
+          document.getElementById('r-password').closest('.form-group').style.display = 'none';
+          document.getElementById('r-confirm').closest('.form-group').style.display = 'none';
+          document.getElementById('google-signin-section').style.display = 'none';
+          document.getElementById('google-prefill-banner').style.display = 'block';
+          document.getElementById('google-prefill-banner').innerHTML =
+            '<span style="font-weight:600;color:#4285F4">✓ Signed in with Google</span>' +
+            '<span style="color:var(--text-secondary)"> — please add your cellphone number to continue.</span>';
+          goToStep(2);
+          showToast('Please add your cellphone number to complete your profile.', 'info');
           return;
         }
 
@@ -640,13 +658,14 @@
           createdAt: new Date().toISOString()
         };
 
-        await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-
-        const users = DB.getUsers();
-        users.push(newUser);
-        DB.saveUsers(users);
-
+        // Establish session so API.post can include the auth token
         Auth.login(newUser, token);
+        try {
+          await API.post('/users', newUser);
+        } catch (apiErr) {
+          // Non-fatal on localhost (mock handles it); on production the backend will save to Supabase
+          console.warn('Profile save to backend failed:', apiErr);
+        }
 
         document.getElementById('success-ref').textContent = pendingRef;
         document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));

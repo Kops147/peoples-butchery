@@ -5,6 +5,26 @@
 
 'use strict';
 
+
+// ── Google Image Search fallback ───────────────
+const GOOGLE_API_KEY = 'AIzaSyD1wDQZISSbrI0B15wVhxEiiB4WilM3QTc';
+const GOOGLE_CSE_ID  = '51a7510b6bf774c12';
+
+window.imgError = async function(el, productName) {
+  el.onerror = null;
+  if (GOOGLE_API_KEY && GOOGLE_CSE_ID) {
+    try {
+      const q   = encodeURIComponent(productName + ' meat south africa');
+      const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&searchType=image&num=1&q=${q}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      const img  = data.items?.[0]?.link;
+      if (img) { el.src = img; return; }
+    } catch { /* fall through */ }
+  }
+  el.src = 'assets/img/food/meat_on_braai.jpg';
+};
+
 let _users = [];
 let _orders = [];
 let _products = [];
@@ -27,6 +47,23 @@ async function seedProductsToFirestore() {
   await Promise.all(products.map(p => setDoc(doc(collection(db, 'products'), p.id), p)));
   showToast('Products seeded to Firestore ✅', 'success');
   return products;
+}
+
+// ── Resync product images from local catalog ──
+// Run once after switching from Google Drive to local assets
+async function resyncProductImages() {
+  const { LOCAL_CATALOG, mapToProduct } = await import('./catalog.js');
+  const { db, doc, updateDoc } = await getFirebase();
+  const updates = LOCAL_CATALOG.map(p => {
+    const mapped = mapToProduct(p);
+    return updateDoc(doc(db, 'products', mapped.id), {
+      image: mapped.image,
+      image_url: mapped.image,
+    }).catch(() => {}); // skip if product doesn't exist in Firestore yet
+  });
+  await Promise.all(updates);
+  showToast('Product images resynced ✅', 'success');
+  await loadAllAdminData();
 }
 
 // ── Image Compression (Canvas API) ────────────
@@ -62,15 +99,15 @@ async function uploadProductImage(file) {
 
   const compressed = await compressImage(file);
   const compressedKb = Math.round(compressed.size / 1024);
-
   statusEl.textContent = `Uploading ${compressedKb}KB (was ${originalKb}KB)...`;
 
   const { storage } = await import('./firebase-config.js');
-  const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js");
+  const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js');
 
-  const filename = `products/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
-  const snapshot = await uploadBytes(ref(storage, filename), compressed, { contentType: 'image/jpeg' });
-  const url = await getDownloadURL(snapshot.ref);
+  const path = `products/${Date.now()}_product.jpg`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg' });
+  const url = await getDownloadURL(storageRef);
 
   statusEl.textContent = `✅ Uploaded · ${compressedKb}KB (was ${originalKb}KB)`;
   return url;
@@ -95,8 +132,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
       link.classList.add('active');
       showAdminTab(link.dataset.tab);
+      location.hash = link.dataset.tab;
     });
   });
+
+  // Restore tab from URL hash on load/refresh
+  const hash = location.hash.replace('#', '');
+  const validTabs = ['overview','credit','orders','inventory','products','reports','customers','settings'];
+  const startTab = validTabs.includes(hash) ? hash : 'overview';
+  const startLink = document.querySelector(`.sidebar-link[data-tab="${startTab}"]`);
+  if (startLink) {
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    startLink.classList.add('active');
+    showAdminTab(startTab);
+  }
 
   document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
 });
@@ -109,7 +158,11 @@ async function loadAllAdminData() {
 
     try {
       const snap = await getDocs(collection(db, 'users'));
-      _users = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => !u.isAdmin);
+      const firestoreUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => !u.isAdmin);
+      const localUsers = typeof DB !== 'undefined' && DB.getUsers ? DB.getUsers().filter(u => !u.isAdmin) : [];
+      const firestoreEmails = new Set(firestoreUsers.map(u => u.email).filter(Boolean));
+      const extraLocal = localUsers.filter(u => u.email && !firestoreEmails.has(u.email));
+      _users = [...firestoreUsers, ...extraLocal];
     } catch (e) { failures.push('users: ' + e.message); console.error('Users load failed:', e); }
 
     try {
@@ -336,6 +389,9 @@ function filterOrders(status) {
   });
 }
 
+window.resyncProductImages = resyncProductImages;
+window.seedProductsToFirestore = seedProductsToFirestore;
+
 window.updateOrderStatus = async (orderId, newStatus) => {
   try {
     const { db, doc, updateDoc } = await getFirebase();
@@ -459,7 +515,7 @@ function renderAdminProducts() {
     <div class="product-admin-card mb-4" id="prod-admin-${p.id}">
       <div class="product-admin-img">
         <img src="${p.image_url || p.image || ''}" alt="${p.name}"
-          onerror="this.src='https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop'">
+          onerror="imgError(this,'${p.name}')">
       </div>
       <div class="product-admin-info">
         <div style="font-family:var(--font-head);font-weight:700">${p.name}</div>
@@ -558,16 +614,27 @@ function initProductForm() {
     const file = e.target.files[0];
     if (!file) return;
     const btn = document.getElementById('upload-image-btn');
+    const statusEl = document.getElementById('upload-status');
     btn.disabled = true;
     btn.textContent = '⏳ Uploading...';
+
+    const safetyTimer = setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '📷 Upload Photo';
+      statusEl.textContent = '⚠️ Upload timed out — check your internet connection';
+      e.target.value = '';
+    }, 30000);
+
     try {
       const url = await uploadProductImage(file);
+      clearTimeout(safetyTimer);
       document.getElementById('prod-image').value = url;
       setImagePreview(url);
       showToast('Image uploaded!', 'success');
     } catch (err) {
+      clearTimeout(safetyTimer);
       showToast('Upload failed: ' + err.message, 'error');
-      document.getElementById('upload-status').textContent = '❌ Upload failed — check Storage rules';
+      statusEl.textContent = '❌ ' + err.message;
     } finally {
       btn.disabled = false;
       btn.textContent = '📷 Upload Photo';
@@ -652,7 +719,11 @@ function renderAdminCustomers() {
             </div>
           </div>
         </td>
-        <td><span class="ref-number" style="font-size:1rem;letter-spacing:2px">${u.refNumber || ''}</span></td>
+        <td>
+          ${u.refNumber
+            ? `<span class="ref-number" style="font-size:1rem;letter-spacing:2px">${u.refNumber}</span>`
+            : `<button class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:4px 10px" onclick="assignRef('${u.id}')">+ Assign REF</button>`}
+        </td>
         <td>${u.phone || ''}</td>
         <td class="text-gold font-bold">${formatCurrency(u.creditBalance || 0)}</td>
         <td>${orderCount}</td>
@@ -671,6 +742,32 @@ function renderAdminCustomers() {
     });
   }
 }
+
+// ── Assign REF Number ─────────────────────────
+window.assignRef = async (userId) => {
+  const user = _users.find(u => u.id === userId);
+  if (!user) return;
+
+  const initials = ((user.name || '?')[0] + (user.surname || '?')[0]).toUpperCase();
+  const existing = _users.filter(u => u.refNumber && u.refNumber.startsWith(initials));
+  const counter = String(existing.length + 1).padStart(4, '0');
+  let ref = initials + counter;
+  // Ensure uniqueness
+  let suffix = 65;
+  while (_users.find(u => u.refNumber === ref)) {
+    ref = initials + counter + String.fromCharCode(suffix++);
+  }
+
+  try {
+    const { db, doc, updateDoc } = await getFirebase();
+    await updateDoc(doc(db, 'users', userId), { refNumber: ref });
+    user.refNumber = ref;
+    showToast(`REF ${ref} assigned to ${user.name}`, 'success');
+    renderAdminCustomers();
+  } catch (e) {
+    showToast('Failed to assign REF: ' + e.message, 'error');
+  }
+};
 
 // ── System Settings ───────────────────────────
 function initSettingsForm() {

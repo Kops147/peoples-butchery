@@ -7,6 +7,25 @@
 import { saveOrderToFirebase } from './firebase-orders.js';
 import { LOCAL_CATALOG, mapToProduct } from './catalog.js';
 
+// ── Google Image Search fallback ───────────────
+const GOOGLE_API_KEY = 'AIzaSyD1wDQZISSbrI0B15wVhxEiiB4WilM3QTc';
+const GOOGLE_CSE_ID  = '51a7510b6bf774c12';
+
+window.imgError = async function(el, productName) {
+  el.onerror = null;
+  if (GOOGLE_API_KEY && GOOGLE_CSE_ID) {
+    try {
+      const q   = encodeURIComponent(productName + ' meat south africa');
+      const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&searchType=image&num=1&q=${q}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      const img  = data.items?.[0]?.link;
+      if (img) { el.src = img; return; }
+    } catch { /* fall through */ }
+  }
+  el.src = 'assets/img/food/meat_on_braai.jpg';
+};
+
 // ── State ──────────────────────────────────────
 let cart = [];
 let apiProducts = [];
@@ -246,7 +265,7 @@ function renderProducts() {
 
     return `<div class="product-card" id="pc-${p.id}">
         <div class="product-img">
-          <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
+          <img src="${p.image_url || p.image}" alt="${p.name}" loading="lazy" onerror="imgError(this,'${p.name}')">
           <div class="product-category-tag">${catBadge}</div>
         </div>
         <div class="product-info">
@@ -313,7 +332,7 @@ function renderCartPanel() {
         ? `${item.qty} kg × ${formatCurrency(unitPrice)}/kg`
         : `${item.qty} × ${formatCurrency(unitPrice)}`;
       return `<div class="cart-item">
-        <div class="cart-item-img"><img src="${p.image}" alt="${p.name}" onerror="this.src='assets/img/food/meat_on_braai.jpg'"></div>
+        <div class="cart-item-img"><img src="${p.image_url || p.image}" alt="${p.name}" onerror="imgError(this,'${p.name}')"></div>
         <div class="cart-item-info">
           <div class="cart-item-name">${p.name}</div>
           <div style="font-size:0.8rem;color:var(--text-muted)">${qtyLabel}</div>
@@ -520,7 +539,10 @@ async function checkout() {
   try {
     // Save order to Firebase
     const orderId = await saveOrderToFirebase({
-      items: cart.map(c => ({ productId: c.productId, quantity: c.qty })),
+      items: cart.map(c => {
+        const p = findProduct(c.productId);
+        return { productId: c.productId, quantity: c.qty, qty: c.qty, name: p?.name, price: p?.price, unit: p?.unit, category: p?.category, categoryLabel: p?.categoryLabel };
+      }),
       subtotal: subtotal,
       deliveryFee: delivFee,
       total: total,

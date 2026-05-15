@@ -69,6 +69,79 @@
     .empty-panel .ei { font-size: 2rem; margin-bottom: 8px; }
     .empty-panel p { font-size: .8rem; }
 
+    /* ── Customer Display Mode ── */
+    .cdisp { display: none; position: fixed; inset: 0; z-index: 900; background: #060606; flex-direction: column; overflow: hidden; }
+    .cdisp.open { display: flex; }
+
+    /* Animated BG */
+    .cdisp-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .cdisp-bg::before { content: ''; position: absolute; inset: -50%; background: conic-gradient(from 0deg at 50% 50%, #8B0000 0%, #1a0000 25%, #0a0a0a 50%, #1a0800 75%, #8B0000 100%); animation: bgSpin 20s linear infinite; opacity: .18; }
+    @keyframes bgSpin { to { transform: rotate(360deg); } }
+    .cdisp-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, #060606 100%); }
+
+    /* Header bar */
+    .cdisp-header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,.05); flex-shrink: 0; }
+    .cdisp-brand { display: flex; align-items: center; gap: 16px; }
+    .cdisp-logo { height: 44px; filter: drop-shadow(0 0 12px rgba(232,160,32,.4)); }
+    .cdisp-store-name { font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: .5px; }
+    .cdisp-store-name span { color: #e8a020; }
+    .cdisp-tagline { font-size: .8rem; color: #555; }
+    .cdisp-clock { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: #333; letter-spacing: 2px; }
+
+    /* Main content */
+    .cdisp-body { flex: 1; position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 360px; overflow: hidden; }
+
+    /* Product carousel */
+    .cdisp-carousel { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 40px; position: relative; overflow: hidden; }
+    .cdisp-slide { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 40px; opacity: 0; transform: translateX(60px); transition: opacity .8s ease, transform .8s ease; pointer-events: none; }
+    .cdisp-slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .cdisp-slide.exit { opacity: 0; transform: translateX(-60px); }
+    .slide-img-wrap { width: 280px; height: 280px; border-radius: 24px; overflow: hidden; border: 2px solid rgba(232,160,32,.2); box-shadow: 0 0 60px rgba(232,160,32,.12), 0 20px 60px rgba(0,0,0,.8); margin-bottom: 28px; flex-shrink: 0; }
+    .slide-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .slide-cat { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #555; margin-bottom: 8px; }
+    .slide-name { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: #fff; text-align: center; line-height: 1.2; margin-bottom: 10px; }
+    .slide-price { font-family: var(--font-head); font-size: 2.8rem; font-weight: 900; color: #e8a020; line-height: 1; }
+    .slide-unit { font-size: .9rem; color: #555; margin-top: 4px; }
+    .slide-desc { font-size: .88rem; color: #444; text-align: center; margin-top: 10px; max-width: 380px; }
+
+    /* Dots */
+    .cdisp-dots { display: flex; gap: 8px; margin-top: 20px; position: relative; z-index: 2; flex-shrink: 0; }
+    .cdot { width: 8px; height: 8px; border-radius: 50%; background: #2a2a2a; transition: background .3s, transform .3s; }
+    .cdot.active { background: #e8a020; transform: scale(1.4); }
+
+    /* Order board */
+    .cdisp-orders { position: relative; z-index: 2; border-left: 1px solid rgba(255,255,255,.05); display: flex; flex-direction: column; overflow: hidden; }
+    .cdisp-orders-head { padding: 24px 24px 16px; flex-shrink: 0; }
+    .cdisp-orders-title { font-family: var(--font-head); font-size: 1rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 2px; }
+    .cdisp-order-list { flex: 1; overflow-y: auto; padding: 0 24px 24px; }
+    .cdisp-order-list::-webkit-scrollbar { display: none; }
+
+    .cord { background: #111; border: 1px solid #1e1e1e; border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; animation: slideIn .4s ease; }
+    .cord.ready { border-color: rgba(61,214,140,.3); background: rgba(61,214,140,.04); animation: slideIn .4s ease, readyPulse 2s ease-in-out infinite; }
+    @keyframes slideIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes readyPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(61,214,140,0); } 50%{ box-shadow:0 0 0 6px rgba(61,214,140,.08); } }
+
+    .cord-status { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .cord.ready .cord-status { color: #3DD68C; }
+    .cord.prep .cord-status { color: #f0a000; }
+    .cord.waiting .cord-status { color: #3498db; }
+    .cord-name { font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; color: #ddd; }
+    .cord-id { font-size: .72rem; color: #3a3a3a; margin-top: 2px; }
+    .cord-items { font-size: .78rem; color: #555; margin-top: 6px; }
+
+    .cdisp-no-orders { text-align: center; padding: 40px 20px; color: #2a2a2a; }
+    .cdisp-no-orders .ei { font-size: 2.5rem; margin-bottom: 10px; }
+
+    /* Ticker */
+    .cdisp-ticker { position: relative; z-index: 2; border-top: 1px solid rgba(232,160,32,.1); background: rgba(232,160,32,.03); padding: 10px 0; overflow: hidden; flex-shrink: 0; }
+    .ticker-inner { display: flex; white-space: nowrap; animation: ticker 30s linear infinite; }
+    .ticker-item { padding: 0 40px; font-size: .82rem; color: #555; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .ticker-item span { color: #e8a020; font-weight: 700; }
+    @keyframes ticker { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+
+    /* Exit hint */
+    .cdisp-exit { position: absolute; bottom: 60px; right: 24px; z-index: 10; font-size: .68rem; color: #1e1e1e; }
+
     /* Restock modal */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 1000; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
@@ -84,6 +157,55 @@
 <body>
   <div id="toast-container"></div>
 
+  <!-- ══════════════════════════════════════════
+       CUSTOMER DISPLAY — full-screen 17" mode
+       Press ESC or triple-tap to exit
+  ══════════════════════════════════════════ -->
+  <div class="cdisp" id="cdisp">
+    <div class="cdisp-bg"></div>
+
+    <!-- Header -->
+    <div class="cdisp-header">
+      <div class="cdisp-brand">
+        <img src="assets/img/logo-navbar.png" class="cdisp-logo" alt="Logo" onerror="this.style.display='none'">
+        <div>
+          <div class="cdisp-store-name">The Peoples <span>Butchery</span></div>
+          <div class="cdisp-tagline">76 Meeu St, East Lynne, Pretoria · 012 345 6789</div>
+        </div>
+      </div>
+      <div class="cdisp-clock" id="cdisp-clock">—</div>
+    </div>
+
+    <!-- Body -->
+    <div class="cdisp-body">
+
+      <!-- Product / Ad Carousel -->
+      <div class="cdisp-carousel">
+        <div id="cdisp-slides"></div>
+        <div class="cdisp-dots" id="cdisp-dots"></div>
+      </div>
+
+      <!-- Live Order Board -->
+      <div class="cdisp-orders">
+        <div class="cdisp-orders-head">
+          <div class="cdisp-orders-title">📋 Order Status</div>
+        </div>
+        <div class="cdisp-order-list" id="cdisp-order-list">
+          <div class="cdisp-no-orders"><div class="ei">✅</div><p>No orders in queue</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Specials Ticker -->
+    <div class="cdisp-ticker">
+      <div class="ticker-inner" id="cdisp-ticker">
+        <!-- cloned twice for seamless loop -->
+      </div>
+    </div>
+
+    <div class="cdisp-exit">ESC to exit display mode</div>
+  </div>
+
   <header class="stn-header">
     <div class="stn-title">
       <span style="font-size:1.4rem">🥩</span>
@@ -97,7 +219,8 @@
       <a href="dispatch.html">🚚 Dispatch</a>
       <a href="admin.html">⚙️ Admin</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button onclick="openDisplay()" style="background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);color:#e8a020;padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(232,160,32,.2)'" onmouseout="this.style.background='rgba(232,160,32,.1)'">📺 Customer Display</button>
       <span class="live-dot"></span>
       <span class="stn-clock" id="clock">—</span>
     </div>
@@ -339,6 +462,163 @@
 
     load();
     setInterval(load, 60000);
+  </script>
+
+  <!-- ── Customer Display Logic ── -->
+  <script>
+    'use strict';
+
+    // ── Ads / product showcase ─────────────────────
+    // Promotional slides shown when no product matches — always shown in rotation
+    const ADS = [
+      { type: 'ad', name: 'Fresh Daily', sub: 'Cut to order every morning', price: null, img: 'assets/img/food/meatOnbraai.jpg', cat: '🔥 Today\'s Special' },
+      { type: 'ad', name: 'Pap & Mogodu', sub: 'Traditional tripe with pap', price: 'R50', img: 'assets/img/food/37.jpg', cat: '🍽️ Cooked Meals' },
+      { type: 'ad', name: 'Club Special', sub: 'Steak, Wors & Chicken with Pap', price: 'From R70', img: 'assets/img/food/172 ChickenSteakAndWors.jpeg', cat: '⭐ Weekend Special' },
+      { type: 'ad', name: 'Boerewors', sub: 'Premium South African sausage', price: 'R95.99/kg', img: 'assets/img/food/1206.jpg', cat: '🥩 Raw Cut' },
+      { type: 'ad', name: 'Lamb Chops', sub: 'Grade A fresh lamb', price: 'R140/kg', img: 'assets/img/food/291.jpg', cat: '🥩 Raw Cut' },
+      { type: 'ad', name: 'Mutton Curry', sub: 'Rich slow-cooked mutton', price: 'R65', img: 'assets/img/food/1179.jpg', cat: '⭐ Special' },
+      { type: 'ad', name: 'Pap & Beef Stew', sub: 'Slow-cooked beef with pap', price: 'R50', img: 'assets/img/food/1126.jpg', cat: '🍽️ Cooked Meals' },
+      { type: 'ad', name: 'Halfskop & Pap', sub: 'A township classic', price: 'R45', img: 'assets/img/food/meatOnbraai.jpg', cat: '🍽️ Cooked Meals' },
+    ];
+
+    let _displaySlides   = [];
+    let _slideIdx        = 0;
+    let _slideInterval   = null;
+    let _displayOrders   = [];
+    let _tapCount        = 0;
+    let _tapTimer        = null;
+    let _displayOpen     = false;
+
+    async function openDisplay(){
+      document.getElementById('cdisp').classList.add('open');
+      _displayOpen = true;
+      document.body.style.overflow = 'hidden';
+      await refreshDisplayData();
+      startSlideShow();
+      startDisplayClock();
+    }
+
+    function closeDisplay(){
+      document.getElementById('cdisp').classList.remove('open');
+      _displayOpen = false;
+      document.body.style.overflow = '';
+      if (_slideInterval) { clearInterval(_slideInterval); _slideInterval = null; }
+    }
+
+    // ESC or triple-tap to exit
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && _displayOpen) closeDisplay(); });
+    document.getElementById('cdisp').addEventListener('click', () => {
+      _tapCount++;
+      if (_tapTimer) clearTimeout(_tapTimer);
+      _tapTimer = setTimeout(() => { _tapCount = 0; }, 600);
+      if (_tapCount >= 3) { closeDisplay(); _tapCount = 0; }
+    });
+
+    // ── Clock ──────────────────────────────────────
+    function startDisplayClock(){
+      const el = document.getElementById('cdisp-clock');
+      const update = () => { el.textContent = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}); };
+      update();
+      setInterval(update, 10000);
+    }
+
+    // ── Refresh data ───────────────────────────────
+    async function refreshDisplayData(){
+      // Build slides from products + static ads
+      try {
+        const { db, collection, getDocs } = await fb();
+        const [prodSnap, ordSnap] = await Promise.all([
+          getDocs(collection(db,'products')),
+          getDocs(collection(db,'orders'))
+        ]);
+        const prods = prodSnap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.is_active!==false && p.price > 0);
+        _displayOrders = ordSnap.docs.map(d=>({id:d.id,...d.data()})).filter(o=>['pending','braai','packaging'].includes(o.status));
+        // Mix real products with static ads
+        const realSlides = prods.slice(0,6).map(p => ({
+          type:'product', name:p.name, sub:p.description||'Fresh today',
+          price: p.unit && /kg/i.test(p.unit) ? `R${parseFloat(p.price).toFixed(2)}/kg` : `R${parseFloat(p.price).toFixed(2)}`,
+          img: p.image_url || p.image || 'assets/img/food/meatOnbraai.jpg',
+          cat: p.categoryLabel || p.category || 'Product'
+        }));
+        _displaySlides = [...realSlides, ...ADS];
+      } catch {
+        _displaySlides = ADS;
+        _displayOrders = [];
+      }
+      buildSlides();
+      buildOrderBoard();
+      buildTicker();
+    }
+
+    // ── Carousel ───────────────────────────────────
+    function buildSlides(){
+      const el   = document.getElementById('cdisp-slides');
+      const dots = document.getElementById('cdisp-dots');
+      el.innerHTML   = _displaySlides.map((s,i) => `
+        <div class="cdisp-slide${i===0?' active':''}" id="cslide-${i}">
+          <div class="slide-img-wrap">
+            <img src="${s.img}" alt="${s.name}" onerror="this.src='assets/img/food/meatOnbraai.jpg'">
+          </div>
+          <div class="slide-cat">${s.cat}</div>
+          <div class="slide-name">${s.name}</div>
+          ${s.price ? `<div class="slide-price">${s.price}</div>` : '<div class="slide-price" style="font-size:1.4rem;color:#333">Ask in store</div>'}
+          <div class="slide-desc">${s.sub}</div>
+        </div>`).join('');
+      dots.innerHTML = _displaySlides.map((_,i) => `<div class="cdot${i===0?' active':''}" id="cdot-${i}"></div>`).join('');
+      _slideIdx = 0;
+    }
+
+    function goSlide(idx){
+      const prev = document.getElementById('cslide-' + _slideIdx);
+      const pdot = document.getElementById('cdot-' + _slideIdx);
+      if (prev){ prev.classList.remove('active'); prev.classList.add('exit'); setTimeout(()=>prev.classList.remove('exit'),900); }
+      if (pdot) pdot.classList.remove('active');
+      _slideIdx = (idx + _displaySlides.length) % _displaySlides.length;
+      const next = document.getElementById('cslide-' + _slideIdx);
+      const ndot = document.getElementById('cdot-' + _slideIdx);
+      if (next) next.classList.add('active');
+      if (ndot) ndot.classList.add('active');
+    }
+
+    function startSlideShow(){
+      if (_slideInterval) clearInterval(_slideInterval);
+      _slideInterval = setInterval(() => { if (_displayOpen) goSlide(_slideIdx + 1); }, 5000);
+    }
+
+    // ── Order Board ────────────────────────────────
+    function buildOrderBoard(){
+      const el = document.getElementById('cdisp-order-list');
+      if (!_displayOrders.length) {
+        el.innerHTML = `<div class="cdisp-no-orders"><div class="ei">✅</div><p>All orders clear</p></div>`;
+        return;
+      }
+      const statusMap = { packaging:'ready', braai:'prep', pending:'waiting' };
+      const statusLabel = { packaging:'✅ READY TO COLLECT', braai:'🔪 BEING PREPARED', pending:'⏳ WAITING' };
+      el.innerHTML = _displayOrders
+        .sort((a,b) => (statusMap[a.status]==='ready'?0:statusMap[a.status]==='prep'?1:2) - (statusMap[b.status]==='ready'?0:statusMap[b.status]==='prep'?1:2))
+        .map(o => `
+        <div class="cord ${statusMap[o.status]||'waiting'}">
+          <div class="cord-status">${statusLabel[o.status]||'In Queue'}</div>
+          <div class="cord-name">${o.userName||'Walk-in'}</div>
+          <div class="cord-id">Order #${o.id.slice(-5).toUpperCase()}</div>
+          <div class="cord-items">${(o.items||[]).slice(0,2).map(it=>it.name).join(' · ')}${(o.items||[]).length>2?' +more':''}</div>
+        </div>`).join('');
+    }
+
+    // ── Specials Ticker ────────────────────────────
+    function buildTicker(){
+      const items = [
+        '🍽️ Pap & Mogodu — R50', '🍽️ Pap & Beef Stew — R50', '🍖 Halfskop — R40',
+        '⭐ Club Special Small — R70', '⭐ Club Special Large — R140', '🍛 Mutton Curry — R65',
+        '🥩 Boerewors — R95.99/kg', '🐑 Lamb Chops — R140/kg', '🥩 Short Rib — R130/kg',
+        '🛒 Order online: thepeoplesbutchery.co.za', '📍 76 Meeu St, East Lynne, Pretoria', '📞 012 345 6789',
+      ];
+      const html = items.map(i => `<div class="ticker-item">• <span>${i}</span></div>`).join('');
+      document.getElementById('cdisp-ticker').innerHTML = html + html; // duplicate for seamless loop
+    }
+
+    // Refresh display data every 30s while open
+    setInterval(() => { if (_displayOpen) refreshDisplayData(); }, 30000);
   </script>
 </body>
 </html>

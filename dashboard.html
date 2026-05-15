@@ -150,8 +150,7 @@
                 REF</button>
             </div>
             <div class="alert alert-info mt-4">
-              ℹ️ <strong>How to add credit:</strong> Visit or call The Peoples Butchery at 76 Meeu St, East Lynne. Make
-              a deposit and give them your REF number: <strong id="inline-ref">—</strong>. Your balance will be updated.
+              ℹ️ <strong>How to add credit:</strong> EFT to FNB account <strong>62936762789</strong> (branch 250655) using your REF as reference, OR visit 76 Meeu St, East Lynne. Call/WhatsApp <strong>0722419751</strong>. REF: <strong id="inline-ref">—</strong>
             </div>
           </div>
         </div>
@@ -208,7 +207,7 @@
                   <div>
                     <div style="font-weight:600;margin-bottom:4px">Make a Deposit</div>
                     <p style="font-size:0.85rem;color:var(--text-secondary)">Visit The Peoples Butchery at 76 Meeu St,
-                      East Lynne OR call us on 012 345 6789 to arrange payment.</p>
+                      East Lynne, OR EFT to the account shown opposite, OR call/WhatsApp <strong>0722419751</strong>.</p>
                   </div>
                 </div>
                 <div style="display:flex;gap:14px;align-items:flex-start">
@@ -236,6 +235,40 @@
               <div class="ref-number" id="credit-ref-display">—</div>
               <button class="btn btn-outline btn-sm mt-3" id="copy-ref-credit-btn">📋 Copy REF Number</button>
             </div>
+
+            <!-- Bank Account Details -->
+            <div class="card mb-4" style="border:1px solid rgba(61,214,140,0.25);background:rgba(61,214,140,0.05)">
+              <div class="card-header" style="border-bottom:1px solid rgba(61,214,140,0.15)">
+                <h3 style="color:#3DD68C">🏦 EFT Bank Details</h3>
+              </div>
+              <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                  <span style="font-size:0.82rem;color:var(--text-secondary)">Bank</span>
+                  <strong>FNB</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                  <span style="font-size:0.82rem;color:var(--text-secondary)">Account Name</span>
+                  <strong>The Peoples Butchery</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                  <span style="font-size:0.82rem;color:var(--text-secondary)">Account Number</span>
+                  <strong style="font-family:monospace;font-size:1rem;letter-spacing:1px" id="bank-acc-num">62936762789</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                  <span style="font-size:0.82rem;color:var(--text-secondary)">Account Type</span>
+                  <strong>Cheque / Current</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+                  <span style="font-size:0.82rem;color:var(--text-secondary)">Branch Code</span>
+                  <strong>250655</strong>
+                </div>
+                <div style="background:rgba(240,160,0,0.1);border:1px solid rgba(240,160,0,0.3);border-radius:8px;padding:10px;font-size:0.82rem;color:#f0a000;margin-top:4px">
+                  ⚠️ Use your <strong>REF number above</strong> as the payment reference so we can match your deposit.
+                </div>
+                <button class="btn btn-outline btn-sm mt-2" onclick="copyBankDetails()">📋 Copy Bank Details</button>
+              </div>
+            </div>
+
             <div class="stat-card">
               <div class="stat-icon gold">💰</div>
               <div class="stat-value text-gold" id="credit-current-balance">R0.00</div>
@@ -245,7 +278,7 @@
                 orders at checkout.</div>
             </div>
             <div class="alert alert-info mt-4">
-              📞 Call us: <strong>012 345 6789</strong><br>
+              📞 Call / WhatsApp: <strong>0722419751</strong><br>
               📍 Visit: 76 Meeu St, East Lynne, Pretoria
             </div>
           </div>
@@ -425,6 +458,13 @@
         }
       }, 100);
     });
+
+    function copyBankDetails() {
+      const ref = document.getElementById('credit-ref-display')?.textContent || 'YOUR-REF';
+      const text = `Bank: FNB\nAccount Name: The Peoples Butchery\nAccount Number: 62936762789\nAccount Type: Cheque\nBranch Code: 250655\nReference: ${ref}`;
+      const btn = document.querySelector('[onclick="copyBankDetails()"]');
+      copyToClipboard(text, btn);
+    }
   </script>
 </body>
 

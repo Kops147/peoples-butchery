@@ -114,7 +114,10 @@
               </div>
             </div>
             <input type="file" id="prod-image-file" accept="image/*" style="display:none">
-            <input type="hidden" id="prod-image">
+            <input type="text" id="prod-image" class="form-control mt-2"
+              placeholder="Image URL or path e.g. assets/img/food/1112.jpg"
+              style="font-size:0.8rem"
+              oninput="setImagePreview(this.value)">
           </div>
           <div class="form-row">
             <div class="form-group" style="display:flex;align-items:center;gap:10px">
@@ -542,6 +545,22 @@
         </div>
         <div class="flex-end mt-4">
           <button class="btn btn-primary" id="save-settings-btn">💾 Save Pricing Configurations</button>
+        </div>
+
+        <div class="card-glass mt-6 p-4">
+          <div style="font-family:var(--font-head);font-weight:700;margin-bottom:8px">🖼️ Product Image Sync</div>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px">
+            Run this once after updating product images. Updates all Firestore product records to use the latest local image paths.
+          </p>
+          <button class="btn btn-outline" onclick="resyncProductImages()">🔄 Resync Product Images from Catalog</button>
+        </div>
+
+        <div class="card-glass mt-4 p-4">
+          <div style="font-family:var(--font-head);font-weight:700;margin-bottom:8px">🍽️ Seed All Products to Firestore</div>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px">
+            Creates or updates <strong>all</strong> products from the local catalog — including new cooked meals. Safe to run multiple times.
+          </p>
+          <button class="btn btn-primary" onclick="seedProductsToFirestore()">🚀 Seed All Products</button>
         </div>
       </div>
 
