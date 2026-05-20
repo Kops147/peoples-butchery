@@ -1030,5 +1030,67 @@
 
   setInterval(loadData, 15000);
 </script>
+  <!-- ── Barcode Scanner Integration ── -->
+<div id="scan-toast" style="display:none;position:fixed;bottom:20px;right:20px;background:#1a1a1a;border:2px solid #e8a020;border-radius:10px;padding:14px 20px;font-size:.85rem;color:#e8a020;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.5)">🔍 Looking up order...</div>
+
+<input type="text" id="barcode-input" placeholder="scan barcode here" style="position:fixed;bottom:-9999px;left:-9999px;opacity:0" autocomplete="off" />
+
+<script>
+let _scanBuffer = '';
+let _scanTimer  = null;
+
+const scanInput = document.getElementById('barcode-input');
+const scanToast = document.getElementById('scan-toast');
+
+function showScanToast(msg) {
+  scanToast.textContent = msg;
+  scanToast.style.display = 'block';
+  setTimeout(() => { scanToast.style.display = 'none'; }, 3000);
+}
+
+// Keep the barcode input permanently focused so scanner always hits it
+setInterval(() => { scanInput.focus(); }, 5000);
+
+// Listen for Enter key (scanner finishes typing)
+scanInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const scanned = _scanBuffer.trim();
+    _scanBuffer = '';
+    if (!scanned) return;
+    scanToast.textContent = '🔍 ' + scanned;
+    scanToast.style.display = 'block';
+    setTimeout(() => { scanToast.style.display = 'none'; }, 3000);
+    handleScannedOrder(scanned);
+  } else {
+    _scanBuffer += e.key;
+    clearTimeout(_scanTimer);
+    _scanTimer = setTimeout(() => { _scanBuffer = ''; }, 200);
+  }
+});
+
+async function handleScannedOrder(orderNum) {
+  try {
+    const resp = await fetch('http://localhost:3001/print?orderNumber=' + encodeURIComponent(orderNum));
+    const data = await resp.json();
+    if (data.success) {
+      showScanToast('✅ Printed: ' + orderNum);
+      loadData(); // refresh the order list
+    } else {
+      showScanToast('❌ Not found: ' + orderNum);
+    }
+  } catch(e) {
+    showScanToast('⚠️ Server offline');
+  }
+}
+
+// Focus barcode input on any keypress anywhere
+document.addEventListener('keypress', function(e) {
+  if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    scanInput.focus();
+  }
+});
+</script>
+
 </body>
 </html>
