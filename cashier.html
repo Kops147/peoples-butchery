@@ -649,6 +649,27 @@
         await deductOrderStock(order.items);
       }
 
+      // 3. Print receipt (non-blocking)
+      if (order) {
+        const u = getUser(order);
+        posPrint({
+          orderNumber: order.id.slice(-8).toUpperCase(),
+          customer: `${u.name||''} ${u.surname||''}`.trim() || order.user_email || '',
+          items: (order.items||[]).map(i => ({
+            name: getProdName(i.productId||i.product_id),
+            qty: i.quantity||i.qty||1,
+            price: i.price||0,
+            braai: i.braai,
+            pap: i.pap
+          })),
+          total: order.total,
+          payMethod: order.payment_method || 'online',
+          deliveryMethod: order.delivery_method,
+          deliveryAddress: order.delivery_address,
+          date: new Date().toISOString()
+        });
+      }
+
       await loadData();
       showToast(newStatus === 'collected' ? '✅ Collected — stock updated' : '✅ Delivered — stock updated', 'success');
     } catch(e) {
@@ -656,6 +677,15 @@
       btn.disabled = false;
     }
   };
+
+  // ── POS Printer (non-blocking — fails silently if server offline) ──
+  function posPrint(payload) {
+    fetch('http://localhost:3001/print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {}); // silent — printer server optional
+  }
 
   // ── Stock deduction (shared by finalise + completeSale + scanner) ──
   async function deductOrderStock(items) {
@@ -1022,6 +1052,19 @@
       // Show receipt & toast
       showTillReceipt({ items: saleSnap, total, payMethod: paySnap, tendered, change, customer: custSnap, date: now });
       showToast('✅ Sale complete — stock updated!', 'success');
+
+      // POS printer receipt (non-blocking)
+      posPrint({
+        orderNumber: null,
+        customer: custSnap ? `${custSnap.name||''} ${custSnap.surname||''}`.trim() : 'Walk-in',
+        items: saleSnap.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        total,
+        payMethod: paySnap,
+        tendered,
+        change,
+        deliveryMethod: 'collection',
+        date: now
+      });
 
     } catch(e) {
       showToast('Sale error: ' + e.message, 'error');
