@@ -90,7 +90,7 @@
 <script type="module">
   import { supabase } from './js/supabase-config.js';
 
-  let _users = [], _products = [];
+  let _users = [], _products = [], _orders = [];
 
   function tick() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' }); }
   tick(); setInterval(tick, 1000);
@@ -102,11 +102,12 @@
     const [ordRes, usrRes, proRes] = await Promise.all([
       supabase.from('orders').select('*').in('status', ['dispatched','delivering','ready']).order('created_at', { ascending: true }),
       supabase.from('users').select('id,name,surname,phone,email'),
-      supabase.from('products').select('id,name,unit')
+      supabase.from('products').select('id,name,unit,stock_qty')
     ]);
     if (!usrRes.error) _users = usrRes.data || [];
     if (!proRes.error) _products = proRes.data || [];
-    render(ordRes.error ? [] : (ordRes.data || []));
+    _orders = ordRes.error ? [] : (ordRes.data || []);
+    render(_orders);
   }
 
   function render(orders) {
@@ -176,17 +177,35 @@
 
   window.markDelivered = async function(id, btn) {
     btn.disabled = true; btn.textContent = 'Updating...';
+    const order = (_orders||[]).find(o => o.id === id);
     const { error } = await supabase.from('orders').update({ status: 'delivered', updated_at: new Date().toISOString() }).eq('id', id);
     if (error) { showToast('Error: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✓ DELIVERED'; return; }
+    if (order && Array.isArray(order.items)) await deductStock(order.items);
     await load();
   };
 
   window.markCollected = async function(id, btn) {
     btn.disabled = true; btn.textContent = 'Updating...';
+    const order = (_orders||[]).find(o => o.id === id);
     const { error } = await supabase.from('orders').update({ status: 'collected', updated_at: new Date().toISOString() }).eq('id', id);
     if (error) { showToast('Error: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✓ COLLECTED'; return; }
+    if (order && Array.isArray(order.items)) await deductStock(order.items);
     await load();
   };
+
+  async function deductStock(items) {
+    for (const item of items) {
+      const pid = item.productId || item.product_id;
+      const qty = parseFloat(item.quantity || item.qty || 1);
+      if (!pid || !qty) continue;
+      const prod = _products.find(p => String(p.id) === String(pid));
+      if (!prod) continue;
+      const current = parseFloat(prod.stock_qty ?? 0);
+      const updated = Math.max(0, current - qty);
+      prod.stock_qty = updated;
+      await supabase.from('products').update({ stock_qty: updated }).eq('id', pid);
+    }
+  }
 
   load();
   setInterval(load, 15000);

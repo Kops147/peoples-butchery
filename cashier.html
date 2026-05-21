@@ -639,15 +639,39 @@
   window.finalise = async function(orderId, newStatus, btn) {
     btn.disabled = true;
     try {
+      // 1. Mark order complete
       const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
       if (error) throw error;
+
+      // 2. Deduct stock for every item in this order
+      const order = _orders.find(o => o.id === orderId);
+      if (order && Array.isArray(order.items) && order.items.length) {
+        await deductOrderStock(order.items);
+      }
+
       await loadData();
-      showToast(newStatus === 'collected' ? '✅ Collected!' : '✅ Delivered!', 'success');
+      showToast(newStatus === 'collected' ? '✅ Collected — stock updated' : '✅ Delivered — stock updated', 'success');
     } catch(e) {
       showToast('Error: ' + e.message, 'error');
       btn.disabled = false;
     }
   };
+
+  // ── Stock deduction (shared by finalise + completeSale + scanner) ──
+  async function deductOrderStock(items) {
+    for (const item of items) {
+      const pid = item.productId || item.product_id;
+      const qty = parseFloat(item.quantity || item.qty || 1);
+      if (!pid || !qty) continue;
+      const prod = _products.find(p => String(p.id) === String(pid));
+      if (!prod) continue;
+      const current = parseFloat(prod.stock_qty ?? 0);
+      const updated = Math.max(0, current - qty);
+      prod.stock_qty = updated; // optimistic local update
+      const { error } = await supabase.from('products').update({ stock_qty: updated }).eq('id', pid);
+      if (error) console.warn('Stock deduct error for', pid, error.message);
+    }
+  }
 
   // ── Cash Credit Modal ────────────────────────────
   window.openModal = function() {
@@ -978,6 +1002,9 @@
       });
       if (txErr) throw txErr;
 
+      // Deduct stock for each cart item
+      await deductOrderStock(_cart.map(i => ({ product_id: i.id, qty: i.qty })));
+
       // Snapshot before clearing
       const saleSnap = [..._cart];
       const custSnap = _tillSelectedUser;
@@ -994,7 +1021,7 @@
 
       // Show receipt & toast
       showTillReceipt({ items: saleSnap, total, payMethod: paySnap, tendered, change, customer: custSnap, date: now });
-      showToast('✅ Sale complete!', 'success');
+      showToast('✅ Sale complete — stock updated!', 'success');
 
     } catch(e) {
       showToast('Sale error: ' + e.message, 'error');
@@ -1069,18 +1096,50 @@ scanInput.addEventListener('keydown', function(e) {
   }
 });
 
-async function handleScannedOrder(orderNum) {
+async function handleScannedOrder(scanned) {
+  // Match by last 6 or 8 chars of order id (uppercase), or full id
+  const q = scanned.trim().toUpperCase();
+  const order = _orders.find(o =>
+    o.id.toUpperCase() === q ||
+    o.id.slice(-8).toUpperCase() === q ||
+    o.id.slice(-6).toUpperCase() === q
+  );
+
+  if (!order) {
+    showScanToast('❌ Order not found: ' + q);
+    return;
+  }
+
+  // Determine what "completing" means based on current status
+  const isCollect = ['ready'].includes(order.status);
+  const isDeliver = ['dispatched', 'delivering'].includes(order.status);
+
+  if (!isCollect && !isDeliver) {
+    showScanToast(`⚠️ #${q} — status: ${order.status} (not ready)`);
+    return;
+  }
+
+  const newStatus = isDeliver ? 'delivered' : 'collected';
+  showScanToast(`🔄 Completing #${q}…`);
+
   try {
-    const resp = await fetch('http://localhost:3001/print?orderNumber=' + encodeURIComponent(orderNum));
-    const data = await resp.json();
-    if (data.success) {
-      showScanToast('✅ Printed: ' + orderNum);
-      loadData(); // refresh the order list
-    } else {
-      showScanToast('❌ Not found: ' + orderNum);
+    const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', order.id);
+    if (error) throw error;
+
+    // Deduct stock
+    if (Array.isArray(order.items) && order.items.length) {
+      await deductOrderStock(order.items);
     }
+
+    showScanToast(`✅ ${newStatus === 'collected' ? 'COLLECTED' : 'DELIVERED'} — #${q}`);
+    showToast(`✅ Order #${q} ${newStatus} — stock updated`, 'success');
+
+    // Optional: trigger POS printer via local server (non-blocking)
+    fetch('http://localhost:3001/print?orderNumber=' + encodeURIComponent(q)).catch(() => {});
+
+    loadData();
   } catch(e) {
-    showScanToast('⚠️ Server offline');
+    showScanToast('❌ Error: ' + e.message);
   }
 }
 
