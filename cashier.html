@@ -8,15 +8,6 @@
   <style>
     body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; font-family: var(--font-body, sans-serif); }
 
-    /* PIN screen */
-    .pin-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .pin-box { background: #111; border: 1px solid #222; border-radius: 16px; padding: 40px; width: 340px; text-align: center; }
-    .pin-box h2 { font-family: var(--font-head, sans-serif); margin: 0 0 6px; font-size: 1.4rem; }
-    .pin-box p { color: #555; font-size: .85rem; margin: 0 0 24px; }
-    .pin-input { width: 100%; background: #0A0A0A; border: 1px solid #2a2a2a; color: #e0e0e0; padding: 12px 16px; border-radius: 10px; font-size: 1.1rem; text-align: center; letter-spacing: 4px; box-sizing: border-box; margin-bottom: 12px; }
-    .pin-input:focus { outline: none; border-color: #e8a020; }
-    .pin-err { color: #ff4d4d; font-size: .8rem; min-height: 18px; }
-
     /* Header */
     .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 12px; flex-wrap: wrap; }
     .stn-title { display: flex; align-items: center; gap: 10px; }
@@ -218,18 +209,6 @@
 
 <div id="toast-container"></div>
 
-<!-- PIN Gate -->
-<div id="pin-screen" class="pin-wrap">
-  <div class="pin-box">
-    <div style="font-size:2rem;margin-bottom:12px">🧾</div>
-    <h2>Cashier Station</h2>
-    <p>The Peoples Butchery — Staff Access</p>
-    <input type="password" id="pin-input" class="pin-input" placeholder="Enter PIN" maxlength="30">
-    <div class="pin-err" id="pin-err"></div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="checkPin()">Unlock</button>
-  </div>
-</div>
-
 <!-- Cash Credit Modal -->
 <div class="modal-overlay" id="credit-modal">
   <div class="modal">
@@ -261,7 +240,7 @@
 </div>
 
 <!-- Main Screen -->
-<div id="main-screen" style="display:none">
+<div id="main-screen">
   <header class="stn-header">
     <div class="stn-title">
       <span class="live-dot"></span>
@@ -419,8 +398,6 @@
 <script src="js/app.js"></script>
 <script type="module">
   import { supabase } from './js/supabase-config.js';
-  const ADMIN_PIN = 'peoplesV2_2024';
-  const SUPER_PIN = 'yType_Dev_2026';
 
   let _orders = [], _users = [], _products = [];
   let _selectedUser = null;
@@ -430,20 +407,6 @@
     document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
   tick(); setInterval(tick, 1000);
-
-  // PIN
-  window.checkPin = function() {
-    const val = document.getElementById('pin-input').value;
-    if (val === ADMIN_PIN || val === SUPER_PIN) {
-      document.getElementById('pin-screen').style.display = 'none';
-      document.getElementById('main-screen').style.display = 'block';
-      loadData();
-    } else {
-      document.getElementById('pin-err').textContent = 'Incorrect PIN';
-      document.getElementById('pin-input').value = '';
-    }
-  };
-  document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') window.checkPin(); });
 
   // ── Data ────────────────────────────────────────
   window.loadData = async function() {
@@ -639,15 +602,69 @@
   window.finalise = async function(orderId, newStatus, btn) {
     btn.disabled = true;
     try {
+      // 1. Mark order complete
       const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', orderId);
       if (error) throw error;
+
+      // 2. Deduct stock for every item in this order
+      const order = _orders.find(o => o.id === orderId);
+      if (order && Array.isArray(order.items) && order.items.length) {
+        await deductOrderStock(order.items);
+      }
+
+      // 3. Print receipt (non-blocking)
+      if (order) {
+        const u = getUser(order);
+        posPrint({
+          orderNumber: order.id.slice(-8).toUpperCase(),
+          customer: `${u.name||''} ${u.surname||''}`.trim() || order.user_email || '',
+          items: (order.items||[]).map(i => ({
+            name: getProdName(i.productId||i.product_id),
+            qty: i.quantity||i.qty||1,
+            price: i.price||0,
+            braai: i.braai,
+            pap: i.pap
+          })),
+          total: order.total,
+          payMethod: order.payment_method || 'online',
+          deliveryMethod: order.delivery_method,
+          deliveryAddress: order.delivery_address,
+          date: new Date().toISOString()
+        });
+      }
+
       await loadData();
-      showToast(newStatus === 'collected' ? '✅ Collected!' : '✅ Delivered!', 'success');
+      showToast(newStatus === 'collected' ? '✅ Collected — stock updated' : '✅ Delivered — stock updated', 'success');
     } catch(e) {
       showToast('Error: ' + e.message, 'error');
       btn.disabled = false;
     }
   };
+
+  // ── POS Printer (non-blocking — fails silently if server offline) ──
+  function posPrint(payload) {
+    fetch('http://localhost:3001/print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {}); // silent — printer server optional
+  }
+
+  // ── Stock deduction (shared by finalise + completeSale + scanner) ──
+  async function deductOrderStock(items) {
+    for (const item of items) {
+      const pid = item.productId || item.product_id;
+      const qty = parseFloat(item.quantity || item.qty || 1);
+      if (!pid || !qty) continue;
+      const prod = _products.find(p => String(p.id) === String(pid));
+      if (!prod) continue;
+      const current = parseFloat(prod.stock_qty ?? 0);
+      const updated = Math.max(0, current - qty);
+      prod.stock_qty = updated; // optimistic local update
+      const { error } = await supabase.from('products').update({ stock_qty: updated }).eq('id', pid);
+      if (error) console.warn('Stock deduct error for', pid, error.message);
+    }
+  }
 
   // ── Cash Credit Modal ────────────────────────────
   window.openModal = function() {
@@ -978,6 +995,9 @@
       });
       if (txErr) throw txErr;
 
+      // Deduct stock for each cart item
+      await deductOrderStock(_cart.map(i => ({ product_id: i.id, qty: i.qty })));
+
       // Snapshot before clearing
       const saleSnap = [..._cart];
       const custSnap = _tillSelectedUser;
@@ -994,7 +1014,20 @@
 
       // Show receipt & toast
       showTillReceipt({ items: saleSnap, total, payMethod: paySnap, tendered, change, customer: custSnap, date: now });
-      showToast('✅ Sale complete!', 'success');
+      showToast('✅ Sale complete — stock updated!', 'success');
+
+      // POS printer receipt (non-blocking)
+      posPrint({
+        orderNumber: null,
+        customer: custSnap ? `${custSnap.name||''} ${custSnap.surname||''}`.trim() : 'Walk-in',
+        items: saleSnap.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        total,
+        payMethod: paySnap,
+        tendered,
+        change,
+        deliveryMethod: 'collection',
+        date: now
+      });
 
     } catch(e) {
       showToast('Sale error: ' + e.message, 'error');
@@ -1029,6 +1062,7 @@
   // ──────────────────────────────────────────────────
 
   setInterval(loadData, 15000);
+  loadData(); // start immediately — no PIN gate
 </script>
   <!-- ── Barcode Scanner Integration ── -->
 <div id="scan-toast" style="display:none;position:fixed;bottom:20px;right:20px;background:#1a1a1a;border:2px solid #e8a020;border-radius:10px;padding:14px 20px;font-size:.85rem;color:#e8a020;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.5)">🔍 Looking up order...</div>
@@ -1069,18 +1103,50 @@ scanInput.addEventListener('keydown', function(e) {
   }
 });
 
-async function handleScannedOrder(orderNum) {
+async function handleScannedOrder(scanned) {
+  // Match by last 6 or 8 chars of order id (uppercase), or full id
+  const q = scanned.trim().toUpperCase();
+  const order = _orders.find(o =>
+    o.id.toUpperCase() === q ||
+    o.id.slice(-8).toUpperCase() === q ||
+    o.id.slice(-6).toUpperCase() === q
+  );
+
+  if (!order) {
+    showScanToast('❌ Order not found: ' + q);
+    return;
+  }
+
+  // Determine what "completing" means based on current status
+  const isCollect = ['ready'].includes(order.status);
+  const isDeliver = ['dispatched', 'delivering'].includes(order.status);
+
+  if (!isCollect && !isDeliver) {
+    showScanToast(`⚠️ #${q} — status: ${order.status} (not ready)`);
+    return;
+  }
+
+  const newStatus = isDeliver ? 'delivered' : 'collected';
+  showScanToast(`🔄 Completing #${q}…`);
+
   try {
-    const resp = await fetch('http://localhost:3001/print?orderNumber=' + encodeURIComponent(orderNum));
-    const data = await resp.json();
-    if (data.success) {
-      showScanToast('✅ Printed: ' + orderNum);
-      loadData(); // refresh the order list
-    } else {
-      showScanToast('❌ Not found: ' + orderNum);
+    const { error } = await supabase.from('orders').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', order.id);
+    if (error) throw error;
+
+    // Deduct stock
+    if (Array.isArray(order.items) && order.items.length) {
+      await deductOrderStock(order.items);
     }
+
+    showScanToast(`✅ ${newStatus === 'collected' ? 'COLLECTED' : 'DELIVERED'} — #${q}`);
+    showToast(`✅ Order #${q} ${newStatus} — stock updated`, 'success');
+
+    // Optional: trigger POS printer via local server (non-blocking)
+    fetch('http://localhost:3001/print?orderNumber=' + encodeURIComponent(q)).catch(() => {});
+
+    loadData();
   } catch(e) {
-    showScanToast('⚠️ Server offline');
+    showScanToast('❌ Error: ' + e.message);
   }
 }
 

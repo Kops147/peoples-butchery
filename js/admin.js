@@ -24,7 +24,7 @@ function mapProduct(p) {
   return { ...p, categoryLabel: p.category_label, stockQty: p.stock_qty, image_url: p.image, createdAt: p.created_at };
 }
 function toSupabaseProduct(p) {
-  return { id: p.id, name: p.name, category: p.category, category_label: p.categoryLabel, price: p.price, unit: p.unit, description: p.description || '', image: p.image, is_active: true, available: true, stock_qty: 100 };
+  return { id: p.id, name: p.name, category: p.category, category_label: p.categoryLabel, price: p.price, unit: p.unit, description: p.description || '', image: p.image, is_active: true, stock_qty: 100 };
 }
 
 // ── Seed products from catalog ─────────────────
@@ -505,8 +505,7 @@ window.toggleAvailability = async (productId) => {
   if (!p) return;
   const newState = !(p.is_active !== false);
   p.is_active = newState;
-  p.available = newState;
-  const { error } = await supabase.from('products').update({ is_active: newState, available: newState }).eq('id', productId);
+  const { error } = await supabase.from('products').update({ is_active: newState }).eq('id', productId);
   if (error) showToast('Update failed: ' + error.message, 'error');
   renderAdminProducts();
   showToast(`${p.name} ${newState ? 'enabled' : 'disabled'}`, 'info');
@@ -514,7 +513,7 @@ window.toggleAvailability = async (productId) => {
 
 window.deleteProduct = async (productId) => {
   if (!confirm('Delete this product?')) return;
-  await supabase.from('products').update({ is_active: false, available: false }).eq('id', productId);
+  await supabase.from('products').update({ is_active: false }).eq('id', productId);
   _products = _products.filter(pr => pr.id != productId);
   renderAdminProducts();
   showToast('Product removed', 'warning');
@@ -581,7 +580,6 @@ function initProductForm() {
       description: document.getElementById('prod-desc').value.trim(),
       image: imgVal,
       is_active: true,
-      available: true,
     };
 
     try {

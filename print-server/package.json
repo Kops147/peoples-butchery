@@ -1,0 +1,18 @@
+{
+  "name": "peoples-butchery-print-server",
+  "version": "1.0.0",
+  "description": "Local POS thermal printer server for The Peoples Butchery",
+  "main": "print-server.js",
+  "scripts": {
+    "start": "node print-server.js",
+    "find-printer": "node find-printer.js"
+  },
+  "dependencies": {
+    "escpos": "^3.0.0-alpha",
+    "escpos-network": "^3.0.0-alpha",
+    "escpos-usb": "^3.0.0-alpha",
+    "escpos-serialport": "^3.0.0-alpha",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}

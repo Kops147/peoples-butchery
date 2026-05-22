@@ -25,7 +25,7 @@ async function loadProductsFromAPI() {
   try {
     const { data, error } = await supabase.from('products').select('*').eq('is_active', true);
     if (!error && data && data.length > 0) {
-      apiProducts = data.map(p => ({ ...p, image_url: p.image, categoryLabel: p.category_label }));
+      apiProducts = data.map(p => ({ ...p, available: p.is_active !== false, image_url: p.image, categoryLabel: p.category_label }));
       return;
     }
   } catch (err) {
