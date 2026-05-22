@@ -8,27 +8,6 @@
   <style>
     body { background: #0A0A0A; color: #E0E0E0; min-height: 100vh; margin: 0; font-family: var(--font-body, sans-serif); }
 
-    /* PIN screen */
-    .pin-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #0A0A0A; }
-    .pin-box { background: #111; border: 1px solid #1e1e1e; border-radius: 20px; padding: 36px 32px 28px; width: 320px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
-    .pin-box h2 { font-family: var(--font-head, sans-serif); margin: 0 0 4px; font-size: 1.35rem; color: #fff; }
-    .pin-box p { color: #444; font-size: .82rem; margin: 0 0 28px; }
-    /* Dot display */
-    .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 28px; }
-    .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #333; background: transparent; transition: background .15s, border-color .15s; }
-    .pin-dot.filled { background: #e8a020; border-color: #e8a020; }
-    .pin-dot.error  { background: #ff4d4d; border-color: #ff4d4d; }
-    /* Keypad grid */
-    .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
-    .pin-key { background: #1a1a1a; border: 1px solid #252525; border-radius: 12px; height: 62px; font-size: 1.4rem; font-weight: 700; color: #e0e0e0; cursor: pointer; transition: background .1s, transform .08s; user-select: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
-    .pin-key:hover  { background: #222; }
-    .pin-key:active { background: #2a2a2a; transform: scale(.94); }
-    .pin-key .sub   { font-size: .5rem; letter-spacing: 1.5px; color: #444; font-weight: 400; text-transform: uppercase; }
-    .pin-key.clear  { color: #e8a020; font-size: 1rem; font-weight: 600; }
-    .pin-key.zero   { grid-column: 2; }
-    .pin-key.back   { color: #aaa; font-size: 1.1rem; }
-    .pin-err { color: #ff4d4d; font-size: .78rem; min-height: 18px; margin-bottom: 4px; }
-
     /* Header */
     .stn-header { background: #111; border-bottom: 2px solid #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; gap: 12px; flex-wrap: wrap; }
     .stn-title { display: flex; align-items: center; gap: 10px; }
@@ -230,41 +209,6 @@
 
 <div id="toast-container"></div>
 
-<!-- PIN Gate -->
-<div id="pin-screen" class="pin-wrap">
-  <div class="pin-box">
-    <div style="font-size:2.2rem;margin-bottom:12px">🧾</div>
-    <h2>Cashier Station</h2>
-    <p>Enter your 4-digit staff PIN</p>
-
-    <!-- 4 dots -->
-    <div class="pin-dots">
-      <div class="pin-dot" id="d0"></div>
-      <div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div>
-      <div class="pin-dot" id="d3"></div>
-    </div>
-
-    <!-- Digit keys -->
-    <div class="pin-grid">
-      <button class="pin-key" onclick="pinKey('1')">1</button>
-      <button class="pin-key" onclick="pinKey('2')">2<span class="sub">ABC</span></button>
-      <button class="pin-key" onclick="pinKey('3')">3<span class="sub">DEF</span></button>
-      <button class="pin-key" onclick="pinKey('4')">4<span class="sub">GHI</span></button>
-      <button class="pin-key" onclick="pinKey('5')">5<span class="sub">JKL</span></button>
-      <button class="pin-key" onclick="pinKey('6')">6<span class="sub">MNO</span></button>
-      <button class="pin-key" onclick="pinKey('7')">7<span class="sub">PRS</span></button>
-      <button class="pin-key" onclick="pinKey('8')">8<span class="sub">TUV</span></button>
-      <button class="pin-key" onclick="pinKey('9')">9<span class="sub">WXY</span></button>
-      <button class="pin-key clear" onclick="pinClear()">CLR</button>
-      <button class="pin-key zero"  onclick="pinKey('0')">0</button>
-      <button class="pin-key back"  onclick="pinBack()">⌫</button>
-    </div>
-
-    <div class="pin-err" id="pin-err"></div>
-  </div>
-</div>
-
 <!-- Cash Credit Modal -->
 <div class="modal-overlay" id="credit-modal">
   <div class="modal">
@@ -296,7 +240,7 @@
 </div>
 
 <!-- Main Screen -->
-<div id="main-screen" style="display:none">
+<div id="main-screen">
   <header class="stn-header">
     <div class="stn-title">
       <span class="live-dot"></span>
@@ -463,65 +407,6 @@
     document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
   tick(); setInterval(tick, 1000);
-
-  // ── PIN keypad ───────────────────────────────────
-  const VALID_PINS = ['2024', '2026']; // staffPin, superPin
-  let _pinBuffer = '';
-
-  function updateDots(shake) {
-    for (let i = 0; i < 4; i++) {
-      const dot = document.getElementById('d' + i);
-      dot.className = 'pin-dot' + (i < _pinBuffer.length ? ' filled' : '') + (shake ? ' error' : '');
-    }
-  }
-
-  function pinShakeAndClear() {
-    // Flash dots red then reset
-    for (let i = 0; i < 4; i++) document.getElementById('d' + i).className = 'pin-dot error';
-    setTimeout(() => { _pinBuffer = ''; updateDots(false); }, 600);
-  }
-
-  window.pinKey = function(digit) {
-    if (_pinBuffer.length >= 4) return;
-    _pinBuffer += digit;
-    updateDots(false);
-    document.getElementById('pin-err').textContent = '';
-    if (_pinBuffer.length === 4) {
-      setTimeout(checkPin, 120); // slight delay so last dot fills visually
-    }
-  };
-  window.pinBack = function() {
-    _pinBuffer = _pinBuffer.slice(0, -1);
-    updateDots(false);
-  };
-  window.pinClear = function() {
-    _pinBuffer = '';
-    updateDots(false);
-    document.getElementById('pin-err').textContent = '';
-  };
-
-  window.checkPin = function() {
-    if (VALID_PINS.includes(_pinBuffer)) {
-      document.getElementById('pin-screen').style.display = 'none';
-      document.getElementById('main-screen').style.display = 'block';
-      loadData();
-    } else {
-      document.getElementById('pin-err').textContent = 'Incorrect PIN — try again';
-      pinShakeAndClear();
-    }
-  };
-
-  // Physical keyboard still works (for scanner keyboards / testing)
-  document.addEventListener('keydown', function(e) {
-    const active = document.activeElement;
-    const pinUp = document.getElementById('pin-screen')?.style.display !== 'none';
-    if (!pinUp) return;
-    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
-    if (e.key >= '0' && e.key <= '9') pinKey(e.key);
-    else if (e.key === 'Backspace') pinBack();
-    else if (e.key === 'Escape') pinClear();
-    else if (e.key === 'Enter') checkPin();
-  });
 
   // ── Data ────────────────────────────────────────
   window.loadData = async function() {
@@ -1177,6 +1062,7 @@
   // ──────────────────────────────────────────────────
 
   setInterval(loadData, 15000);
+  loadData(); // start immediately — no PIN gate
 </script>
   <!-- ── Barcode Scanner Integration ── -->
 <div id="scan-toast" style="display:none;position:fixed;bottom:20px;right:20px;background:#1a1a1a;border:2px solid #e8a020;border-radius:10px;padding:14px 20px;font-size:.85rem;color:#e8a020;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.5)">🔍 Looking up order...</div>
