@@ -15,3 +15,6 @@ Thumbs.db
 backend/serviceAccountKey*
 .agents/
 skills-lock.json
+
+# ── Secrets: never commit local config ──
+js/config.js
