@@ -22,16 +22,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data } = await supabase.from('users').select('*').eq('id', session.user.id).single();
         if (data) {
           profile = data;
+          // Backfill ref_number for existing Google users who never got one
+          if (!profile.ref_number) {
+            const _nameParts = (session.user.user_metadata?.full_name || profile.name || '').split(' ');
+            const _ref = typeof ensureUniqueRef === 'function'
+              ? ensureUniqueRef(_nameParts[0] || '', _nameParts[1] || '', session.user.id.slice(-4))
+              : ((_nameParts[0]?.[0] || '') + (_nameParts[1]?.[0] || '')).toUpperCase() + session.user.id.slice(-4).toUpperCase();
+            await supabase.from('users').update({ ref_number: _ref }).eq('id', session.user.id);
+            profile.ref_number = _ref;
+          }
         } else {
           // First-time Google user — create profile row
           const nameParts = (session.user.user_metadata?.full_name || session.user.email.split('@')[0]).split(' ');
+          const googleRef = typeof ensureUniqueRef === 'function'
+            ? ensureUniqueRef(nameParts[0] || '', nameParts[1] || '', session.user.id.slice(-4))
+            : ((nameParts[0]?.[0] || '') + (nameParts[1]?.[0] || '')).toUpperCase() + session.user.id.slice(-4).toUpperCase();
           const newUser = {
             id: session.user.id,
             email: session.user.email,
             name: nameParts[0] || '',
             surname: nameParts.slice(1).join(' ') || '',
             is_admin: false,
-            credit_balance: 0
+            credit_balance: 0,
+            ref_number: googleRef
           };
           await supabase.from('users').insert(newUser);
           profile = newUser;

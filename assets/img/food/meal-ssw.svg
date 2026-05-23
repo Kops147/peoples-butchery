@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#120a02" rx="12"/>
+<ellipse cx="100" cy="167" rx="70" ry="9" fill="#000" opacity=".35"/>
+<circle cx="100" cy="108" r="76" fill="#e8e2cc" stroke="#ccc5aa" stroke-width="3"/>
+<circle cx="100" cy="108" r="66" fill="#f5f0e0"/>
+<!-- pap mound -->
+<ellipse cx="64" cy="123" rx="22" ry="13" fill="#dfd7b6"/>
+<ellipse cx="64" cy="116" rx="16" ry="12" fill="#ebe6ce"/>
+<ellipse cx="64" cy="109" rx="10" ry="8" fill="#f8f5e8"/>
+<!-- steak 1 (top) -->
+<ellipse cx="116" cy="93" rx="22" ry="17" fill="#7a3010"/>
+<ellipse cx="115" cy="91" rx="17" ry="13" fill="#9e4220"/>
+<rect x="113" y="74" width="4" height="36" rx="2" fill="#ede0c0" stroke="#d4caa8" stroke-width="1"/>
+<line x1="104" y1="86" x2="110" y2="100" stroke="#5a2008" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+<line x1="110" y1="84" x2="116" y2="98" stroke="#5a2008" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+<!-- steak 2 (offset below-right) -->
+<ellipse cx="126" cy="112" rx="22" ry="17" fill="#7a3010"/>
+<ellipse cx="125" cy="110" rx="17" ry="13" fill="#9e4220"/>
+<rect x="123" y="93" width="4" height="36" rx="2" fill="#ede0c0" stroke="#d4caa8" stroke-width="1"/>
+<line x1="114" y1="105" x2="120" y2="119" stroke="#5a2008" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+<line x1="120" y1="103" x2="126" y2="117" stroke="#5a2008" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+<!-- wors coil (lower left area) -->
+<path d="M76 138 C82 132 92 133 96 139 C100 145 96 152 90 154 C84 156 77 152 76 146 C75 140 81 136 87 138" fill="none" stroke="#7a5010" stroke-width="7" stroke-linecap="round"/>
+<circle cx="76.5" cy="138.5" r="3" fill="#7a5010"/>
+<!-- gravy pool -->
+<ellipse cx="102" cy="132" rx="38" ry="10" fill="#3a1a06" opacity=".3"/>
+<!-- steam -->
+<path d="M80 52 C78 45 80 38 78 31" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100 49 C98 42 100 35 98 28" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M120 52 C118 45 120 38 118 31" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

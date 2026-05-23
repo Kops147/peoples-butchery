@@ -447,7 +447,7 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
 
   const mobileActions = `
     <li class="mobile-actions">
-      ${!isLoggedIn ? `<a href="login.html" class="btn btn-outline">Login / Register</a>` : ''}
+      ${!isLoggedIn ? `<a href="login.html" class="btn btn-ghost">Login</a><a href="register.html" class="btn btn-primary" style="font-weight:700">Register Free</a>` : ''}
       ${isLoggedIn ? `<a href="${accountHref}" class="btn btn-primary">${navLabel}${balanceChip}</a>` : ''}
       ${isLoggedIn ? `<button class="btn btn-ghost" id="nav-logout-btn-mobile">Logout</button>` : ''}
       ${orderNowBtn ? `<a href="shop.html" class="btn btn-gold">Order Now</a>` : ''}
@@ -467,7 +467,8 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
         ${mobileActions}
       </ul>
       <div class="navbar-actions">
-        <a href="login.html" class="btn btn-outline btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-login-btn">Login / Register</a>
+        <a href="login.html" class="btn btn-ghost btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-login-btn">Login</a>
+        <a href="register.html" class="btn btn-primary btn-sm${isLoggedIn ? ' hidden' : ''}" id="nav-register-btn">Register Free</a>
         <a href="${accountHref}" class="btn btn-primary btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-dash-btn">${navLabel}${balanceChip}</a>
         ${orderNowBtn}${cartBtn}
         <button class="btn btn-ghost btn-sm${isLoggedIn ? '' : ' hidden'}" id="nav-logout-btn">Logout</button>

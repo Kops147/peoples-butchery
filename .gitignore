@@ -5,3 +5,13 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# ── Security: never commit credentials ──
+*serviceAccountKey*
+*service-account*
+*.pem
+*.p12
+*.key
+backend/serviceAccountKey*
+.agents/
+skills-lock.json

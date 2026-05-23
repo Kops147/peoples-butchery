@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#120a02" rx="12"/>
+<ellipse cx="100" cy="168" rx="62" ry="8" fill="#000" opacity=".4"/>
+<!-- bowl outer -->
+<path d="M30 100 Q28 148 100 160 Q172 148 170 100 Z" fill="#8a6030" stroke="#704e22" stroke-width="2"/>
+<!-- stew inside -->
+<path d="M36 100 Q34 144 100 156 Q166 144 164 100 Z" fill="#4a2a0e"/>
+<!-- stew surface -->
+<ellipse cx="100" cy="100" rx="64" ry="14" fill="#5e3618"/>
+<!-- beef chunks -->
+<ellipse cx="80" cy="100" rx="11" ry="8" fill="#7a3a10"/>
+<ellipse cx="79" cy="99" rx="8" ry="6" fill="#9e5020"/>
+<ellipse cx="118" cy="103" rx="10" ry="7" fill="#7a3a10"/>
+<ellipse cx="117" cy="102" rx="7" ry="5" fill="#9e5020"/>
+<!-- veggie chunks (carrot, potato) -->
+<ellipse cx="100" cy="97" rx="7" ry="5" fill="#c86820"/><!-- carrot -->
+<ellipse cx="92" cy="106" rx="6" ry="5" fill="#c4a040"/><!-- potato -->
+<ellipse cx="110" cy="96" rx="5" ry="4" fill="#c4a040" opacity=".8"/>
+<!-- gravy pool shine -->
+<ellipse cx="66" cy="100" rx="10" ry="4" fill="#8B4a20" opacity=".4"/>
+<!-- bowl rim -->
+<ellipse cx="100" cy="100" rx="70" ry="15" fill="none" stroke="#8a6030" stroke-width="3"/>
+<ellipse cx="55" cy="125" rx="5" ry="14" fill="#fff" opacity=".07" transform="rotate(-15 55 125)"/>
+<!-- pap visible on side -->
+<ellipse cx="148" cy="130" rx="16" ry="12" fill="#dfd7b6" opacity=".7"/>
+<ellipse cx="148" cy="123" rx="11" ry="9" fill="#ede8d0" opacity=".8"/>
+<!-- steam -->
+<path d="M80 68 C78 61 80 54 78 47" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100 65 C98 58 100 51 98 44" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M120 68 C118 61 120 54 118 47" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="58" y="16" width="84" height="22" rx="11" fill="#5a2a08" opacity=".9"/>
+<text x="100" y="31" font-family="Arial" font-size="11" font-weight="700" fill="#f5d08a" text-anchor="middle">PAP &amp; BEEF STEW</text>
+</svg>

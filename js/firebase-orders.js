@@ -16,6 +16,16 @@ export async function saveOrderToFirebase(orderData) {
       throw new Error('User must be logged in to place an order');
     }
 
+    // Route raw meat to butcher, cooked meals to kitchen
+    const RAW_CATS = new Set(['raw','Beef','Lamb','Chicken','Sausages']);
+    const routedTo = new Set();
+    (orderData.items || []).forEach(it => {
+      const cat = it.category || it.categoryLabel || '';
+      if (RAW_CATS.has(cat)) routedTo.add('butcher');
+      else routedTo.add('kitchen');
+    });
+    if (routedTo.size === 0) routedTo.add('kitchen');
+
     const order = {
       userId: user.uid,
       userEmail: user.email,
@@ -26,6 +36,7 @@ export async function saveOrderToFirebase(orderData) {
       deliveryMethod: orderData.deliveryMethod,
       deliveryAddress: orderData.deliveryAddress,
       deliveryCoordinates: orderData.deliveryCoordinates,
+      routedTo: [...routedTo],
       status: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()

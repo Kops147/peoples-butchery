@@ -2,10 +2,10 @@
    The Peoples Butchery — Global Design System
    ============================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:hwght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
 
 /* ── CSS Variables ── */
-:root {h
+:root {
   --bg-base: #080808;
   --bg-surface: #111111;
   --bg-card: #1a1a1a;
@@ -66,6 +66,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -141,6 +142,7 @@ h6 {
 .heading-xl {
   font-size: clamp(2.4rem, 6vw, 4.5rem);
   font-weight: 900;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
 }
 
 .heading-lg {
@@ -241,16 +243,19 @@ h6 {
 }
 
 .grid-2 {
+  display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
 }
 
 .grid-3 {
+  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 }
 
 .grid-4 {
+  display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
@@ -754,6 +759,21 @@ h6 {
 
 .form-control::placeholder {
   color: var(--text-muted);
+}
+
+/* ── Browser autofill override (prevents white-on-dark bg) ── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-surface) inset !important;
+  box-shadow: 0 0 0 1000px var(--bg-surface) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--text-primary);
 }
 
 .form-control.error {

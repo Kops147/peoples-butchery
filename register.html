@@ -586,12 +586,26 @@
         users.push(sessionUser);
         DB.saveUsers(users);
 
-        Auth.login(sessionUser, data.session?.access_token);
+        // session is null when Supabase email confirmation is required
+        Auth.login(sessionUser, data.session?.access_token ?? null);
 
         document.getElementById('success-ref').textContent = pendingRef;
         document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
         document.getElementById('step-success').classList.add('active');
         document.querySelector('.steps-indicator').style.display = 'none';
+
+        // If email confirmation required, surface a reminder
+        if (!data.session) {
+          const successEl = document.getElementById('step-success');
+          if (successEl && !document.getElementById('email-confirm-notice')) {
+            const notice = document.createElement('div');
+            notice.id = 'email-confirm-notice';
+            notice.className = 'alert alert-info mt-4';
+            notice.style.cssText = 'text-align:left;font-size:0.88rem';
+            notice.innerHTML = '📧 <strong>One more step:</strong> Check your email and click the confirmation link before logging in.';
+            successEl.appendChild(notice);
+          }
+        }
 
       } catch (err) {
         btn.disabled = false;

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Migration Tool — The Peoples Butchery</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: var(--bg-base); color: var(--text-primary); font-family: var(--font-body); padding: 0; margin: 0; }
+    .mig-header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+    .mig-title { font-family: var(--font-head); font-size: 1.3rem; font-weight: 700; }
+    .mig-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+    .mig-body { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .mig-info { background: rgba(232,160,32,0.08); border: 1px solid rgba(232,160,32,0.3); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 28px; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; }
+    .mig-info strong { color: var(--gold); }
+    .mig-actions { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; align-items: center; }
+    .mig-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border); }
+    .mig-table th { background: var(--bg-elevated); padding: 12px 16px; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .mig-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 0.88rem; }
+    .mig-table tr:last-child td { border-bottom: none; }
+    .mig-table tr:hover td { background: var(--bg-elevated); }
+    .thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); }
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .pill-drive { background: rgba(66,133,244,0.15); color: #4285f4; }
+    .pill-firebase { background: rgba(61,214,140,0.15); color: var(--success); }
+    .pill-local { background: rgba(232,160,32,0.15); color: var(--gold); }
+    .pill-unknown { background: rgba(150,150,150,0.15); color: var(--text-muted); }
+    .pill-done { background: rgba(61,214,140,0.2); color: var(--success); }
+    .pill-error { background: rgba(231,76,60,0.15); color: var(--danger); }
+    .file-pick { display: none; }
+    .mig-log { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 20px; margin-top: 32px; max-height: 280px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; line-height: 1.8; }
+    .log-ok { color: var(--success); }
+    .log-err { color: var(--danger); }
+    .log-info { color: var(--text-muted); }
+    .log-warn { color: var(--gold); }
+    .progress-bar-wrap { height: 6px; background: var(--bg-elevated); border-radius: 3px; margin-top: 16px; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--gold); width: 0%; transition: width 0.3s ease; }
+    .home-img-section { margin-top: 48px; }
+    .home-img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+    .home-img-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .home-img-card img { width: 100%; height: 140px; object-fit: cover; }
+    .home-img-info { padding: 12px 14px; }
+    .home-img-label { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+    .home-img-file { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; margin-bottom: 8px; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+<div class="mig-header">
+  <div>
+    <div class="mig-title">🖼️ Image Migration Tool</div>
+    <div class="mig-subtitle">Upload product images to Firebase Storage and update Firestore</div>
+  </div>
+  <a href="admin.html" class="btn btn-outline btn-sm">← Back to Admin</a>
+</div>
+
+<div class="mig-body">
+  <div class="mig-info">
+    <strong>How this works:</strong> This tool scans all products in Firestore, detects which ones have local image files in
+    <code>assets/img/food/</code>, and lets you upload them to <strong>Firebase Storage</strong>. After upload, Firestore is updated automatically.<br><br>
+    <strong>Before running:</strong> Make sure Firebase Storage rules allow writes:
+    <code>allow write: if request.auth != null;</code> — set this in Firebase Console → Storage → Rules.<br><br>
+    <strong>Home page images</strong> are currently Unsplash stock photos — you can replace them below by uploading your own.
+  </div>
+
+  <div id="auth-warning" style="display:none" class="mig-info" style="border-color:rgba(231,76,60,0.3);background:rgba(231,76,60,0.08)">
+    ❌ You must be logged in as an admin to use this tool. <a href="login.html">Log in →</a>
+  </div>
+
+  <div id="main-content">
+    <div class="mig-actions">
+      <button class="btn btn-primary" id="btn-migrate-all" disabled>⚡ Migrate All Detected</button>
+      <button class="btn btn-outline" id="btn-reload" onclick="loadProducts()">🔄 Refresh Products</button>
+      <span id="summary-text" style="color:var(--text-muted);font-size:0.85rem"></span>
+    </div>
+    <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div id="loading" style="text-align:center;padding:48px;color:var(--text-muted)">Loading products...</div>
+
+    <table class="mig-table" id="mig-table" style="display:none">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Product</th>
+          <th>ID / Stock Code</th>
+          <th>Current Source</th>
+          <th>Local File</th>
+          <th>Actions</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody id="mig-tbody"></tbody>
+    </table>
+
+    <div class="home-img-section">
+      <h3 style="font-family:var(--font-head);font-weight:700;margin-bottom:4px">Home Page Images</h3>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:0">Currently from Unsplash. Upload your own photos to replace them in index.html.</p>
+      <div class="home-img-grid" id="home-img-grid"></div>
+    </div>
+
+    <div class="mig-log" id="mig-log">
+      <div class="log-info">— Ready. Click "Migrate All Detected" or upload files individually. —</div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script type="module">
+  import { db, storage } from './js/firebase-config.js';
+  import {
+    collection, getDocs, doc, updateDoc
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import {
+    ref, uploadBytes, getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+  let products = [];
+  const detectedLocal = {};
+
+  const HOME_IMAGES = [
+    { label: 'Hero Background', file: 'index.html line 331', current: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=1800&h=900&fit=crop', key: 'hero-bg' },
+    { label: 'Hero Right Image', file: 'index.html line 362', current: 'https://images.unsplash.com/photo-1558030006-450675393462?w=800&h=600&fit=crop', key: 'hero-img' },
+    { label: 'Raw Cuts Category', file: 'index.html line 419', current: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=700&h=500&fit=crop', key: 'cat-raw' },
+    { label: 'Cooked Meals Category', file: 'index.html line 430', current: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=700&h=500&fit=crop', key: 'cat-cooked' },
+  ];
+
+  function log(msg, type = 'info') {
+    const el = document.getElementById('mig-log');
+    const line = document.createElement('div');
+    line.className = `log-${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function sourceType(p) {
+    const url = p.image_url || p.image || '';
+    if (!url) return 'unknown';
+    if (url.includes('firebasestorage')) return 'firebase';
+    if (url.includes('drive.google.com') || p.drive_id) return 'drive';
+    if (url.startsWith('assets/') || url.startsWith('./assets/')) return 'local';
+    return 'unknown';
+  }
+
+  function sourcePill(p) {
+    const t = sourceType(p);
+    const map = {
+      firebase: ['pill-firebase', '✅ Firebase Storage'],
+      drive: ['pill-drive', '📁 Google Drive'],
+      local: ['pill-local', '📂 Local Assets'],
+      unknown: ['pill-unknown', '❓ Unknown'],
+    };
+    const [cls, label] = map[t] || map.unknown;
+    return `<span class="status-pill ${cls}">${label}</span>`;
+  }
+
+  async function checkLocalFile(id) {
+    const candidates = [
+      `assets/img/food/${id}.jpg`,
+      `assets/img/food/${id}.jpeg`,
+      `assets/img/food/${id}.png`,
+      `assets/img/food/${id} b.jpg`,
+    ];
+    for (const path of candidates) {
+      try {
+        const r = await fetch(path, { method: 'HEAD' });
+        if (r.ok) return path;
+      } catch { /* not found */ }
+    }
+    return null;
+  }
+
+  function setRowResult(id, html) {
+    const cell = document.getElementById(`result-${id}`);
+    if (cell) cell.innerHTML = html;
+  }
+
+  function setThumb(id, url) {
+    const img = document.getElementById(`thumb-${id}`);
+    if (img) img.src = url;
+  }
+
+  async function uploadAndSave(productId, file, isBlob = false) {
+    setRowResult(productId, '<span class="status-pill pill-local">⏳ Uploading...</span>');
+    log(`Uploading ${productId}...`);
+
+    const uploadTimeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timed out — check Storage rules')), 30000)
+    );
+
+    try {
+      let blob = file;
+      if (!isBlob) {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+        blob = await res.blob();
+      }
+
+      const storageRef = ref(storage, `products/${productId}_${Date.now()}.jpg`);
+      const snapshot = await Promise.race([
+        uploadBytes(storageRef, blob, { contentType: blob.type || 'image/jpeg' }),
+        uploadTimeout
+      ]);
+      const url = await getDownloadURL(snapshot.ref);
+
+      await updateDoc(doc(db, 'products', productId), { image: url, image_url: url });
+
+      const prod = products.find(p => p.id === productId);
+      if (prod) { prod.image = url; prod.image_url = url; }
+
+      setThumb(productId, url);
+      setRowResult(productId, `<span class="status-pill pill-done">✅ Done</span>`);
+      log(`✅ ${productId} → Firebase Storage`, 'ok');
+      return true;
+    } catch (err) {
+      setRowResult(productId, `<span class="status-pill pill-error" title="${err.message}">❌ Failed</span>`);
+      log(`❌ ${productId}: ${err.message}`, 'err');
+      return false;
+    }
+  }
+
+  window.pickFileForProduct = (productId) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      await uploadAndSave(productId, file, true);
+    };
+    input.click();
+  };
+
+  window.migrateDetected = async (productId) => {
+    const path = detectedLocal[productId];
+    if (!path) return;
+    await uploadAndSave(productId, path, false);
+  };
+
+  async function loadProducts() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('mig-table').style.display = 'none';
+    document.getElementById('btn-migrate-all').disabled = true;
+    log('Loading products from Firestore...');
+
+    try {
+      const snap = await getDocs(collection(db, 'products'));
+      products = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      log(`Found ${products.length} products.`, 'ok');
+    } catch (err) {
+      log(`Failed to load products: ${err.message}`, 'err');
+      document.getElementById('loading').innerHTML = `<div style="color:var(--danger)">Failed to load: ${err.message}</div>`;
+      return;
+    }
+
+    log('Checking for local image files...');
+    const checks = await Promise.all(products.map(async p => {
+      const path = await checkLocalFile(p.id);
+      if (path) detectedLocal[p.id] = path;
+      return { id: p.id, path };
+    }));
+
+    const detectedCount = checks.filter(c => c.path).length;
+    const alreadyOnFirebase = products.filter(p => (p.image_url || '').includes('firebasestorage')).length;
+    document.getElementById('summary-text').textContent =
+      `${products.length} products · ${detectedCount} local images detected · ${alreadyOnFirebase} already on Firebase`;
+
+    const tbody = document.getElementById('mig-tbody');
+    tbody.innerHTML = products.map(p => {
+      const localPath = detectedLocal[p.id];
+      const src = sourceType(p);
+      const localCell = localPath
+        ? `<span class="status-pill pill-local">📂 ${localPath}</span>`
+        : `<span style="color:var(--text-muted);font-size:0.8rem">— not found</span>`;
+      const migrateBtn = localPath
+        ? `<button class="btn btn-primary btn-sm" onclick="migrateDetected('${p.id}')">⚡ Migrate</button>`
+        : '';
+      return `<tr id="row-${p.id}">
+        <td><img class="thumb" id="thumb-${p.id}" src="${p.image_url || p.image || ''}"
+          onerror="this.src='assets/img/food/meat_on_braai.jpg'" alt="${p.name}"></td>
+        <td style="font-weight:600">${p.name}</td>
+        <td style="font-family:monospace;font-size:0.82rem">${p.id}</td>
+        <td id="source-${p.id}">${sourcePill(p)}</td>
+        <td>${localCell}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          ${migrateBtn}
+          <button class="btn btn-outline btn-sm" onclick="pickFileForProduct('${p.id}')">📁 Upload File</button>
+        </td>
+        <td id="result-${p.id}">
+          ${src === 'firebase' ? '<span class="status-pill pill-firebase">✅ Already Firebase</span>' : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('mig-table').style.display = 'table';
+
+    if (detectedCount > 0) {
+      document.getElementById('btn-migrate-all').disabled = false;
+      log(`${detectedCount} products have local images ready to migrate. Click "Migrate All Detected" to proceed.`, 'warn');
+    } else {
+      log('No local images auto-detected. Use "Upload File" buttons to manually select images for each product.', 'warn');
+    }
+  }
+
+  document.getElementById('btn-migrate-all').addEventListener('click', async () => {
+    const toMigrate = products.filter(p => detectedLocal[p.id] && !(p.image_url || '').includes('firebasestorage'));
+    if (toMigrate.length === 0) {
+      log('Nothing to migrate — all detected products are already on Firebase.', 'warn');
+      return;
+    }
+
+    document.getElementById('btn-migrate-all').disabled = true;
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressBar = document.getElementById('progress-bar');
+    progressWrap.style.display = 'block';
+    log(`Starting migration of ${toMigrate.length} products...`, 'info');
+
+    let done = 0;
+    for (const p of toMigrate) {
+      await uploadAndSave(p.id, detectedLocal[p.id], false);
+      done++;
+      progressBar.style.width = `${Math.round((done / toMigrate.length) * 100)}%`;
+    }
+
+    log(`Migration complete. ${done}/${toMigrate.length} processed.`, 'ok');
+    document.getElementById('btn-migrate-all').disabled = false;
+  });
+
+  function renderHomeImages() {
+    const grid = document.getElementById('home-img-grid');
+    grid.innerHTML = HOME_IMAGES.map(img => `
+      <div class="home-img-card">
+        <img src="${img.current}" alt="${img.label}" onerror="this.style.display='none'">
+        <div class="home-img-info">
+          <div class="home-img-label">${img.label}</div>
+          <div class="home-img-file">${img.file}</div>
+          <button class="btn btn-outline btn-sm btn-full" onclick="pickHomeImage('${img.key}', '${img.file}')">
+            📁 Replace with own photo
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.pickHomeImage = async (key, fileRef) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      log(`Uploading home page image: ${key}...`);
+      try {
+        const uploadTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timed out — check Storage rules')), 30000)
+        );
+        const storageRef = ref(storage, `site/${key}_${Date.now()}.jpg`);
+        const snapshot = await Promise.race([
+          uploadBytes(storageRef, file, { contentType: file.type }),
+          uploadTimeout
+        ]);
+        const url = await getDownloadURL(snapshot.ref);
+        log(`✅ Home image uploaded: ${url}`, 'ok');
+        log(`To use it: open index.html and replace the ${fileRef} URL with: ${url}`, 'warn');
+        alert(`✅ Uploaded!\n\nFirebase URL:\n${url}\n\nOpen index.html and replace the image at ${fileRef} with this URL.`);
+      } catch (err) {
+        log(`❌ Home image upload failed: ${err.message}`, 'err');
+      }
+    };
+    input.click();
+  };
+
+  // Auth check then load
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof Auth === 'undefined' || !Auth.isAdmin()) {
+      document.getElementById('auth-warning').style.display = 'block';
+      document.getElementById('main-content').style.display = 'none';
+      return;
+    }
+    renderHomeImages();
+    loadProducts();
+  });
+</script>
+</body>
+</html>

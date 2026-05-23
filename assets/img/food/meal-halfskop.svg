@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#120a02" rx="12"/>
+<!-- steam from hot food -->
+<path d="M72 48 C70 41 72 34 70 27" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100 44 C98 37 100 30 98 23" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M128 48 C126 41 128 34 126 27" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
+<!-- plate shadow -->
+<ellipse cx="100" cy="167" rx="68" ry="9" fill="#000" opacity=".35"/>
+<!-- plate -->
+<circle cx="100" cy="110" r="74" fill="#e8e2cc" stroke="#ccc5aa" stroke-width="3"/>
+<circle cx="100" cy="110" r="64" fill="#f5f0e0"/>
+<!-- split line down center of head -->
+<line x1="100" y1="56" x2="100" y2="164" stroke="#8a6030" stroke-width="2" stroke-dasharray="6 3" opacity=".4"/>
+<!-- skull base / half cranium (left half) -->
+<path d="M100 65 C80 65 58 80 55 105 C52 128 65 148 100 152 Z" fill="#d4c8a0" stroke="#b0a880" stroke-width="1.5"/>
+<path d="M100 69 C83 69 63 83 60 106 C57 127 69 145 100 148 Z" fill="#e0d4b0"/>
+<!-- snout area -->
+<ellipse cx="72" cy="140" rx="20" ry="14" fill="#c8b890"/>
+<ellipse cx="68" cy="140" rx="10" ry="8" fill="#b0a078"/>
+<!-- nostril -->
+<ellipse cx="66" cy="138" rx="3" ry="2.5" fill="#8a7050"/>
+<ellipse cx="66" cy="143" rx="3" ry="2.5" fill="#8a7050"/>
+<!-- eye socket (left) -->
+<ellipse cx="80" cy="96" rx="12" ry="10" fill="#8a6030" opacity=".8"/>
+<ellipse cx="80" cy="96" rx="8" ry="7" fill="#4a3020"/>
+<circle cx="82" cy="94" r="2.5" fill="#fff" opacity=".4"/>
+<!-- ear (left, cartoon style) -->
+<path d="M56 80 C50 68 56 60 64 66 C60 72 62 80 56 80 Z" fill="#c4b090" stroke="#a8987a" stroke-width="1.5"/>
+<!-- right side (cut / inside) -->
+<path d="M100 65 C120 65 142 80 145 105 C148 128 135 148 100 152 Z" fill="#9e3a18" stroke="#803010" stroke-width="1.5"/>
+<!-- cross-section bone detail -->
+<circle cx="100" cy="90" r="10" fill="#ede0c0" stroke="#d4caa8" stroke-width="2"/>
+<circle cx="100" cy="90" r="5" fill="#c4b898"/>
+<!-- brain/inside texture dots -->
+<circle cx="116" cy="108" r="6" fill="#c05030" opacity=".7"/>
+<circle cx="128" cy="118" r="5" fill="#c05030" opacity=".6"/>
+<circle cx="110" cy="124" r="4.5" fill="#c05030" opacity=".7"/>
+<circle cx="124" cy="104" r="4" fill="#d06040" opacity=".6"/>
+<!-- label badge -->
+<rect x="68" y="16" width="64" height="22" rx="11" fill="#7a3010" opacity=".9"/>
+<text x="100" y="31" font-family="Arial" font-size="12" font-weight="700" fill="#f5d08a" text-anchor="middle">HALFSKOP</text>
+</svg>

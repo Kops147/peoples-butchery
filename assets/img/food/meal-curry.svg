@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" fill="#120a02" rx="12"/>
+<ellipse cx="100" cy="168" rx="62" ry="8" fill="#000" opacity=".4"/>
+<!-- bowl outer -->
+<path d="M30 100 Q28 148 100 160 Q172 148 170 100 Z" fill="#c4903a" stroke="#a07530" stroke-width="2"/>
+<!-- bowl inner / curry -->
+<path d="M36 100 Q34 144 100 156 Q166 144 164 100 Z" fill="#e8820a"/>
+<!-- curry surface highlight -->
+<ellipse cx="100" cy="100" rx="64" ry="14" fill="#f09820"/>
+<!-- mutton chunk 1 -->
+<ellipse cx="82" cy="98" rx="12" ry="9" fill="#7a3a10"/>
+<ellipse cx="81" cy="97" rx="9" ry="7" fill="#9e5020"/>
+<!-- mutton chunk 2 -->
+<ellipse cx="115" cy="102" rx="10" ry="8" fill="#7a3a10"/>
+<ellipse cx="114" cy="101" rx="7.5" ry="6" fill="#9e5020"/>
+<!-- potato chunk -->
+<ellipse cx="100" cy="96" rx="8" ry="6" fill="#d4aa60" opacity=".9"/>
+<!-- dhania (coriander) dots -->
+<circle cx="88" cy="94" r="3" fill="#2a8a30"/>
+<circle cx="104" cy="92" r="2.5" fill="#2a8a30"/>
+<circle cx="96" cy="90" r="2" fill="#3aa040"/>
+<!-- bowl rim -->
+<ellipse cx="100" cy="100" rx="70" ry="15" fill="none" stroke="#c4903a" stroke-width="3"/>
+<!-- bowl side sheen -->
+<ellipse cx="55" cy="125" rx="6" ry="16" fill="#fff" opacity=".08" transform="rotate(-15 55 125)"/>
+<!-- steam -->
+<path d="M80 68 C78 61 80 54 78 47" fill="none" stroke="#c88020" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M100 65 C98 58 100 51 98 44" fill="none" stroke="#c88020" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M120 68 C118 61 120 54 118 47" fill="none" stroke="#c88020" stroke-width="2.5" stroke-linecap="round"/>
+<!-- label badge -->
+<rect x="62" y="16" width="76" height="22" rx="11" fill="#c06010" opacity=".9"/>
+<text x="100" y="31" font-family="Arial" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">MUTTON CURRY</text>
+</svg>
