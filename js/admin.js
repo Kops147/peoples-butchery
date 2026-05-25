@@ -35,7 +35,7 @@ function mapProduct(p) {
   return { ...p, category: cat.category || 'raw', categoryLabel: cat.categoryLabel || 'Other', stockQty: p.stock_qty || 0, image_url: p.image, createdAt: p.created_at };
 }
 function toSupabaseProduct(p) {
-  return { id: p.id, name: p.name, price: p.price, unit: p.unit, is_active: true };
+  return { id: p.id, name: p.name, unit: p.unit, is_active: true };
 }
 
 // ── Seed products from catalog ─────────────────
@@ -530,7 +530,6 @@ function initProductForm() {
     const imgVal = document.getElementById('prod-image').value.trim() || 'assets/img/food/beef_brisket.png';
     const payload = {
       name: document.getElementById('prod-name').value.trim(),
-      price: parseFloat(document.getElementById('prod-price').value),
       unit: document.getElementById('prod-unit').value.trim(),
       is_active: true,
     };
@@ -544,7 +543,7 @@ function initProductForm() {
         showToast('Product updated!', 'success');
       } else {
         const newId = generateId('p_');
-        const newProd = { ...payload, id: newId, stock_qty: 0 };
+        const newProd = { ...payload, id: newId };
         const { error } = await supabase.from('products').insert(newProd);
         if (error) throw error;
         _products.push(mapProduct(newProd));
