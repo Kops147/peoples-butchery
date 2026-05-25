@@ -12,17 +12,37 @@ let mapModalCallback = null;
 export async function initGoogleMaps() {
   if (window.google && window.google.maps) return;
 
+  if (!window.GOOGLE_MAPS_API_KEY || window.GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') {
+    console.error('Google Maps API Key is missing or invalid.');
+    return;
+  }
+
   const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAPS_API_KEY}&libraries=places`;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAPS_API_KEY}&libraries=places&callback=onGoogleMapsLoaded`;
   script.async = true;
   script.defer = true;
+  
+  // Add an error handler for the script tag
+  script.onerror = () => {
+    console.error('Failed to load Google Maps script. Check your internet or API key.');
+    window.googleMapsError = true;
+  };
+
   document.head.appendChild(script);
 
   return new Promise((resolve) => {
-    script.onload = () => {
-      console.log('Google Maps API Loaded');
+    window.onGoogleMapsLoaded = () => {
+      console.log('Google Maps API Loaded successfully');
       resolve();
     };
+    
+    // Timeout as a fallback
+    setTimeout(() => {
+      if (!window.google || !window.google.maps) {
+        console.warn('Google Maps load timed out');
+        resolve();
+      }
+    }, 5000);
   });
 }
 

@@ -250,144 +250,161 @@ function calcDelivFee() {
 
 // ── Render Products ────────────────────────────
 function renderProducts() {
+  console.log('Rendering products. Count:', apiProducts.length);
   const container = document.getElementById('products-grid');
   if (!container) return;
 
-  const all = apiProducts.filter(p => p.available);
-  const products = all
-    .filter(p => activeFilter === 'all' || p.category === activeFilter)
-    .sort((a, b) => (b.category === 'cooked') - (a.category === 'cooked'));
+  try {
+    // Ensure all products have a baseline of required fields
+    const all = apiProducts.filter(p => p && (p.available !== false));
+    
+    const products = all
+      .filter(p => activeFilter === 'all' || p.category === activeFilter)
+      .sort((a, b) => (b.category === 'cooked') - (a.category === 'cooked'));
 
-  const countAllEl = document.getElementById('count-all');
-  const countRawEl = document.getElementById('count-raw');
-  const countCookedEl = document.getElementById('count-cooked');
-  const countLabelEl = document.getElementById('product-count-label');
-  if (countAllEl) countAllEl.textContent = all.length;
-  if (countRawEl) countRawEl.textContent = all.filter(p => p.category === 'raw').length;
-  if (countCookedEl) countCookedEl.textContent = all.filter(p => p.category === 'cooked').length;
-  if (countLabelEl) countLabelEl.textContent = all.length + ' products available';
+    const countAllEl = document.getElementById('count-all');
+    const countRawEl = document.getElementById('count-raw');
+    const countCookedEl = document.getElementById('count-cooked');
+    const countLabelEl = document.getElementById('product-count-label');
+    
+    if (countAllEl) countAllEl.textContent = all.length;
+    if (countRawEl) countRawEl.textContent = all.filter(p => p.category === 'raw').length;
+    if (countCookedEl) countCookedEl.textContent = all.filter(p => p.category === 'cooked').length;
+    if (countLabelEl) countLabelEl.textContent = all.length + ' products available';
 
-  if (products.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-icon">🥩</div>
-      <div class="empty-title">No products found</div>
-      <div class="empty-desc">Try a different filter</div>
-    </div>`;
-    return;
-  }
-
-  container.innerHTML = products.map(p => {
-    const cartItem = cart.find(c => c.productId === p.id);
-    const extras = productExtras[p.id] || {};
-    const basePrice = p.price + (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
-    const weighted = isWeightBased(p);
-    const catBadge = p.category === 'cooked'
-      ? '<span class="badge badge-gold">🍽️ Cooked Meal</span>'
-      : `<span class="badge badge-red">🥩 ${p.categoryLabel}</span>`;
-
-    const qtyBased = isQtyBased(p);
-
-    let cartControl;
-    if (weighted) {
-      const currentKg = cartItem ? cartItem.qty : 0.5;
-      const currentRand = parseFloat((currentKg * basePrice).toFixed(2));
-      const inCart = !!cartItem;
-      cartControl = `
-        <div class="weight-ctrl${inCart ? ' in-cart' : ''}">
-          <div class="weight-dual-row">
-            <div class="weight-field">
-              <input type="number" class="weight-inp" id="wi-${p.id}"
-                value="${currentKg.toFixed(2)}" min="0.25" max="20" step="0.25"
-                oninput="syncFromKg('${p.id}')"
-                onblur="commitWeight('${p.id}')">
-              <span class="weight-lbl">kg</span>
-            </div>
-            <span class="weight-sep">↔</span>
-            <div class="weight-field">
-              <span class="weight-lbl">R</span>
-              <input type="number" class="weight-inp" id="pi-${p.id}"
-                value="${currentRand.toFixed(2)}" min="0" step="1"
-                oninput="syncFromPrice('${p.id}')"
-                onblur="commitWeight('${p.id}')">
-            </div>
-          </div>
-          ${inCart
-            ? `<button class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);width:100%" onclick="removeItem('${p.id}')">✓ In Cart — Remove</button>`
-            : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addWeightToCart('${p.id}')">Add to Cart</button>`
-          }
-        </div>`;
-    } else if (qtyBased) {
-      const currentQty = cartItem ? cartItem.qty : 1;
-      const currentTotal = parseFloat((currentQty * basePrice).toFixed(2));
-      const inCart = !!cartItem;
-      cartControl = `
-        <div class="weight-ctrl${inCart ? ' in-cart' : ''}">
-          <div class="weight-dual-row">
-            <div class="weight-field">
-              <input type="number" class="weight-inp" id="qi-${p.id}"
-                value="${currentQty}" min="1" max="100" step="1"
-                oninput="syncFromQty('${p.id}')"
-                onblur="commitQty('${p.id}')">
-              <span class="weight-lbl">each</span>
-            </div>
-            <span class="weight-sep">↔</span>
-            <div class="weight-field">
-              <span class="weight-lbl">R</span>
-              <input type="number" class="weight-inp" id="ti-${p.id}"
-                value="${currentTotal.toFixed(2)}" min="0" step="1"
-                oninput="syncFromTotal('${p.id}')"
-                onblur="commitQty('${p.id}')">
-            </div>
-          </div>
-          ${inCart
-            ? `<button class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);width:100%" onclick="removeItem('${p.id}')">✓ In Cart — Remove</button>`
-            : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addQtyToCart('${p.id}')">Add to Cart</button>`
-          }
-        </div>`;
-    } else {
-      const qty = cartItem ? cartItem.qty : 0;
-      cartControl = qty === 0
-        ? `<button class="btn btn-primary btn-sm" onclick="addToCart('${p.id}')">Add to Cart</button>`
-        : `<div class="qty-control">
-             <button class="qty-btn" onclick="updateQtyUI('${p.id}',-1)">−</button>
-             <span class="qty-display">${qty}</span>
-             <button class="qty-btn" onclick="updateQtyUI('${p.id}',1)">+</button>
-           </div>`;
+    if (products.length === 0) {
+      container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">🥩</div>
+        <div class="empty-title">No products found</div>
+        <div class="empty-desc">Try a different filter</div>
+      </div>`;
+      return;
     }
 
-    const usesInputCtrl = weighted || qtyBased;
+    container.innerHTML = products.map(p => {
+      try {
+        const cartItem = cart.find(c => c.productId === String(p.id));
+        const extras = productExtras[p.id] || {};
+        const basePrice = parseFloat(p.price || 0) + (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
+        const weighted = isWeightBased(p);
+        const catLabel = p.categoryLabel || p.category || 'Meat';
+        
+        const catBadge = (p.category === 'cooked' || catLabel === 'Other' || catLabel === 'Sides')
+          ? '<span class="badge badge-gold">🍽️ Cooked Meal</span>'
+          : `<span class="badge badge-red">🥩 ${catLabel}</span>`;
 
-    return `<div class="product-card" id="pc-${p.id}">
-        <div class="product-img">
-          <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
-          <div class="product-category-tag">${catBadge}</div>
-        </div>
-        <div class="product-info">
-          <div class="product-name">${p.name}</div>
-          <div class="product-desc">${p.description}</div>
-          ${isBraaible(p) ? `<div class="product-extras">
-            <label class="extra-toggle ${extras.braai ? 'active' : ''}" onclick="toggleExtra('${p.id}','braai')">
-              🔥 Add Braai <span>+R10</span>
-            </label>
-            <div class="pap-ctrl">
-              <span class="pap-label">🍚 Pap</span>
-              <button class="pap-btn" onclick="adjustPap('${p.id}',-1)" ${(extras.pap||0)===0?'disabled':''}>−</button>
-              <span class="pap-count">${extras.pap || 0}</span>
-              <button class="pap-btn" onclick="adjustPap('${p.id}',1)">+</button>
-              <span class="pap-price">${(extras.pap||0) > 0 ? `+R${(extras.pap*10).toFixed(0)}` : 'R10/ea'}</span>
+        const qtyBased = isQtyBased(p);
+        const prodImage = p.image || p.image_url || 'assets/img/food/meat_on_braai.jpg';
+
+        let cartControl;
+        if (weighted) {
+          const currentKg = cartItem ? cartItem.qty : 0.5;
+          const currentRand = parseFloat((currentKg * basePrice).toFixed(2));
+          const inCart = !!cartItem;
+          cartControl = `
+            <div class="weight-ctrl${inCart ? ' in-cart' : ''}">
+              <div class="weight-dual-row">
+                <div class="weight-field">
+                  <input type="number" class="weight-inp" id="wi-${p.id}"
+                    value="${currentKg.toFixed(2)}" min="0.25" max="20" step="0.25"
+                    oninput="syncFromKg('${p.id}')"
+                    onblur="commitWeight('${p.id}')">
+                  <span class="weight-lbl">kg</span>
+                </div>
+                <span class="weight-sep">↔</span>
+                <div class="weight-field">
+                  <span class="weight-lbl">R</span>
+                  <input type="number" class="weight-inp" id="pi-${p.id}"
+                    value="${currentRand.toFixed(2)}" min="0" step="1"
+                    oninput="syncFromPrice('${p.id}')"
+                    onblur="commitWeight('${p.id}')">
+                </div>
+              </div>
+              ${inCart
+                ? `<button class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);width:100%" onclick="removeItem('${p.id}')">✓ In Cart — Remove</button>`
+                : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addWeightToCart('${p.id}')">Add to Cart</button>`
+              }
+            </div>`;
+        } else if (qtyBased) {
+          const currentQty = cartItem ? cartItem.qty : 1;
+          const currentTotal = parseFloat((currentQty * basePrice).toFixed(2));
+          const inCart = !!cartItem;
+          cartControl = `
+            <div class="weight-ctrl${inCart ? ' in-cart' : ''}">
+              <div class="weight-dual-row">
+                <div class="weight-field">
+                  <input type="number" class="weight-inp" id="qi-${p.id}"
+                    value="${currentQty}" min="1" max="100" step="1"
+                    oninput="syncFromQty('${p.id}')"
+                    onblur="commitQty('${p.id}')">
+                  <span class="weight-lbl">each</span>
+                </div>
+                <span class="weight-sep">↔</span>
+                <div class="weight-field">
+                  <span class="weight-lbl">R</span>
+                  <input type="number" class="weight-inp" id="ti-${p.id}"
+                    value="${currentTotal.toFixed(2)}" min="0" step="1"
+                    oninput="syncFromTotal('${p.id}')"
+                    onblur="commitQty('${p.id}')">
+                </div>
+              </div>
+              ${inCart
+                ? `<button class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);width:100%" onclick="removeItem('${p.id}')">✓ In Cart — Remove</button>`
+                : `<button class="btn btn-primary btn-sm" style="width:100%" onclick="addQtyToCart('${p.id}')">Add to Cart</button>`
+              }
+            </div>`;
+        } else {
+          const qty = cartItem ? cartItem.qty : 0;
+          cartControl = qty === 0
+            ? `<button class="btn btn-primary btn-sm" onclick="addToCart('${p.id}')">Add to Cart</button>`
+            : `<div class="qty-control">
+                 <button class="qty-btn" onclick="updateQtyUI('${p.id}',-1)">−</button>
+                 <span class="qty-display">${qty}</span>
+                 <button class="qty-btn" onclick="updateQtyUI('${p.id}',1)">+</button>
+               </div>`;
+        }
+
+        const usesInputCtrl = weighted || qtyBased;
+
+        return `<div class="product-card" id="pc-${p.id}">
+            <div class="product-img">
+              <img src="${prodImage}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
+              <div class="product-category-tag">${catBadge}</div>
             </div>
-          </div>` : ''}
-          <div class="product-footer">
-            <div>
-              <div class="product-price">${formatCurrency(basePrice)}</div>
-              <div class="product-unit">${p.unit}</div>
+            <div class="product-info">
+              <div class="product-name">${p.name}</div>
+              <div class="product-desc">${p.description || ''}</div>
+              ${isBraaible(p) ? `<div class="product-extras">
+                <label class="extra-toggle ${extras.braai ? 'active' : ''}" onclick="toggleExtra('${p.id}','braai')">
+                  🔥 Add Braai <span>+R10</span>
+                </label>
+                <div class="pap-ctrl">
+                  <span class="pap-label">🍚 Pap</span>
+                  <button class="pap-btn" onclick="adjustPap('${p.id}',-1)" ${(extras.pap||0)===0?'disabled':''}>−</button>
+                  <span class="pap-count">${extras.pap || 0}</span>
+                  <button class="pap-btn" onclick="adjustPap('${p.id}',1)">+</button>
+                  <span class="pap-price">${(extras.pap||0) > 0 ? `+R${(extras.pap*10).toFixed(0)}` : 'R10/ea'}</span>
+                </div>
+              </div>` : ''}
+              <div class="product-footer">
+                <div>
+                  <div class="product-price">${typeof formatCurrency === 'function' ? formatCurrency(basePrice) : 'R' + basePrice.toFixed(2)}</div>
+                  <div class="product-unit">${p.unit || ''}</div>
+                </div>
+                ${usesInputCtrl ? '' : cartControl}
+              </div>
+              ${usesInputCtrl ? `<div class="weight-ctrl-wrap" style="margin-top:12px">${cartControl}</div>` : ''}
             </div>
-            ${usesInputCtrl ? '' : cartControl}
-          </div>
-          ${usesInputCtrl ? `<div class="weight-ctrl-wrap">${cartControl}</div>` : ''}
-        </div>
-      </div>`;
-  }).join('\n');
+          </div>`;
+      } catch (err) {
+        console.error('Error rendering individual product card:', p, err);
+        return '';
+      }
+    }).join('');
+  } catch (err) {
+    console.error('Critical error in renderProducts:', err);
+    container.innerHTML = `<div class="alert alert-error">Error loading product list. Please try refreshing.</div>`;
+  }
 }
 
 function updateQtyUI(productId, change) {
