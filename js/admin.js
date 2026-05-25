@@ -34,19 +34,6 @@ function mapProduct(p) {
   const cat = CATEGORY_MAP[p.id] || {};
   return { ...p, category: cat.category || 'raw', categoryLabel: cat.categoryLabel || 'Other', stockQty: p.stock_qty || 0, image_url: p.image, createdAt: p.created_at };
 }
-function toSupabaseProduct(p) {
-  return { id: p.id, name: p.name, unit: p.unit, is_active: true };
-}
-
-// ── Seed products from catalog ─────────────────
-async function seedProductsToSupabase() {
-  const catProducts = LOCAL_CATALOG.map(mapToProduct);
-  const products = catProducts.map(toSupabaseProduct);
-  const { error } = await supabase.from('products').upsert(products);
-  if (error) throw error;
-  showToast('Products seeded to Supabase ✅', 'success');
-  return catProducts.map(p => mapProduct(p));
-}
 
 // ── Local File Upload ─────────────────────────
 function openPhotoPicker() {
@@ -112,9 +99,7 @@ async function loadAllAdminData() {
     if (data && data.length > 0) {
       _products = data.map(mapProduct);
     } else {
-      try { _products = await seedProductsToSupabase(); } catch {
-        _products = LOCAL_CATALOG.map(mapToProduct);
-      }
+      _products = LOCAL_CATALOG.map(mapToProduct);
     }
   } catch (e) {
     failures.push('products: ' + e.message);
@@ -375,14 +360,6 @@ window.handleUpdateStock = async (id) => {
   const newQty = current + amount;
   p.stockQty = newQty;
 
-  try {
-    const { error } = await supabase.from('products').update({ stock_qty: newQty }).eq('id', id);
-    if (error) console.warn('stock_qty update failed (column may not exist):', error.message);
-  } catch (e2) { console.warn('stock_qty update failed:', e2.message); }
-
-  try {
-  } catch (e) { console.warn('Stock update failed:', e); }
-
   input.value = '';
   showToast(`Added ${amount} units to ${p.name}`, 'success');
   renderInventory();
@@ -462,18 +439,16 @@ window.toggleAvailability = async (productId) => {
   const newState = !(p.is_active !== false);
   p.is_active = newState;
   p.available = newState;
-  const { error } = await supabase.from('products').update({ is_active: newState }).eq('id', productId);
-  if (error) showToast('Update failed: ' + error.message, 'error');
   renderAdminProducts();
   showToast(`${p.name} ${newState ? 'enabled' : 'disabled'}`, 'info');
 };
 
 window.deleteProduct = async (productId) => {
   if (!confirm('Delete this product?')) return;
-  await supabase.from('products').update({ is_active: false }).eq('id', productId);
   _products = _products.filter(pr => pr.id != productId);
   renderAdminProducts();
   showToast('Product removed', 'warning');
+};
 };
 
 function setImagePreview(url) {
@@ -536,17 +511,13 @@ function initProductForm() {
 
     try {
       if (id) {
-        const { error } = await supabase.from('products').update(payload).eq('id', id);
-        if (error) throw error;
         const idx = _products.findIndex(p => p.id == id);
-        if (idx !== -1) _products[idx] = { ..._products[idx], ...payload, image_url: imgVal };
+        if (idx !== -1) _products[idx] = { ..._products[idx], name: payload.name, unit: payload.unit, image_url: imgVal, price: parseFloat(document.getElementById('prod-price').value), description: document.getElementById('prod-desc').value.trim() };
         showToast('Product updated!', 'success');
       } else {
         const newId = generateId('p_');
-        const newProd = { ...payload, id: newId };
-        const { error } = await supabase.from('products').insert(newProd);
-        if (error) throw error;
-        _products.push(mapProduct(newProd));
+        const newProd = { id: newId, name: payload.name, unit: payload.unit, is_active: true, image_url: imgVal, price: parseFloat(document.getElementById('prod-price').value), description: document.getElementById('prod-desc').value.trim(), category: document.getElementById('prod-category').value, stockQty: 0 };
+        _products.push(newProd);
         showToast('Product added!', 'success');
       }
     } catch (err) {
