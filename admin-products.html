@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Products — The Peoples Butchery</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <style>
+    body { background: var(--bg-base); margin: 0; padding: 0; }
+    .admin-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); background: var(--gold-glow); border: 1px solid rgba(232, 160, 32, 0.3); color: var(--gold); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Mobile Top Bar -->
+  <div class="mobile-topbar">
+    <div class="brand-name">The Peoples <span style="color:var(--gold)">Admin</span></div>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Product Modal -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="product-modal-title">Add New Product</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="product-form">
+          <input type="hidden" id="prod-id">
+          <div class="form-group">
+            <label class="form-label">Product Name *</label>
+            <input type="text" id="prod-name" class="form-control" placeholder="e.g. T-Bone Steak" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <select id="prod-category" class="form-control">
+                <option value="raw">🥩 Raw Meat</option>
+                <option value="cooked">🍽️ Cooked Meal (with Pap)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (R) *</label>
+              <input type="number" id="prod-price" class="form-control" placeholder="89" min="0" step="0.01" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unit *</label>
+            <input type="text" id="prod-unit" class="form-control" placeholder="per kg / per plate / per 500g">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="prod-desc" class="form-control" rows="2" placeholder="Brief product description"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Product Image</label>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-lg)">
+              <img id="prod-image-preview" src="" alt="Preview"
+                style="width:72px;height:72px;object-fit:cover;border-radius:var(--radius-md);background:var(--bg-surface);display:none"
+                onerror="this.style.display='none'">
+              <div style="flex:1;min-width:0">
+                <button type="button" id="upload-image-btn" class="btn btn-outline btn-sm" style="margin-bottom:6px">
+                  📁 Upload from Computer
+                </button>
+                <div id="upload-status" style="font-size:0.75rem;color:var(--text-muted)">
+                  Click Browse to pick a photo from the library
+                </div>
+              </div>
+            </div>
+            <input type="hidden" id="prod-image">
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="display:flex;align-items:center;gap:10px">
+              <input type="checkbox" id="prod-is-special" style="width:20px;height:20px">
+              <label class="form-label" style="margin-bottom:0">On Special?</label>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Discount Price (R)</label>
+              <input type="number" id="prod-discount" class="form-control" placeholder="e.g. 75" step="0.01">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full mt-2">Save Product</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="navbar-brand">
+          <div class="brand-logo">NB</div>
+          <span class="brand-name">The Peoples <span>Butchery</span></span>
+        </a>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar gold">A</div>
+        <div>
+          <div class="user-name" id="admin-name">Admin</div>
+          <div><span class="admin-badge">⚙️ Admin Portal</span></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Dashboard</div>
+        <a href="admin.html" class="sidebar-link">
+          <span class="link-icon">📊</span> Overview
+        </a>
+        <a href="admin-credit.html" class="sidebar-link">
+          <span class="link-icon">💳</span> Credit Customers
+        </a>
+        <a href="admin-orders.html" class="sidebar-link">
+          <span class="link-icon">📦</span> All Orders
+        </a>
+        <div class="sidebar-section-label">Manage</div>
+        <a href="admin-inventory.html" class="sidebar-link">
+          <span class="link-icon">⚖️</span> Inventory (kg)
+        </a>
+        <a href="admin-products.html" class="sidebar-link active">
+          <span class="link-icon">🥩</span> Products
+        </a>
+        <a href="admin-reports.html" class="sidebar-link">
+          <span class="link-icon">📊</span> AI Reports
+        </a>
+        <a href="admin-customers.html" class="sidebar-link">
+          <span class="link-icon">👥</span> Customers
+        </a>
+        <div class="sidebar-section-label">Staff Portals</div>
+        <a href="kitchen.html" class="sidebar-link" target="_blank"><span class="link-icon">🍳</span> Kitchen Feed</a>
+        <a href="butcher.html" class="sidebar-link" target="_blank"><span class="link-icon">🥩</span> Butcher Station</a>
+        <a href="cashier.html" class="sidebar-link" target="_blank"><span class="link-icon">💰</span> Cashier Verification</a>
+        <a href="dispatch.html" class="sidebar-link" target="_blank"><span class="link-icon">🚚</span> Dispatch Control</a>
+        <div class="sidebar-section-label">System</div>
+        <a href="admin-settings.html" class="sidebar-link">
+          <span class="link-icon">⚙️</span> yType Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div style="padding:12px;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px">📍 76 Meeu St, East Lynne, Pretoria</div>
+        <button type="button" class="sidebar-link btn-full" id="logout-btn" style="color:var(--error)">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="tab-content active" id="tab-products">
+        <div class="page-header flex-between" style="flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="page-title">Products</div>
+            <div class="page-subtitle">Manage your meat products and meals.</div>
+          </div>
+          <button class="btn btn-primary" id="add-product-btn">+ Add New Product</button>
+        </div>
+        <div id="admin-products-list">
+          <div style="text-align:center;color:var(--text-muted);padding:40px">Loading products...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+
+</html>

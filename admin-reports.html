@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Reports — The Peoples Butchery</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <style>
+    body { background: var(--bg-base); margin: 0; padding: 0; }
+    .admin-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); background: var(--gold-glow); border: 1px solid rgba(232, 160, 32, 0.3); color: var(--gold); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Mobile Top Bar -->
+  <div class="mobile-topbar">
+    <div class="brand-name">The Peoples <span style="color:var(--gold)">Admin</span></div>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="navbar-brand">
+          <div class="brand-logo">NB</div>
+          <span class="brand-name">The Peoples <span>Butchery</span></span>
+        </a>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar gold">A</div>
+        <div>
+          <div class="user-name" id="admin-name">Admin</div>
+          <div><span class="admin-badge">⚙️ Admin Portal</span></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Dashboard</div>
+        <a href="admin.html" class="sidebar-link"><span class="link-icon">📊</span> Overview</a>
+        <a href="admin-credit.html" class="sidebar-link"><span class="link-icon">💳</span> Credit Customers</a>
+        <a href="admin-orders.html" class="sidebar-link"><span class="link-icon">📦</span> All Orders</a>
+        <div class="sidebar-section-label">Manage</div>
+        <a href="admin-inventory.html" class="sidebar-link"><span class="link-icon">⚖️</span> Inventory (kg)</a>
+        <a href="admin-products.html" class="sidebar-link"><span class="link-icon">🥩</span> Products</a>
+        <a href="admin-reports.html" class="sidebar-link active"><span class="link-icon">📊</span> AI Reports</a>
+        <a href="admin-customers.html" class="sidebar-link"><span class="link-icon">👥</span> Customers</a>
+        <div class="sidebar-section-label">Staff Portals</div>
+        <a href="kitchen.html" class="sidebar-link" target="_blank"><span class="link-icon">🍳</span> Kitchen Feed</a>
+        <a href="butcher.html" class="sidebar-link" target="_blank"><span class="link-icon">🥩</span> Butcher Station</a>
+        <a href="cashier.html" class="sidebar-link" target="_blank"><span class="link-icon">💰</span> Cashier Verification</a>
+        <a href="dispatch.html" class="sidebar-link" target="_blank"><span class="link-icon">🚚</span> Dispatch Control</a>
+        <div class="sidebar-section-label">System</div>
+        <a href="admin-settings.html" class="sidebar-link"><span class="link-icon">⚙️</span> yType Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div style="padding:12px;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px">📍 76 Meeu St, East Lynne, Pretoria</div>
+        <button type="button" class="sidebar-link btn-full" id="logout-btn" style="color:var(--error)">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="tab-content active" id="tab-reports">
+        <div class="page-header">
+          <div class="page-title">AI Projections & Reports</div>
+          <div class="page-subtitle">Autonomous financial forecasting and stock depletion estimates.</div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>💰 Revenue Forecast (Next 7 Days)</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="height:250px">
+                <canvas id="chart-revenue"></canvas>
+              </div>
+              <div style="font-size:2.5rem;font-weight:900;color:var(--gold);margin-top:20px" id="rep-projected-income">
+                R0.00</div>
+              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">Projected total revenue based on growth velocity.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>⚖️ Stock Levels (kg)</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="height:250px">
+                <canvas id="chart-inventory"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Credit Management — The Peoples Butchery</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: var(--bg-base); margin: 0; padding: 0; }
+    .admin-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); background: var(--gold-glow); border: 1px solid rgba(232, 160, 32, 0.3); color: var(--gold); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .credit-form-card { max-width: 560px; }
+    .credit-user-info { min-height: 80px; }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Mobile Top Bar -->
+  <div class="mobile-topbar">
+    <div class="brand-name">The Peoples <span style="color:var(--gold)">Admin</span></div>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="navbar-brand">
+          <div class="brand-logo">NB</div>
+          <span class="brand-name">The Peoples <span>Butchery</span></span>
+        </a>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar gold">A</div>
+        <div>
+          <div class="user-name" id="admin-name">Admin</div>
+          <div><span class="admin-badge">⚙️ Admin Portal</span></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Dashboard</div>
+        <a href="admin.html" class="sidebar-link"><span class="link-icon">📊</span> Overview</a>
+        <a href="admin-credit.html" class="sidebar-link active"><span class="link-icon">💳</span> Credit Customers</a>
+        <a href="admin-orders.html" class="sidebar-link"><span class="link-icon">📦</span> All Orders</a>
+        <div class="sidebar-section-label">Manage</div>
+        <a href="admin-inventory.html" class="sidebar-link"><span class="link-icon">⚖️</span> Inventory (kg)</a>
+        <a href="admin-products.html" class="sidebar-link"><span class="link-icon">🥩</span> Products</a>
+        <a href="admin-reports.html" class="sidebar-link"><span class="link-icon">📊</span> AI Reports</a>
+        <a href="admin-customers.html" class="sidebar-link"><span class="link-icon">👥</span> Customers</a>
+        <div class="sidebar-section-label">Staff Portals</div>
+        <a href="kitchen.html" class="sidebar-link" target="_blank"><span class="link-icon">🍳</span> Kitchen Feed</a>
+        <a href="butcher.html" class="sidebar-link" target="_blank"><span class="link-icon">🥩</span> Butcher Station</a>
+        <a href="cashier.html" class="sidebar-link" target="_blank"><span class="link-icon">💰</span> Cashier Verification</a>
+        <a href="dispatch.html" class="sidebar-link" target="_blank"><span class="link-icon">🚚</span> Dispatch Control</a>
+        <div class="sidebar-section-label">System</div>
+        <a href="admin-settings.html" class="sidebar-link"><span class="link-icon">⚙️</span> yType Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div style="padding:12px;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px">📍 76 Meeu St, East Lynne, Pretoria</div>
+        <button type="button" class="sidebar-link btn-full" id="logout-btn" style="color:var(--error)">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="tab-content active" id="tab-credit">
+        <div class="page-header">
+          <div class="page-title">Credit Customers</div>
+          <div class="page-subtitle">Add credit to a customer's account using their unique REF number.</div>
+        </div>
+        <div class="grid-2" style="align-items:start">
+          <div class="card credit-form-card">
+            <div class="card-header">
+              <h3>🔍 Find Customer by REF</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Customer REF Number</label>
+                <div style="display:flex;gap:10px">
+                  <input type="text" id="credit-ref" class="form-control" placeholder="e.g. NL-2024-A3F7"
+                    style="text-transform:uppercase;font-family:var(--font-head);font-weight:700;letter-spacing:2px">
+                  <button class="btn btn-primary" id="lookup-user-btn">🔍 Find</button>
+                </div>
+              </div>
+              <div class="credit-user-info mb-4" id="credit-user-info">
+                <div class="alert alert-info">Enter a REF number and click Find to load customer details.</div>
+              </div>
+              <form id="credit-form">
+                <input type="hidden" id="credit-user-id">
+                <div class="form-group">
+                  <label class="form-label">Amount to Credit (R) *</label>
+                  <div class="input-group">
+                    <span class="input-icon">💰</span>
+                    <input type="number" id="credit-amount" class="form-control" placeholder="e.g. 500" min="1" step="0.01">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Note (optional)</label>
+                  <input type="text" id="credit-note" class="form-control" placeholder="e.g. Cash deposit R500">
+                </div>
+                <button type="submit" class="btn btn-gold btn-full btn-lg">💳 Credit Customer Account</button>
+              </form>
+            </div>
+          </div>
+          <div>
+            <div class="card mb-4">
+              <div class="card-header">
+                <h3>📋 Recent Credits</h3>
+              </div>
+              <div class="card-body" style="padding:0">
+                <div class="table-wrap" style="border:none;border-radius:0">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>REF</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody id="recent-credits-tbody">
+                      <tr>
+                        <td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">No credits added yet</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-warning">
+              ⚠️ <strong>Important:</strong> Credit transactions are irreversible. Always verify the customer's identity and REF number before adding credit.
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+
+</html>

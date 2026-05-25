@@ -68,6 +68,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderAdminUser();
     await loadAllAdminData();
 
+    // Handle standalone pages by detecting current tab from URL or body class
+    const path = window.location.pathname;
+    let activeTab = 'overview';
+    if (path.includes('admin-products')) activeTab = 'products';
+    else if (path.includes('admin-customers')) activeTab = 'customers';
+    else if (path.includes('admin-inventory')) activeTab = 'inventory';
+    else if (path.includes('admin-reports')) activeTab = 'reports';
+    else if (path.includes('admin-orders')) activeTab = 'orders';
+    else if (path.includes('admin-credit')) activeTab = 'credit';
+    else if (path.includes('admin-settings')) activeTab = 'settings';
+
+    // Set active link in sidebar
+    document.querySelectorAll('.sidebar-link').forEach(l => {
+      l.classList.remove('active');
+      if (l.getAttribute('href')?.includes(activeTab)) l.classList.add('active');
+      else if (activeTab === 'overview' && (l.getAttribute('href') === 'admin.html' || l.dataset.tab === 'overview')) l.classList.add('active');
+    });
+
+    renderAdminTab(activeTab);
     document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
   } catch (error) {
     console.error('Error initializing admin panel:', error);
@@ -90,23 +109,8 @@ function setupAdminSidebar() {
     toggle.addEventListener('click', openSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
 
-    sidebar.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
-      link.addEventListener('click', () => {
-        try {
-          const target = link.dataset.tab;
-          sidebar.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-          link.classList.add('active');
-          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-          const panel = document.getElementById('tab-' + target);
-          if (panel) panel.classList.add('active');
-          renderAdminTab(target);
-          closeSidebar();
-        } catch (err) {
-          console.error(`Error switching to tab "${link.dataset.tab}":`, err);
-          showToast(`Error loading tab: ${err.message}`, 'error');
-        }
-      });
-    });
+    // Sidebar navigation is now handled by regular <a> href links
+    // to standalone pages for better reliability.
   } catch (error) {
     console.error('Error setting up admin sidebar:', error);
   }
@@ -499,7 +503,6 @@ window.deleteProduct = async (productId) => {
   _products = _products.filter(pr => pr.id != productId);
   renderAdminProducts();
   showToast('Product removed', 'warning');
-};
 };
 
 function setImagePreview(url) {

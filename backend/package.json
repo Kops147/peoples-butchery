@@ -13,9 +13,6 @@
     "seed": "node src/scripts/seed.js"
   },
   "dependencies": {
-    "@alicloud/dysmsapi20170525": "^2.0.24",
-    "@alicloud/openapi-client": "^0.4.7",
-    "ali-oss": "^6.18.1",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.9.0",
     "cors": "^2.8.5",

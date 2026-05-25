@@ -2156,6 +2156,14 @@ tbody tr:hover {
   transition: var(--transition);
   margin-bottom: 2px;
   cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.sidebar-link:focus-visible {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--gold);
 }
 
 .sidebar-link:hover {

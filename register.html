@@ -254,10 +254,11 @@
         <div class="form-hint">Start typing your suburb — suggestions will appear</div>
         <div class="form-error hidden" id="err-suburb">Please enter your suburb</div>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="position:relative">
         <label class="form-label" for="r-address">Full Street Address *</label>
         <textarea id="r-address" class="form-control" rows="3" placeholder="e.g. 15 Main St, Silverton, Pretoria, 0184"
-          autocomplete="street-address"></textarea>
+          autocomplete="off"></textarea>
+        <div id="reg-address-suggestions" class="delivery-suggestions" style="position:absolute;width:100%;z-index:100;top:100%"></div>
         <div class="form-hint">Auto-filled when you pick a suburb above, or type it manually</div>
         <div class="form-error hidden" id="err-address">Please enter your delivery address</div>
       </div>
@@ -450,7 +451,13 @@
             const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-25.7219&lon=28.3412&limit=6&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
             const res = await fetch(url);
             const json = await res.json();
-            const results = (json.features || []).filter(f => !f.properties.country_code || f.properties.country_code === 'za');
+            const results = (json.features || []).filter(f => {
+              const c = f.properties.country_code;
+              const [lng, lat] = f.geometry.coordinates;
+              // Strict bounding box filter: 27.8,-25.9,28.7,-25.5
+              const inBox = lng >= 27.8 && lng <= 28.7 && lat >= -25.9 && lat <= -25.5;
+              return (!c || c === 'za') && inBox;
+            });
             suggestionsEl.innerHTML = '';
             results.slice(0, 5).forEach(r => {
               const p = r.properties;
@@ -482,6 +489,66 @@
 
       document.addEventListener('click', (e) => {
         if (!suburbInput.contains(e.target) && !suggestionsEl.contains(e.target)) {
+          suggestionsEl.innerHTML = '';
+        }
+      });
+    })();
+
+    // Address autocomplete (Photon, Pretoria area)
+    (function () {
+      const addressInput = document.getElementById('r-address');
+      const suggestionsEl = document.getElementById('reg-address-suggestions');
+      let timer;
+
+      addressInput.addEventListener('input', () => {
+        clearTimeout(timer);
+        suggestionsEl.innerHTML = '';
+        const q = addressInput.value.trim();
+        if (q.length < 5) return; // Street addresses need more context
+
+        timer = setTimeout(async () => {
+          try {
+            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-25.7219&lon=28.3412&limit=6&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
+            const res = await fetch(url);
+            const json = await res.json();
+              const results = (json.features || []).filter(f => {
+                const c = f.properties.country_code;
+                const [lng, lat] = f.geometry.coordinates;
+                // Strict bounding box filter: 27.8,-25.9,28.7,-25.5
+                const inBox = lng >= 27.8 && lng <= 28.7 && lat >= -25.9 && lat <= -25.5;
+                return (!c || c === 'za') && inBox;
+              });
+            suggestionsEl.innerHTML = '';
+            results.forEach(r => {
+              const p = r.properties;
+              const street = p.housenumber ? `${p.housenumber} ${p.street || ''}`.trim() : (p.street || '');
+              const suburb = p.suburb || p.district || p.neighbourhood || '';
+              const city = p.city || p.town || 'Pretoria';
+              const fullAddress = [street, suburb, city].filter(Boolean).join(', ');
+              const [lng, lat] = r.geometry.coordinates;
+
+              const item = document.createElement('div');
+              item.className = 'delivery-suggestion-item';
+              item.textContent = fullAddress;
+              item.addEventListener('click', () => {
+                addressInput.value = fullAddress;
+                if (suburb) document.getElementById('r-suburb').value = suburb;
+                pendingCoords = { lat, lng };
+                suggestionsEl.innerHTML = '';
+                hideError('err-address');
+                // Auto-calculate delivery fee when address is picked
+                document.getElementById('calc-delivery-btn').click();
+              });
+              suggestionsEl.appendChild(item);
+            });
+          } catch {
+            // silent
+          }
+        }, 600);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!addressInput.contains(e.target) && !suggestionsEl.contains(e.target)) {
           suggestionsEl.innerHTML = '';
         }
       });

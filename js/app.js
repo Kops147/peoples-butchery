@@ -265,9 +265,10 @@ const API = {
     }
     return res.json();
   },
-  get(path) { return this.request(path); },
-  post(path, body) { return this.request(path, { method: 'POST', body: JSON.stringify(body) }); },
-  put(path, body) { return this.request(path, { method: 'PUT', body: JSON.stringify(body) }); },
+  async get(path, options = {}) { return this.request(path, { ...options, method: 'GET' }); },
+  async post(path, body, options = {}) { return this.request(path, { ...options, method: 'POST', body: JSON.stringify(body) }); },
+  async put(path, body, options = {}) { return this.request(path, { ...options, method: 'PUT', body: JSON.stringify(body) }); },
+  async delete(path, options = {}) { return this.request(path, { ...options, method: 'DELETE' }); },
 };
 
 // ── Utilities ──────────────────────────────────

@@ -475,7 +475,10 @@ function initDeliveryLocation() {
         const data = await res.json();
         const results = (data.features || []).filter(f => {
           const c = f.properties.country_code;
-          return !c || c === 'za';
+          const [lng, lat] = f.geometry.coordinates;
+          // Strict bounding box filter: 27.8,-25.9,28.7,-25.5
+          const inBox = lng >= 27.8 && lng <= 28.7 && lat >= -25.9 && lat <= -25.5;
+          return (!c || c === 'za') && inBox;
         });
         suggestionsEl.innerHTML = '';
         if (!results.length) {

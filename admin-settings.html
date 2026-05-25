@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Settings — The Peoples Butchery</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: var(--bg-base); margin: 0; padding: 0; }
+    .admin-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); background: var(--gold-glow); border: 1px solid rgba(232, 160, 32, 0.3); color: var(--gold); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Mobile Top Bar -->
+  <div class="mobile-topbar">
+    <div class="brand-name">The Peoples <span style="color:var(--gold)">Admin</span></div>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="navbar-brand">
+          <div class="brand-logo">NB</div>
+          <span class="brand-name">The Peoples <span>Butchery</span></span>
+        </a>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar gold">A</div>
+        <div>
+          <div class="user-name" id="admin-name">Admin</div>
+          <div><span class="admin-badge">⚙️ Admin Portal</span></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Dashboard</div>
+        <a href="admin.html" class="sidebar-link"><span class="link-icon">📊</span> Overview</a>
+        <a href="admin-credit.html" class="sidebar-link"><span class="link-icon">💳</span> Credit Customers</a>
+        <a href="admin-orders.html" class="sidebar-link"><span class="link-icon">📦</span> All Orders</a>
+        <div class="sidebar-section-label">Manage</div>
+        <a href="admin-inventory.html" class="sidebar-link"><span class="link-icon">⚖️</span> Inventory (kg)</a>
+        <a href="admin-products.html" class="sidebar-link"><span class="link-icon">🥩</span> Products</a>
+        <a href="admin-reports.html" class="sidebar-link"><span class="link-icon">📊</span> AI Reports</a>
+        <a href="admin-customers.html" class="sidebar-link"><span class="link-icon">👥</span> Customers</a>
+        <div class="sidebar-section-label">Staff Portals</div>
+        <a href="kitchen.html" class="sidebar-link" target="_blank"><span class="link-icon">🍳</span> Kitchen Feed</a>
+        <a href="butcher.html" class="sidebar-link" target="_blank"><span class="link-icon">🥩</span> Butcher Station</a>
+        <a href="cashier.html" class="sidebar-link" target="_blank"><span class="link-icon">💰</span> Cashier Verification</a>
+        <a href="dispatch.html" class="sidebar-link" target="_blank"><span class="link-icon">🚚</span> Dispatch Control</a>
+        <div class="sidebar-section-label">System</div>
+        <a href="admin-settings.html" class="sidebar-link active"><span class="link-icon">⚙️</span> yType Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div style="padding:12px;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px">📍 76 Meeu St, East Lynne, Pretoria</div>
+        <button type="button" class="sidebar-link btn-full" id="logout-btn" style="color:var(--error)">
+          <span class="link-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="tab-content active" id="tab-settings">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="page-title">yType — Automate iT Pricing</div>
+            <div class="page-subtitle">Configure your platform automation models and service fees.</div>
+          </div>
+          <svg width="160" height="44" viewBox="0 0 160 44">
+            <rect width="160" height="44" rx="6" fill="#0A0A0A"/>
+            <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
+            <text x="12" y="40" font-family="Arial" font-size="10" fill="#666">Automate iT</text>
+            <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
+          </svg>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>💎 Option A: Premium Fixed</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Setup Fee (R)</label>
+                <input type="number" id="setting-opt-a-setup" class="form-control" value="25000">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Monthly Management (R)</label>
+                <input type="number" id="setting-opt-a-monthly" class="form-control" value="2850">
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>🚀 Option B: Scaling Partnership</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Setup Fee (R)</label>
+                <input type="number" id="setting-opt-b-setup" class="form-control" value="8500">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Monthly Management (R)</label>
+                <input type="number" id="setting-opt-b-monthly" class="form-control" value="1200">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Order Commission (%)</label>
+                <input type="number" id="setting-opt-b-comm" class="form-control" value="2.5" step="0.1">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-end mt-4">
+          <button class="btn btn-primary" id="save-settings-btn">💾 Save Pricing Configurations</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+
+</html>
