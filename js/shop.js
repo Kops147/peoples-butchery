@@ -23,16 +23,20 @@ function findProduct(id) {
 }
 
 async function loadProductsFromAPI() {
+  // 1. Load from local catalog immediately as a baseline
+  apiProducts = LOCAL_CATALOG.map(mapToProduct);
+  renderProducts();
+
+  // 2. Try to fetch fresh data from Supabase in the background
   try {
     const { data, error } = await supabase.from('products').select('*').eq('is_active', true);
     if (!error && data && data.length > 0) {
       apiProducts = data.map(p => ({ ...p, image_url: p.image, categoryLabel: p.category_label }));
-      return;
+      renderProducts();
     }
   } catch (err) {
-    console.warn('Supabase products unavailable, using local catalog:', err);
+    console.warn('Supabase products unavailable, staying with local catalog:', err);
   }
-  apiProducts = LOCAL_CATALOG.map(mapToProduct);
 }
 
 // ── Cart from Session ──────────────────────────
@@ -688,7 +692,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('products-grid');
   if (grid) grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⏳</div><div class="empty-title">Loading products...</div></div>`;
 
-  await loadProductsFromAPI();
+  // Initialize data (don't block the rest of UI with await)
+  loadProductsFromAPI();
 
   // URL filter param
   const params = new URLSearchParams(window.location.search);
