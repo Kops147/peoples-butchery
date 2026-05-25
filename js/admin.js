@@ -35,7 +35,7 @@ function mapProduct(p) {
   return { ...p, category: cat.category || 'raw', categoryLabel: cat.categoryLabel || 'Other', stockQty: p.stock_qty || 0, image_url: p.image, createdAt: p.created_at };
 }
 function toSupabaseProduct(p) {
-  return { id: p.id, name: p.name, price: p.price, unit: p.unit, image: p.image, is_active: true };
+  return { id: p.id, name: p.name, price: p.price, unit: p.unit, is_active: true };
 }
 
 // ── Seed products from catalog ─────────────────
@@ -532,7 +532,6 @@ function initProductForm() {
       name: document.getElementById('prod-name').value.trim(),
       price: parseFloat(document.getElementById('prod-price').value),
       unit: document.getElementById('prod-unit').value.trim(),
-      image: imgVal,
       is_active: true,
     };
 
