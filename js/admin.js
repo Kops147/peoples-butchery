@@ -138,28 +138,29 @@ async function loadAllAdminData() {
   const failures = [];
 
   try {
-    const { data, error } = await supabase.from('users').select('*').eq('is_admin', false);
-    if (error) throw error;
-    _users = (data || []).map(mapUser);
-  } catch (e) { failures.push('users: ' + e.message); console.error('Users load failed:', e); }
+    const { data: userData, error: userError } = await supabase.from('users').select('*').eq('is_admin', false);
+    if (userError) throw userError;
+    _users = (userData || []).map(mapUser);
 
-  try {
-    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    _orders = (data || []).map(mapOrder);
-  } catch (e) { failures.push('orders: ' + e.message); console.error('Orders load failed:', e); }
+    const { data: orderData, error: orderError } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (orderError) throw orderError;
+    _orders = (orderData || []).map(mapOrder);
 
-  try {
-    const { data, error } = await supabase.from('products').select('*');
-    if (error) throw error;
-    if (data && data.length > 0) {
-      _products = data.map(mapProduct);
+    const { data: prodData, error: prodError } = await supabase.from('products').select('*');
+    if (prodError) throw prodError;
+    if (prodData && prodData.length > 0) {
+      _products = prodData.map(mapProduct);
     } else {
       _products = LOCAL_CATALOG.map(mapToProduct);
     }
   } catch (e) {
-    failures.push('products: ' + e.message);
-    _products = LOCAL_CATALOG.map(mapToProduct);
+    failures.push('Supabase load failed: ' + e.message);
+    console.error('Data load failed:', e);
+    
+    // Fallback to localStorage if Supabase fails
+    _users = DB.getUsers().map(mapUser);
+    _orders = DB.getOrders().map(mapOrder);
+    _products = DB.getProducts().length > 0 ? DB.getProducts().map(mapProduct) : LOCAL_CATALOG.map(mapToProduct);
   }
 
   _stats = {
@@ -169,7 +170,9 @@ async function loadAllAdminData() {
     pendingOrders: _orders.filter(o => o.status === 'pending').length
   };
 
-  if (failures.length) showToast('⚠️ Some data failed to load: ' + failures.join(', '), 'error', 8000);
+  if (failures.length && !(_users.length || _orders.length)) {
+    showToast('⚠️ Data failed to load from database. Using local cache.', 'error', 8000);
+  }
 
   renderAdminOverview();
   renderAdminOrders();

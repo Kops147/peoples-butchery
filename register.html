@@ -256,10 +256,12 @@
       </div>
       <div class="form-group" style="position:relative">
         <label class="form-label" for="r-address">Full Street Address *</label>
-        <textarea id="r-address" class="form-control" rows="3" placeholder="e.g. 15 Main St, Silverton, Pretoria, 0184"
-          autocomplete="off"></textarea>
-        <div id="reg-address-suggestions" class="delivery-suggestions" style="position:absolute;width:100%;z-index:100;top:100%"></div>
-        <div class="form-hint">Auto-filled when you pick a suburb above, or type it manually</div>
+        <div class="input-group">
+          <textarea id="r-address" class="form-control" rows="3" placeholder="Click to select from map..."
+            readonly style="cursor:pointer;padding-right:45px"></textarea>
+          <button type="button" id="reg-open-map-btn" class="input-icon-right" style="border:none;background:none;font-size:1.2rem;cursor:pointer">📍</button>
+        </div>
+        <div class="form-hint">Precision delivery location - tap the pin to open map</div>
         <div class="form-error hidden" id="err-address">Please enter your delivery address</div>
       </div>
 
@@ -357,7 +359,40 @@
     <a href="index.html" style="color:var(--text-muted)">← Back to Home</a>
   </p>
 
+  <!-- Map Modal -->
+  <div id="map-modal-overlay" class="map-modal-overlay">
+    <div class="map-modal">
+      <div class="map-modal-header">
+        <h3 style="font-family:var(--font-head);font-weight:800;margin:0">📍 Set Delivery Location</h3>
+        <button id="cancel-map-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">✕</button>
+      </div>
+      <div class="map-search-container">
+        <div class="input-group">
+          <input id="map-search-input" type="text" class="form-control" placeholder="🔍 Search for your address or suburb..." style="padding-left:16px">
+        </div>
+      </div>
+      <div id="map-canvas"></div>
+      <div class="map-modal-footer">
+        <div style="flex:1;font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">💡</span> Drag the pin exactly onto your house for the fastest delivery.
+        </div>
+        <button id="confirm-map-btn" class="btn btn-primary">✅ Use This Location</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/app.js"></script>
+  <script type="module">
+    import { initGoogleMaps, openMapModal } from './js/google-maps.js';
+    window.initGoogleMaps = initGoogleMaps;
+    window.openMapModal = openMapModal;
+  </script>
+  <script>
+    // Points button listener
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.initGoogleMaps) await window.initGoogleMaps();
+    });
+  </script>
   <script type="module">
     import { supabase } from './js/supabase-config.js';
 
@@ -433,6 +468,31 @@
     });
 
     document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
+
+    // Maps logic
+    (function() {
+      const addrInput = document.getElementById('r-address');
+      const openBtn = document.getElementById('reg-open-map-btn');
+      
+      const handleOpenMap = () => {
+        window.openMapModal((location) => {
+          addrInput.value = location.address;
+          pendingCoords = { lat: location.lat, lng: location.lng };
+          hideError('err-address');
+          
+          // Auto-calculate delivery fee when address is picked
+          const box = document.getElementById('delivery-estimate-box');
+          box.classList.remove('hidden');
+          const fee = calcDeliveryFee(pendingCoords);
+          pendingDeliveryFee = fee;
+          document.getElementById('delivery-estimate-text').textContent =
+            fee === 0 ? '🆓 FREE delivery! You are within 5km of the shop.' : `Estimated delivery fee: R${fee.toFixed(2)} (you're ~${Math.round(haversineKm(STORE_COORDS, pendingCoords))}km away)`;
+        });
+      };
+
+      addrInput?.addEventListener('click', handleOpenMap);
+      openBtn?.addEventListener('click', handleOpenMap);
+    })();
 
     // Suburb autocomplete (Photon, Pretoria area)
     (function () {

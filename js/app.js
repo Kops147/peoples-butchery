@@ -13,6 +13,7 @@ const RATE_PER_KM = 5; // R5/km for distance-based
 const MIN_DISTANCE_KM = 3; // First 3km included in flat fee
 const ADMIN_PIN = 'peoplesV2_2024';
 const SUPER_ADMIN_PIN = 'yType_Dev_2026';
+const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // User to replace with paid key
 
 // ── API Configuration ─────────────────────────
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -182,14 +183,17 @@ const API = {
     // --- ADMIN ---
     if (path === '/admin/stats') {
       const orders = DB.getOrders();
+      const users = DB.getUsers();
       return {
-        totalUsers: DB.getUsers().length,
+        totalUsers: users.length,
         totalOrders: orders.length,
-        totalRevenue: orders.reduce((sum, o) => sum + (o.total || 0), 0),
+        totalRevenue: orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0),
         pendingOrders: orders.filter(o => o.status === 'pending').length
       };
     }
-    if (path === '/admin/orders') return DB.getOrders();
+    if (path === '/admin/orders') {
+      return DB.getOrders();
+    }
     if (path === '/admin/users') {
       const users = DB.getUsers();
       return users.filter(u => !u.isAdmin && !u.is_admin);
