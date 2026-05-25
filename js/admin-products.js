@@ -11,18 +11,16 @@ let _products = [];
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Check Auth
-    const session = JSON.parse(localStorage.getItem('nilos_session'));
-    if (!session || !session.isAdmin) {
-      window.location.href = 'login.html';
+    // Check Auth using global Auth helper from app.js
+    if (typeof Auth === 'undefined' || !Auth.requireAdmin()) {
       return;
     }
 
-    document.getElementById('admin-name').textContent = session.name || 'Admin';
+    const session = Auth.getSession();
+    document.getElementById('admin-name').textContent = session?.name || 'Admin';
+    
     document.getElementById('logout-btn')?.addEventListener('click', () => {
-      localStorage.removeItem('nilos_session');
-      localStorage.removeItem('nilos_token');
-      window.location.href = 'login.html';
+      Auth.logout();
     });
 
     await loadProducts();
