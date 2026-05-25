@@ -435,25 +435,33 @@
     import { initGoogleMaps, openMapModal } from './js/google-maps.js';
 
     document.addEventListener('DOMContentLoaded', async () => {
-      renderNavbar({ active: 'shop', showCart: true });
-      
-      // Initialize Google Maps
-      await initGoogleMaps();
+      try {
+        renderNavbar({ active: 'shop', showCart: true });
+        
+        // Initialize Google Maps in the background without blocking the UI
+        initGoogleMaps().catch(err => console.error('Google Maps failed to load:', err));
 
-      // Open Map Modal when clicking delivery address input
-      const delInput = document.getElementById('delivery-addr-input');
-      const delBtn = document.getElementById('open-map-btn');
-      
-      const handleOpenMap = () => {
-        openMapModal((location) => {
-          // Trigger distance calculation in shop.js via event
-          const event = new CustomEvent('locationSelected', { detail: location });
-          window.dispatchEvent(event);
-        });
-      };
+        // Open Map Modal when clicking delivery address input
+        const delInput = document.getElementById('delivery-addr-input');
+        const delBtn = document.getElementById('open-map-btn');
+        
+        const handleOpenMap = () => {
+          if (typeof openMapModal === 'function') {
+            openMapModal((location) => {
+              // Trigger distance calculation in shop.js via event
+              const event = new CustomEvent('locationSelected', { detail: location });
+              window.dispatchEvent(event);
+            });
+          } else {
+            console.error('Map modal not ready');
+          }
+        };
 
-      delInput?.addEventListener('click', handleOpenMap);
-      delBtn?.addEventListener('click', handleOpenMap);
+        delInput?.addEventListener('click', handleOpenMap);
+        delBtn?.addEventListener('click', handleOpenMap);
+      } catch (e) {
+        console.error('Shop initialization error:', e);
+      }
     });
   </script>
 </body>

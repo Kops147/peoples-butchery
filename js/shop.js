@@ -23,19 +23,36 @@ function findProduct(id) {
 }
 
 async function loadProductsFromAPI() {
+  console.log('Loading products...');
   // 1. Load from local catalog immediately as a baseline
-  apiProducts = LOCAL_CATALOG.map(mapToProduct);
-  renderProducts();
+  try {
+    if (typeof LOCAL_CATALOG !== 'undefined' && Array.isArray(LOCAL_CATALOG)) {
+      apiProducts = LOCAL_CATALOG.map(mapToProduct);
+      console.log('Local catalog mapped:', apiProducts.length);
+      renderProducts();
+    }
+  } catch (err) {
+    console.error('Error mapping local catalog:', err);
+  }
 
   // 2. Try to fetch fresh data from Supabase in the background
   try {
     const { data, error } = await supabase.from('products').select('*').eq('is_active', true);
-    if (!error && data && data.length > 0) {
-      apiProducts = data.map(p => ({ ...p, image_url: p.image, categoryLabel: p.category_label }));
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      console.log('Supabase products loaded:', data.length);
+      apiProducts = data.map(p => ({ 
+        ...p, 
+        id: String(p.id),
+        available: p.is_active !== false,
+        image: p.image || p.image_url || 'assets/img/food/meat_on_braai.jpg',
+        categoryLabel: p.category_label || p.category
+      }));
       renderProducts();
     }
   } catch (err) {
-    console.warn('Supabase products unavailable, staying with local catalog:', err);
+    console.warn('Supabase products unavailable, staying with local catalog:', err.message);
   }
 }
 
@@ -205,7 +222,7 @@ function getCartTotal() {
     return sum + ((p.price + extraCost) * item.qty);
   }, 0);
 
-  if (usePoints) {
+  if (usePoints && typeof Auth !== 'undefined') {
     const user = Auth.getCurrentUser();
     const pointsValue = (user?.points || 0) / 10;
     return Math.max(0, subtotal - pointsValue);
