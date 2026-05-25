@@ -190,7 +190,10 @@ const API = {
       };
     }
     if (path === '/admin/orders') return DB.getOrders();
-    if (path === '/admin/users') return DB.getUsers();
+    if (path === '/admin/users') {
+      const users = DB.getUsers();
+      return users.filter(u => !u.isAdmin && !u.is_admin);
+    }
     if (path.match(/^\/admin\/orders\/([^/]+)\/status$/) && options.method === 'PUT') {
       const id = path.split('/')[3];
       const body = JSON.parse(options.body);
