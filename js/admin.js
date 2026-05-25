@@ -63,20 +63,50 @@ function toDate(val) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireAdmin()) return;
-  initSidebar();
+  setupAdminSidebar();
   renderAdminUser();
   await loadAllAdminData();
 
-  document.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
-    link.addEventListener('click', () => {
-      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-      link.classList.add('active');
-      showAdminTab(link.dataset.tab);
-    });
-  });
-
   document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
 });
+
+function setupAdminSidebar() {
+  const toggle = document.getElementById('sidebar-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!toggle || !sidebar) return;
+
+  function openSidebar() { sidebar.classList.add('mobile-open'); if (overlay) overlay.classList.add('open'); }
+  function closeSidebar() { sidebar.classList.remove('mobile-open'); if (overlay) overlay.classList.remove('open'); }
+  toggle.addEventListener('click', openSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+
+  sidebar.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
+    link.addEventListener('click', () => {
+      const target = link.dataset.tab;
+      sidebar.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      const panel = document.getElementById('tab-' + target);
+      if (panel) panel.classList.add('active');
+      renderAdminTab(target);
+      closeSidebar();
+    });
+  });
+}
+
+function renderAdminTab(tab) {
+  switch (tab) {
+    case 'overview': renderAdminOverview(); break;
+    case 'credit': renderAdminCredits(); break;
+    case 'orders': renderAdminOrders(); break;
+    case 'inventory': renderInventory(); break;
+    case 'products': renderAdminProducts(); break;
+    case 'reports': renderReports(); break;
+    case 'customers': renderAdminCustomers(); break;
+    case 'settings': break;
+  }
+}
 
 async function loadAllAdminData() {
   const failures = [];
@@ -124,12 +154,6 @@ async function loadAllAdminData() {
   initCreditForm();
   initProductForm();
   initSettingsForm();
-}
-
-function showAdminTab(tab) {
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const panel = document.getElementById('tab-' + tab);
-  if (panel) panel.classList.add('active');
 }
 
 function renderAdminUser() {
