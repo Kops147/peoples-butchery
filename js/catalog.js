@@ -7,20 +7,20 @@
 
 export const LOCAL_CATALOG = [
   { stock_code: "1125", name: "Short Rib",            price: 130.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/1125.jpeg" },
-  { stock_code: "1126", name: "Beef Stew",             price: 100.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/1126.jpg" },
-  { stock_code: "1124", name: "Brisket",               price: 130.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/1124.jpg" },
-  { stock_code: "137",  name: "Bulk Mince",             price:  80.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/137.jpg" },
-  { stock_code: "1123", name: "Chuck",                 price: 130.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/1123.jpg" },
+  { stock_code: "1126", name: "Beef Stew",             price: 100.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/beef_stew_meat.png" },
+  { stock_code: "1124", name: "Brisket",               price: 130.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/beef_brisket.png" },
+  { stock_code: "137",  name: "Bulk Mince",             price:  80.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/beef_mince.png" },
+  { stock_code: "1123", name: "Chuck",                 price: 130.00, unit: "per kg",    category: "Beef",     image: "assets/img/food/beef_chuck_roast.png" },
   { stock_code: "1166", name: "Frozen Chicken Hearts", price:  35.00, unit: "each",      category: "Chicken",  image: "assets/img/food/1166.jpg" },
   { stock_code: "37",   name: "Lamb Tripe",             price:  30.00, unit: "per kg",    category: "Lamb",     image: "assets/img/food/37.jpg" },
-  { stock_code: "291",  name: "Lamb Chops",             price: 140.00, unit: "per kg",    category: "Lamb",     image: "assets/img/food/291.jpg" },
+  { stock_code: "291",  name: "Lamb Chops",             price: 140.00, unit: "per kg",    category: "Lamb",     image: "assets/img/food/lamb_chops.png" },
   { stock_code: "1179", name: "Lamb Stew",             price: 140.00, unit: "per kg",    category: "Lamb",     image: "assets/img/food/1179.jpg" },
-  { stock_code: "130",  name: "Black Lentils (Cooked Meal)",          price:  10.00, unit: "per 200g",  category: "Other",    image: "assets/img/food/meal-stew.svg" },
+  { stock_code: "130",  name: "2 Steak 1 Wors",          price:  90.00, unit: "each",      category: "Other",    image: "assets/img/food/meal_2steak_wors_r90.png" },
   { stock_code: "124",  name: "Pink Lentils (Cooked Meal)",           price:  15.00, unit: "per 200g",  category: "Other",    image: "assets/img/food/meal-sw.svg" },
   { stock_code: "1206", name: "Boerewors",             price:  95.99, unit: "per kg",    category: "Sausages", image: "assets/img/food/boerewors_coil.png" },
   { stock_code: "1112", name: "Chilli Bites",          price: 350.00, unit: "each",      category: "Sides",    image: "assets/img/food/1112.jpg" },
   { stock_code: "meal_steak_wors_r65", name: "Steak + Wors Meal", price: 65.00, unit: "each", category: "Other", image: "assets/img/food/meal_wors_chicken_r65.png" },
-  { stock_code: "atchar",         name: "Atchar (Cooked Meal)",        price:   6.00, unit: "each",      category: "Sides",    image: "assets/img/food/meal-sw.svg" },
+  { stock_code: "atchar",         name: "1 Steak 1 Wors 1 Chicken",     price:  75.00, unit: "each",      category: "Other",    image: "assets/img/food/meal_steak_wors_chicken_r75.png" },
   { stock_code: "curry-chillies", name: "Curry Chillies (Cooked Meal)",price:  10.00, unit: "each",      category: "Sides",    image: "assets/img/food/meal-curry.svg" },
 ];
 
