@@ -62,49 +62,71 @@ function toDate(val) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!Auth.requireAdmin()) return;
-  setupAdminSidebar();
-  renderAdminUser();
-  await loadAllAdminData();
+  try {
+    if (!Auth.requireAdmin()) return;
+    setupAdminSidebar();
+    renderAdminUser();
+    await loadAllAdminData();
 
-  document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
+    document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
+  } catch (error) {
+    console.error('Error initializing admin panel:', error);
+    showToast('Error initializing admin panel. Please refresh the page.', 'error', 8000);
+  }
 });
 
 function setupAdminSidebar() {
-  const toggle = document.getElementById('sidebar-toggle');
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  if (!toggle || !sidebar) return;
+  try {
+    const toggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!toggle || !sidebar) {
+      console.warn('Sidebar elements not found in DOM');
+      return;
+    }
 
-  function openSidebar() { sidebar.classList.add('mobile-open'); if (overlay) overlay.classList.add('open'); }
-  function closeSidebar() { sidebar.classList.remove('mobile-open'); if (overlay) overlay.classList.remove('open'); }
-  toggle.addEventListener('click', openSidebar);
-  if (overlay) overlay.addEventListener('click', closeSidebar);
+    function openSidebar() { sidebar.classList.add('mobile-open'); if (overlay) overlay.classList.add('open'); }
+    function closeSidebar() { sidebar.classList.remove('mobile-open'); if (overlay) overlay.classList.remove('open'); }
+    toggle.addEventListener('click', openSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
 
-  sidebar.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
-    link.addEventListener('click', () => {
-      const target = link.dataset.tab;
-      sidebar.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-      link.classList.add('active');
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      const panel = document.getElementById('tab-' + target);
-      if (panel) panel.classList.add('active');
-      renderAdminTab(target);
-      closeSidebar();
+    sidebar.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
+      link.addEventListener('click', () => {
+        try {
+          const target = link.dataset.tab;
+          sidebar.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          const panel = document.getElementById('tab-' + target);
+          if (panel) panel.classList.add('active');
+          renderAdminTab(target);
+          closeSidebar();
+        } catch (err) {
+          console.error(`Error switching to tab "${link.dataset.tab}":`, err);
+          showToast(`Error loading tab: ${err.message}`, 'error');
+        }
+      });
     });
-  });
+  } catch (error) {
+    console.error('Error setting up admin sidebar:', error);
+  }
 }
 
 function renderAdminTab(tab) {
-  switch (tab) {
-    case 'overview': renderAdminOverview(); break;
-    case 'credit': renderAdminCredits(); break;
-    case 'orders': renderAdminOrders(); break;
-    case 'inventory': renderInventory(); break;
-    case 'products': renderAdminProducts(); break;
-    case 'reports': renderReports(); break;
-    case 'customers': renderAdminCustomers(); break;
-    case 'settings': break;
+  try {
+    switch (tab) {
+      case 'overview': renderAdminOverview(); break;
+      case 'credit': renderAdminCredits(); break;
+      case 'orders': renderAdminOrders(); break;
+      case 'inventory': renderInventory(); break;
+      case 'products': renderAdminProducts(); break;
+      case 'reports': renderReports(); break;
+      case 'customers': renderAdminCustomers(); break;
+      case 'settings': break;
+    }
+  } catch (error) {
+    console.error(`Error rendering tab "${tab}":`, error);
+    showToast(`Error rendering content: ${error.message}`, 'error');
   }
 }
 
@@ -279,6 +301,11 @@ function initCreditForm() {
   }
 
   refInput?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); lookupBtn?.click(); } });
+}
+
+// ── Render Credit Tab ──────────────────────────
+function renderAdminCredits() {
+  initCreditForm();
 }
 
 // ── Orders ────────────────────────────────────

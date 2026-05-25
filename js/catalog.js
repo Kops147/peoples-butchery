@@ -28,7 +28,7 @@ const COOKED_CATEGORIES = new Set(['Sides', 'Other']);
 
 export function mapToProduct(p) {
   const category = COOKED_CATEGORIES.has(p.category) ? 'cooked' : 'raw';
-  const image = p.image || 'assets/img/food/meat_on_braai.jpg';
+  const image = p.image || 'assets/img/food/meatOnbraai.jpg';
   return {
     id: p.stock_code || p.name.replace(/\s+/g, '-').toLowerCase(),
     name: p.name,
