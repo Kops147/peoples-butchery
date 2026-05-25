@@ -10,14 +10,15 @@ let _products = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+  try {
     // Check Auth using global Auth helper from app.js
-    try {
     if (typeof Auth === 'undefined' || !Auth.requireAdmin()) {
       return;
     }
 
     const session = Auth.getSession();
-    document.getElementById('admin-name').textContent = session?.name || 'Admin';
+    const adminNameEl = document.getElementById('admin-name');
+    if (adminNameEl) adminNameEl.textContent = session?.name || 'Admin';
     
     document.getElementById('logout-btn')?.addEventListener('click', () => {
       Auth.logout();

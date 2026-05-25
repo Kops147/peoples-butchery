@@ -15,6 +15,7 @@ let activeFilter = 'all';
 let deliveryMethod = 'delivery';
 let productExtras = {};
 let deliveryCoords = null;
+let usePoints = false;
 
 // ── Product Helpers ────────────────────────────
 function findProduct(id) {
@@ -192,14 +193,28 @@ function clearCart() {
 }
 
 function getCartTotal() {
-  return cart.reduce((sum, item) => {
+  const subtotal = cart.reduce((sum, item) => {
     const p = findProduct(item.productId);
     if (!p) return sum;
     const extras = productExtras[item.productId] || {};
     const extraCost = (extras.braai ? 10 : 0) + (extras.pap || 0) * 10;
     return sum + ((p.price + extraCost) * item.qty);
   }, 0);
+
+  if (usePoints) {
+    const user = Auth.getCurrentUser();
+    const pointsValue = (user?.points || 0) / 10;
+    return Math.max(0, subtotal - pointsValue);
+  }
+  return subtotal;
 }
+
+window.toggleUsePoints = () => {
+  usePoints = !usePoints;
+  const btn = document.getElementById('use-points-btn');
+  if (btn) btn.classList.toggle('active', usePoints);
+  renderCartPanel();
+};
 
 function getCartCount() {
   return cart.length; // count unique lines, not qty (avoids fractional badge)
@@ -674,8 +689,51 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (grid) grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⏳</div><div class="empty-title">Loading products...</div></div>`;
 
   await loadProductsFromAPI();
+
+  // URL filter param
+  const params = new URLSearchParams(window.location.search);
+  const filterParam = params.get('filter');
+  if (filterParam) {
+    activeFilter = filterParam;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === filterParam);
+    });
+  }
+
   renderProducts();
   updateCartUI();
+
+  // Credit banner & Points
+  if (Auth.isLoggedIn()) {
+    const user = Auth.getCurrentUser();
+    const pointsBtn = document.getElementById('use-points-btn');
+    if (pointsBtn && user.points > 10) {
+      pointsBtn.style.display = 'block';
+      pointsBtn.title = `You have ${user.points} points worth ${formatCurrency(user.points / 10)}`;
+    }
+
+    const creditBanner = document.getElementById('credit-banner');
+    if (creditBanner) {
+      creditBanner.classList.remove('hidden');
+      document.getElementById('banner-balance').textContent = formatCurrency(user.creditBalance);
+      document.getElementById('banner-ref').textContent = user.refNumber;
+    }
+    
+    const accInfo = document.getElementById('sidebar-account-info');
+    const accLogged = document.getElementById('sidebar-account-loggedin');
+    if (accInfo) accInfo.style.display = 'none';
+    if (accLogged) {
+      accLogged.style.display = 'block';
+      document.getElementById('sidebar-balance').textContent = formatCurrency(user.creditBalance);
+      document.getElementById('sidebar-ref-display').textContent = 'REF: ' + user.refNumber;
+    }
+
+    if (user.coordinates) {
+      const fee = calcDeliveryFee(user.coordinates);
+      const feeLabel = document.getElementById('delivery-fee-label');
+      if (feeLabel) feeLabel.textContent = fee === 0 ? 'Free for you!' : `~R${fee.toFixed(2)} for you`;
+    }
+  }
 
   document.getElementById('cart-toggle-btn')?.addEventListener('click', openCart);
   document.getElementById('nav-cart-btn')?.addEventListener('click', openCart);
@@ -689,6 +747,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelectorAll('.delivery-option').forEach(el => {
     el.addEventListener('click', () => setDeliveryMethod(el.dataset.method));
+  });
+
+  // Listen for Google Maps selection
+  window.addEventListener('locationSelected', (e) => {
+    const { address, lat, lng } = e.detail;
+    const input = document.getElementById('delivery-addr-input');
+    const distanceTag = document.getElementById('delivery-distance-tag');
+    if (input) input.value = address;
+    setDeliveryCoords({ lat, lng }, distanceTag);
   });
 
   const searchInput = document.getElementById('product-search');

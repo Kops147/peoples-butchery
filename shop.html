@@ -446,8 +446,7 @@
       
       const handleOpenMap = () => {
         openMapModal((location) => {
-          delInput.value = location.address;
-          // Trigger distance calculation in shop.js
+          // Trigger distance calculation in shop.js via event
           const event = new CustomEvent('locationSelected', { detail: location });
           window.dispatchEvent(event);
         });
@@ -455,10 +454,6 @@
 
       delInput?.addEventListener('click', handleOpenMap);
       delBtn?.addEventListener('click', handleOpenMap);
-
-      // Points button listener
-      document.getElementById('use-points-btn')?.addEventListener('click', toggleUsePoints);
-      // ... (rest of existing DOMContentLoaded logic)
     });
   </script>
 </body>
