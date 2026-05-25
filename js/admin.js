@@ -24,7 +24,7 @@ function mapProduct(p) {
   return { ...p, categoryLabel: p.category_label, stockQty: p.stock_qty, image_url: p.image, createdAt: p.created_at };
 }
 function toSupabaseProduct(p) {
-  return { id: p.id, name: p.name, category: p.category, category_label: p.categoryLabel, price: p.price, unit: p.unit, description: p.description || '', image: p.image, is_active: true, stock_qty: 100 };
+  return { id: p.id, name: p.name, category_label: p.categoryLabel, price: p.price, unit: p.unit, description: p.description || '', image: p.image, is_active: true, stock_qty: 100 };
 }
 
 // ── Seed products from catalog ─────────────────
@@ -514,7 +514,6 @@ function initProductForm() {
     const imgVal = document.getElementById('prod-image').value.trim() || 'assets/img/food/beef_brisket.png';
     const payload = {
       name: document.getElementById('prod-name').value.trim(),
-      category: document.getElementById('prod-category').value,
       category_label: document.getElementById('prod-category').value,
       price: parseFloat(document.getElementById('prod-price').value),
       unit: document.getElementById('prod-unit').value.trim(),
