@@ -427,33 +427,44 @@ window.handleUpdateStock = async (id) => {
 let revenueChart, inventoryChart;
 
 function renderReports() {
-  const revenue = parseFloat(_stats.totalRevenue || 0);
-  document.getElementById('rep-projected-income').textContent = formatCurrency(revenue * 1.15);
+  const container = document.getElementById('tab-reports');
+  if (!container) return;
 
-  const revCtx = document.getElementById('chart-revenue')?.getContext('2d');
-  if (revCtx) {
-    if (revenueChart) revenueChart.destroy();
-    revenueChart = new Chart(revCtx, {
+  const incomeEl = document.getElementById('rep-projected-income');
+  const revenue = parseFloat(_stats.totalRevenue || 0);
+  if (incomeEl) incomeEl.textContent = formatCurrency(revenue * 1.15);
+
+  const canvasRev = document.getElementById('chart-revenue');
+  const canvasInv = document.getElementById('chart-inventory');
+
+  if (canvasRev) {
+    new Chart(canvasRev, {
       type: 'line',
       data: {
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        datasets: [{ label: 'Revenue (R)', data: [1200, 1900, 1500, 2500, 2200, 3100, 2800], borderColor: '#e8a020', backgroundColor: 'rgba(232, 160, 32, 0.1)', fill: true, tension: 0.4 }]
+        datasets: [{
+          label: 'Revenue Projection',
+          data: [1200, 1900, 1700, 2100, 2800, 3200, 2900],
+          borderColor: '#e8a020',
+          tension: 0.4
+        }]
       },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false } } }
+      options: { responsive: true, maintainAspectRatio: false }
     });
   }
 
-  const invCtx = document.getElementById('chart-inventory')?.getContext('2d');
-  if (invCtx) {
-    const top6 = _products.slice(0, 6);
-    if (inventoryChart) inventoryChart.destroy();
-    inventoryChart = new Chart(invCtx, {
+  if (canvasInv) {
+    new Chart(canvasInv, {
       type: 'bar',
       data: {
-        labels: top6.map(p => p.name),
-        datasets: [{ label: 'Stock (qty)', data: top6.map(p => parseFloat(p.stockQty ?? 0)), backgroundColor: top6.map(p => parseFloat(p.stockQty ?? 0) < 5 ? '#e74c3c' : '#e8a020') }]
+        labels: ['Beef', 'Lamb', 'Pork', 'Chicken'],
+        datasets: [{
+          label: 'Stock Level (kg)',
+          data: [150, 80, 120, 200],
+          backgroundColor: '#3DD68C'
+        }]
       },
-      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+      options: { responsive: true, maintainAspectRatio: false }
     });
   }
 }

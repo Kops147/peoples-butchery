@@ -10,8 +10,8 @@ let _products = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  try {
     // Check Auth using global Auth helper from app.js
+    try {
     if (typeof Auth === 'undefined' || !Auth.requireAdmin()) {
       return;
     }
@@ -48,13 +48,16 @@ async function loadProducts() {
       _products = data;
     } else {
       console.warn('No products in Supabase, loading from local catalog');
-      _products = LOCAL_CATALOG.map(mapToProduct);
+      // Fallback to localStorage or static catalog
+      const localProds = JSON.parse(localStorage.getItem('nilos_products')) || [];
+      _products = localProds.length > 0 ? localProds : LOCAL_CATALOG.map(mapToProduct);
     }
     renderProducts();
   } catch (err) {
     console.error('Error loading products:', err);
-    showToast('Database error: ' + err.message, 'error');
-    _products = LOCAL_CATALOG.map(mapToProduct);
+    // Silent fallback to local data
+    const localProds = JSON.parse(localStorage.getItem('nilos_products')) || [];
+    _products = localProds.length > 0 ? localProds : LOCAL_CATALOG.map(mapToProduct);
     renderProducts();
   }
 }
