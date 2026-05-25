@@ -17,8 +17,9 @@ export const LOCAL_CATALOG = [
   { stock_code: "1179", name: "Lamb Stew",             price: 140.00, unit: "per kg",    category: "Lamb",     image: "assets/img/food/1179 LambStew R140perKilo.jpeg" },
   { stock_code: "130",  name: "Black Lentils (Cooked Meal)",          price:  10.00, unit: "per 200g",  category: "Other",    image: "assets/img/food/meal-stew.svg" },
   { stock_code: "124",  name: "Pink Lentils (Cooked Meal)",           price:  15.00, unit: "per 200g",  category: "Other",    image: "assets/img/food/meal-sw.svg" },
-  { stock_code: "1206", name: "Boerewors",             price:  95.99, unit: "per kg",    category: "Sausages", image: "assets/img/food/1206 Boerewors  R95.99 per kilo.jpeg" },
+  { stock_code: "1206", name: "Boerewors",             price:  95.99, unit: "per kg",    category: "Sausages", image: "assets/img/food/boerewors_coil.png" },
   { stock_code: "1112", name: "Chilli Bites",          price: 350.00, unit: "each",      category: "Sides",    image: "assets/img/food/1112 Chilli Bytes R350.jpeg" },
+  { stock_code: "meal_steak_wors_r65", name: "Steak + Wors Meal", price: 65.00, unit: "each", category: "Other", image: "assets/img/food/meal_wors_chicken_r65.png" },
   { stock_code: "atchar",         name: "Atchar (Cooked Meal)",        price:   6.00, unit: "each",      category: "Sides",    image: "assets/img/food/meal-sw.svg" },
   { stock_code: "curry-chillies", name: "Curry Chillies (Cooked Meal)",price:  10.00, unit: "each",      category: "Sides",    image: "assets/img/food/meal-curry.svg" },
 ];
