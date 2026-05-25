@@ -36,84 +36,24 @@ async function seedProductsToSupabase() {
   return products.map(p => mapProduct({ ...p, category_label: p.category_label, stock_qty: p.stock_qty }));
 }
 
-// ── Local Photo Picker ─────────────────────────
-async function openPhotoPicker() {
-  let images;
-  try {
-    const res = await fetch('assets/img/food/manifest.json');
-    images = await res.json();
-  } catch {
-    showToast('Could not load photo library', 'error');
-    return;
-  }
-
-  document.getElementById('photo-picker-overlay')?.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'photo-picker-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-
-  const modal = document.createElement('div');
-  modal.style.cssText = 'background:var(--card-bg,#1a1a1a);border-radius:12px;padding:20px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:12px';
-
-  const shimmerStyle = `
-    <style>
-      @keyframes _pkshimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-      .picker-thumb { cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color 0.15s; }
-      .picker-thumb:hover { border-color:var(--gold,#e8a020); }
-      .picker-skel { width:100%;height:90px;background:linear-gradient(90deg,#2a2a2a 25%,#383838 50%,#2a2a2a 75%);background-size:200% 100%;animation:_pkshimmer 1.4s infinite; }
-      .picker-img { width:100%;height:90px;object-fit:cover;display:block;opacity:0;transition:opacity 0.25s; }
-      .picker-img.loaded { opacity:1; }
-      .picker-label { font-size:0.62rem;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted,#aaa); }
-    </style>`;
-
-  modal.innerHTML = `
-    ${shimmerStyle}
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0;font-size:1.1rem">Choose a Photo</h3>
-      <button id="picker-close" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer">✕</button>
-    </div>
-    <div id="picker-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;overflow-y:auto;max-height:55vh;padding:4px">
-      ${images.map(name => `
-        <div class="picker-thumb" data-name="${name}">
-          <div class="picker-skel" id="skel-${CSS.escape(name)}"></div>
-          <img class="picker-img" data-src="assets/img/food/${encodeURIComponent(name)}" alt="${name}"
-            style="display:none" onerror="this.style.display='none';document.getElementById('skel-${CSS.escape(name)}')?.remove()">
-          <div class="picker-label">${name}</div>
-        </div>`).join('')}
-    </div>`;
-
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  modal.querySelector('#picker-close').addEventListener('click', () => overlay.remove());
-
-  // Lazy-load images as they scroll into view
-  const grid = modal.querySelector('#picker-grid');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const img = entry.target;
-      img.src = img.dataset.src;
-      img.style.display = 'block';
-      img.addEventListener('load', () => {
-        img.classList.add('loaded');
-        document.getElementById('skel-' + CSS.escape(img.alt))?.remove();
-      }, { once: true });
-      observer.unobserve(img);
-    });
-  }, { root: grid, rootMargin: '120px' });
-
-  modal.querySelectorAll('.picker-img').forEach(img => observer.observe(img));
-
-  modal.querySelectorAll('.picker-thumb').forEach(thumb => {
-    thumb.addEventListener('click', () => {
-      const url = `assets/img/food/${thumb.dataset.name}`;
+// ── Local File Upload ─────────────────────────
+function openPhotoPicker() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const url = e.target.result;
       document.getElementById('prod-image').value = url;
       setImagePreview(url);
-      document.getElementById('upload-status').textContent = `✅ Selected: ${thumb.dataset.name}`;
-      overlay.remove();
-    });
-  });
+      document.getElementById('upload-status').textContent = `✅ Selected: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
 }
 
 function toDate(val) {
@@ -539,7 +479,7 @@ window.editProduct = (productId) => {
   document.getElementById('prod-image').value = p.image_url || p.image || '';
   document.getElementById('prod-is-special').checked = p.is_special || false;
   document.getElementById('prod-discount').value = p.discount_price || '';
-  document.getElementById('upload-status').textContent = 'Click Browse to pick a photo from the library';
+  document.getElementById('upload-status').textContent = p.image_url ? 'Image set' : 'Upload a photo from your computer';
   setImagePreview(p.image_url || p.image || '');
   document.getElementById('product-modal').classList.add('open');
   document.getElementById('product-modal-title').textContent = 'Edit Product';
@@ -550,7 +490,7 @@ function initProductForm() {
     document.getElementById('product-form')?.reset();
     document.getElementById('prod-id').value = '';
     document.getElementById('prod-image').value = '';
-    document.getElementById('upload-status').textContent = 'Click Browse to pick a photo from the library';
+    document.getElementById('upload-status').textContent = 'Upload a photo from your computer';
     setImagePreview('');
     document.getElementById('product-modal-title').textContent = 'Add New Product';
     document.getElementById('product-modal').classList.add('open');
@@ -571,7 +511,7 @@ function initProductForm() {
     submitBtn.textContent = 'Saving...';
 
     const id = document.getElementById('prod-id').value;
-    const imgVal = document.getElementById('prod-image').value.trim() || 'assets/img/food/meat_on_braai.jpg';
+    const imgVal = document.getElementById('prod-image').value.trim() || 'assets/img/food/beef_brisket.png';
     const payload = {
       name: document.getElementById('prod-name').value.trim(),
       category: document.getElementById('prod-category').value,
