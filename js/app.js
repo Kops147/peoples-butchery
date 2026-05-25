@@ -486,10 +486,41 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
   </nav>`;
 
   initNavbar();
+  renderBottomNav(active);
 
   const logoutHandler = () => { Auth.logout(); window.location.href = 'index.html'; };
   document.getElementById('nav-logout-btn')?.addEventListener('click', logoutHandler);
   document.getElementById('nav-logout-btn-mobile')?.addEventListener('click', logoutHandler);
+}
+
+function renderBottomNav(active = '') {
+  // Only for customer pages
+  if (Auth.isAdmin()) return;
+  
+  const existing = document.querySelector('.bottom-nav');
+  if (existing) existing.remove();
+
+  const nav = document.createElement('div');
+  nav.className = 'bottom-nav';
+  nav.innerHTML = `
+    <a href="index.html" class="bottom-nav-item${active === 'home' ? ' active' : ''}">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </a>
+    <a href="shop.html" class="bottom-nav-item${active === 'shop' ? ' active' : ''}">
+      <span class="nav-icon">🛒</span>
+      <span>Shop</span>
+    </a>
+    <a href="dashboard.html" class="bottom-nav-item${active === 'dashboard' ? ' active' : ''}">
+      <span class="nav-icon">📊</span>
+      <span>Orders</span>
+    </a>
+    <a href="dashboard.html?tab=profile" class="bottom-nav-item${active === 'profile' ? ' active' : ''}">
+      <span class="nav-icon">👤</span>
+      <span>Profile</span>
+    </a>
+  `;
+  document.body.appendChild(nav);
 }
 
 // ── Tabs ──────────────────────────────────────
@@ -656,7 +687,44 @@ async function seedAdmin() {
       isAdmin: true,
     });
   }
+
+  // 3. Demo Customer (to ensure admin sees data)
+  if (users.filter(u => !u.isAdmin).length === 0) {
+    users.push({
+      id: 'usr_demo_001',
+      refNumber: 'TPB-DEMO',
+      name: 'John',
+      surname: 'Doe',
+      email: 'customer@demo.co.za',
+      passwordHash: await hashPassword('demo123'),
+      phone: '0812345678',
+      address: '15 Main St, Silverton, Pretoria',
+      suburb: 'Silverton',
+      coordinates: { lat: -25.7333, lng: 28.3000 },
+      creditBalance: 250,
+      createdAt: new Date().toISOString(),
+      isAdmin: false
+    });
+  }
   DB.saveUsers(users);
+
+  // 4. Demo Order
+  const orders = DB.getOrders();
+  if (orders.length === 0) {
+    orders.push({
+      id: 'ord_demo_001',
+      userId: 'usr_demo_001',
+      userEmail: 'customer@demo.co.za',
+      items: [{ id: '1126', name: 'Beef Stew', price: 100, qty: 1 }],
+      total: 115,
+      deliveryMethod: 'delivery',
+      deliveryAddress: '15 Main St, Silverton, Pretoria',
+      deliveryFee: 15,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    });
+    DB.saveOrders(orders);
+  }
 }
 
 // ── Global Floating Actions & AI Chat ───────

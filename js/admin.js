@@ -140,24 +140,25 @@ async function loadAllAdminData() {
   try {
     const { data: userData, error: userError } = await supabase.from('users').select('*').eq('is_admin', false);
     if (userError) throw userError;
-    _users = (userData || []).map(mapUser);
+    _users = (userData && userData.length > 0) ? userData.map(mapUser) : DB.getUsers().map(mapUser);
 
     const { data: orderData, error: orderError } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
     if (orderError) throw orderError;
-    _orders = (orderData || []).map(mapOrder);
+    _orders = (orderData && orderData.length > 0) ? orderData.map(mapOrder) : DB.getOrders().map(mapOrder);
 
     const { data: prodData, error: prodError } = await supabase.from('products').select('*');
     if (prodError) throw prodError;
     if (prodData && prodData.length > 0) {
       _products = prodData.map(mapProduct);
     } else {
-      _products = LOCAL_CATALOG.map(mapToProduct);
+      const localProds = DB.getProducts();
+      _products = (localProds && localProds.length > 0) ? localProds.map(mapProduct) : LOCAL_CATALOG.map(mapToProduct);
     }
   } catch (e) {
-    failures.push('Supabase load failed: ' + e.message);
+    failures.push('Database sync failed: ' + e.message);
     console.error('Data load failed:', e);
     
-    // Fallback to localStorage if Supabase fails
+    // Total fallback to localStorage
     _users = DB.getUsers().map(mapUser);
     _orders = DB.getOrders().map(mapOrder);
     _products = DB.getProducts().length > 0 ? DB.getProducts().map(mapProduct) : LOCAL_CATALOG.map(mapToProduct);
@@ -170,19 +171,17 @@ async function loadAllAdminData() {
     pendingOrders: _orders.filter(o => o.status === 'pending').length
   };
 
-  if (failures.length && !(_users.length || _orders.length)) {
-    showToast('⚠️ Data failed to load from database. Using local cache.', 'error', 8000);
-  }
-
+  // Re-render everything with the best available data
   renderAdminOverview();
   renderAdminOrders();
   renderInventory();
   renderAdminProducts();
   renderReports();
   renderAdminCustomers();
-  initCreditForm();
-  initProductForm();
-  initSettingsForm();
+  
+  if (failures.length && !(_users.length || _orders.length)) {
+    showToast('⚠️ Using local cache. Connect database for live updates.', 'warning', 5000);
+  }
 }
 
 function renderAdminUser() {
