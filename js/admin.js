@@ -13,6 +13,16 @@ let _orders = [];
 let _products = [];
 let _stats = {};
 
+// ── Category lookup from local catalog ─────────
+function buildCategoryMap() {
+  const map = {};
+  LOCAL_CATALOG.map(mapToProduct).forEach(p => {
+    map[p.id] = { category: p.category, categoryLabel: p.categoryLabel };
+  });
+  return map;
+}
+const CATEGORY_MAP = buildCategoryMap();
+
 // ── Data Mappers ──────────────────────────────
 function mapUser(u) {
   return { ...u, isAdmin: u.is_admin, creditBalance: u.credit_balance, refNumber: u.ref_number, createdAt: u.created_at };
@@ -21,19 +31,21 @@ function mapOrder(o) {
   return { ...o, userId: o.user_id, userEmail: o.user_email, deliveryMethod: o.delivery_method, deliveryAddress: o.delivery_address, deliveryFee: o.delivery_fee, createdAt: o.created_at };
 }
 function mapProduct(p) {
-  return { ...p, categoryLabel: p.category_label, stockQty: p.stock_qty, image_url: p.image, createdAt: p.created_at };
+  const cat = CATEGORY_MAP[p.id] || {};
+  return { ...p, category: cat.category || 'raw', categoryLabel: cat.categoryLabel || 'Other', stockQty: p.stock_qty || 0, image_url: p.image, createdAt: p.created_at };
 }
 function toSupabaseProduct(p) {
-  return { id: p.id, name: p.name, category_label: p.categoryLabel, price: p.price, unit: p.unit, description: p.description || '', image: p.image, is_active: true, stock_qty: 100 };
+  return { id: p.id, name: p.name, price: p.price, unit: p.unit, image: p.image, is_active: true };
 }
 
 // ── Seed products from catalog ─────────────────
 async function seedProductsToSupabase() {
-  const products = LOCAL_CATALOG.map(mapToProduct).map(toSupabaseProduct);
+  const catProducts = LOCAL_CATALOG.map(mapToProduct);
+  const products = catProducts.map(toSupabaseProduct);
   const { error } = await supabase.from('products').upsert(products);
   if (error) throw error;
   showToast('Products seeded to Supabase ✅', 'success');
-  return products.map(p => mapProduct({ ...p, category_label: p.category_label, stock_qty: p.stock_qty }));
+  return catProducts.map(p => mapProduct(p));
 }
 
 // ── Local File Upload ─────────────────────────
@@ -100,12 +112,13 @@ async function loadAllAdminData() {
     if (data && data.length > 0) {
       _products = data.map(mapProduct);
     } else {
-      _products = await seedProductsToSupabase();
+      try { _products = await seedProductsToSupabase(); } catch {
+        _products = LOCAL_CATALOG.map(mapToProduct);
+      }
     }
   } catch (e) {
     failures.push('products: ' + e.message);
-    _products = DB.getProducts();
-    if (_products.length === 0) { seedProducts(); _products = DB.getProducts(); }
+    _products = LOCAL_CATALOG.map(mapToProduct);
   }
 
   _stats = {
@@ -364,7 +377,10 @@ window.handleUpdateStock = async (id) => {
 
   try {
     const { error } = await supabase.from('products').update({ stock_qty: newQty }).eq('id', id);
-    if (error) throw error;
+    if (error) console.warn('stock_qty update failed (column may not exist):', error.message);
+  } catch (e2) { console.warn('stock_qty update failed:', e2.message); }
+
+  try {
   } catch (e) { console.warn('Stock update failed:', e); }
 
   input.value = '';
@@ -514,10 +530,8 @@ function initProductForm() {
     const imgVal = document.getElementById('prod-image').value.trim() || 'assets/img/food/beef_brisket.png';
     const payload = {
       name: document.getElementById('prod-name').value.trim(),
-      category_label: document.getElementById('prod-category').value,
       price: parseFloat(document.getElementById('prod-price').value),
       unit: document.getElementById('prod-unit').value.trim(),
-      description: document.getElementById('prod-desc').value.trim(),
       image: imgVal,
       is_active: true,
     };
