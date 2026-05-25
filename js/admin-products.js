@@ -188,24 +188,24 @@ function initProductForm() {
   });
 
   document.getElementById('upload-image-btn')?.addEventListener('click', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target.result;
-        document.getElementById('prod-image').value = base64;
-        const preview = document.getElementById('prod-image-preview');
+    document.getElementById('prod-image-file').click();
+  });
+
+  document.getElementById('prod-image-file')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target.result;
+      document.getElementById('prod-image').value = base64;
+      const preview = document.getElementById('prod-image-preview');
+      if (preview) {
         preview.src = base64;
         preview.style.display = 'block';
-        document.getElementById('upload-status').textContent = '✅ Image ready';
-      };
-      reader.readAsDataURL(file);
+      }
+      document.getElementById('upload-status').textContent = '✅ Image ready';
     };
-    input.click();
+    reader.readAsDataURL(file);
   });
 
   form?.addEventListener('submit', async (e) => {
