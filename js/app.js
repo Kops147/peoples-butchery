@@ -13,7 +13,7 @@ const RATE_PER_KM = 5; // R5/km for distance-based
 const MIN_DISTANCE_KM = 3; // First 3km included in flat fee
 const ADMIN_PIN = 'peoplesV2_2024';
 const SUPER_ADMIN_PIN = 'yType_Dev_2026';
-const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // User to replace with paid key
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBLzgWnnZa3kBc_-Yx3SeK7KpNIWSJYAiU'; // User to replace with paid key
 
 // ── API Configuration ─────────────────────────
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
