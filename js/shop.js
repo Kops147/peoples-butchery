@@ -24,21 +24,47 @@ function findProduct(id) {
 
 async function loadProductsFromAPI() {
   console.log('Loading products...');
+  console.log('LOCAL_CATALOG available:', typeof LOCAL_CATALOG, Array.isArray(LOCAL_CATALOG), LOCAL_CATALOG?.length);
+  
   // 1. Load from local catalog immediately as a baseline
   try {
-    if (typeof LOCAL_CATALOG !== 'undefined' && Array.isArray(LOCAL_CATALOG)) {
-      apiProducts = LOCAL_CATALOG.map(mapToProduct);
-      console.log('Local catalog mapped:', apiProducts.length);
+    if (typeof LOCAL_CATALOG !== 'undefined' && Array.isArray(LOCAL_CATALOG) && LOCAL_CATALOG.length > 0) {
+      const mapped = LOCAL_CATALOG.map(mapToProduct);
+      console.log('Local catalog mapped successfully:', mapped.length, 'products');
+      console.log('First product:', mapped[0]);
+      apiProducts = mapped;
       renderProducts();
+    } else {
+      console.error('LOCAL_CATALOG is empty or invalid:', { type: typeof LOCAL_CATALOG, isArray: Array.isArray(LOCAL_CATALOG), length: LOCAL_CATALOG?.length });
+      const container = document.getElementById('products-grid');
+      if (container) {
+        container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-icon">⚠️</div>
+          <div class="empty-title">Catalog Error</div>
+          <div class="empty-desc">Could not load products. Please try refreshing the page.</div>
+        </div>`;
+      }
     }
   } catch (err) {
     console.error('Error mapping local catalog:', err);
+    const container = document.getElementById('products-grid');
+    if (container) {
+      container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">❌</div>
+        <div class="empty-title">Error Loading Products</div>
+        <div class="empty-desc">${err.message}</div>
+      </div>`;
+    }
   }
 
   // 2. Try to fetch fresh data from Supabase in the background
   try {
+    console.log('Attempting to fetch from Supabase...');
     const { data, error } = await supabase.from('products').select('*').eq('is_active', true);
-    if (error) throw error;
+    if (error) {
+      console.warn('Supabase error:', error);
+      return;
+    }
     
     if (data && data.length > 0) {
       console.log('Supabase products loaded:', data.length);

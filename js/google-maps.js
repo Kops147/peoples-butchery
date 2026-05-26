@@ -12,7 +12,7 @@ let mapModalCallback = null;
 export async function initGoogleMaps() {
   if (window.google && window.google.maps) return;
 
-  if (!window.GOOGLE_MAPS_API_KEY || window.GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') {
+  if (!window.GOOGLE_MAPS_API_KEY || window.GOOGLE_MAPS_API_KEY === 'AIzaSyDAvFIhRvYBc-PKvF6K44xF7OVah7I9jM8') {
     console.error('Google Maps API Key is missing or invalid.');
     return;
   }
