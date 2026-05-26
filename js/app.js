@@ -458,7 +458,7 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
       ${!isLoggedIn ? `<a href="login.html" class="btn btn-ghost">Login</a><a href="register.html" class="btn btn-primary" style="font-weight:700">Register Free</a>` : ''}
       ${isLoggedIn ? `<a href="${accountHref}" class="btn btn-primary">${navLabel}${balanceChip}</a>` : ''}
       ${isLoggedIn ? `<button class="btn btn-ghost" id="nav-logout-btn-mobile">Logout</button>` : ''}
-      ${orderNowBtn ? `<a href="shop.html" class="btn btn-gold">Order Now</a>` : ''}
+      ${orderNowBtn ? `<a href="shopNew.html" class="btn btn-gold">Order Now</a>` : ''}
     </li>`;
 
   placeholder.outerHTML = `
@@ -470,7 +470,7 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
       </a>
       <ul class="navbar-nav" id="nav-menu">
         <li><a href="index.html" class="nav-link${active === 'home' ? ' active' : ''}">Home</a></li>
-        <li><a href="shop.html" class="nav-link${active === 'shop' ? ' active' : ''}">Shop</a></li>${homeOnlyLinks}
+        <li><a href="shopNew.html" class="nav-link${active === 'shop' ? ' active' : ''}">Shop</a></li>${homeOnlyLinks}
         <li${isLoggedIn ? '' : ' class="hidden"'}><a href="${accountHref}" class="nav-link">My Account</a></li>
         ${mobileActions}
       </ul>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Cart — The Peoples Butchery</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      padding-top: var(--navbar-h);
+      background: var(--bg-base);
+    }
+
+    .cart-layout {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    @media(min-width: 900px) {
+      .cart-layout {
+        grid-template-columns: 1fr 380px;
+      }
+    }
+
+    .cart-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+
+    .cart-title {
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cart-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-img {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius);
+      object-fit: cover;
+    }
+
+    .cart-item-info {
+      flex: 1;
+    }
+
+    .cart-item-name {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+
+    .cart-item-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .cart-item-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cart-item-price {
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .fulfillment-card {
+      margin-top: 24px;
+    }
+
+    .delivery-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .delivery-option {
+      background: var(--bg-elevated);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      cursor: pointer;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .delivery-option.selected {
+      border-color: var(--primary);
+      background: var(--primary-glow);
+    }
+
+    .delivery-option-icon {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    .delivery-option-label {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .addr-preview {
+      background: var(--bg-elevated);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+    }
+
+    .summary-row.total {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid var(--border);
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .checkout-btn {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      font-weight: 800;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 20px;
+    }
+
+    .checkout-btn:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .checkout-btn:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    /* Map Modal Styles */
+    #map-modal-overlay.open {
+      display: flex;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+  <div id="app-navbar"></div>
+
+  <main class="cart-layout">
+    <div>
+      <section class="cart-section">
+        <h2 class="cart-title">🛒 Your Selection</h2>
+        <div id="cart-items-list">
+          <!-- Items injected by JS -->
+        </div>
+        <div id="cart-empty-msg" style="display:none; text-align:center; padding:40px;">
+          <div style="font-size:3rem; margin-bottom:16px;">🛒</div>
+          <h3>Your cart is empty</h3>
+          <p style="color:var(--text-muted); margin-bottom:24px;">Add some meat to get started!</p>
+          <a href="shopNew.html" class="btn btn-primary">Go to Shop</a>
+        </div>
+      </section>
+
+      <section class="cart-section fulfillment-card" id="fulfillment-section">
+        <h2 class="cart-title">🚗 Fulfillment</h2>
+        <div class="delivery-options">
+          <div class="delivery-option selected" id="opt-delivery" onclick="window.setFulfillment('delivery')">
+            <div class="delivery-option-icon">🚗</div>
+            <div class="delivery-option-label">Delivery</div>
+          </div>
+          <div class="delivery-option" id="opt-collect" onclick="window.setFulfillment('collect')">
+            <div class="delivery-option-icon">🏪</div>
+            <div class="delivery-option-label">Collection</div>
+          </div>
+        </div>
+
+        <div id="delivery-details">
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">We deliver within Pretoria. Fees apply based on distance.</p>
+          <div class="addr-preview" id="open-map-btn">
+            <span style="font-size:1.5rem;">📍</span>
+            <div style="flex:1;">
+              <div id="addr-text" style="font-weight:700;">Set delivery location...</div>
+              <div id="dist-text" style="font-size:0.75rem; color:var(--text-muted);">Click to open map</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="collection-details" style="display:none;">
+          <div class="addr-preview" style="cursor:default;">
+            <span style="font-size:1.5rem;">🏪</span>
+            <div>
+              <div style="font-weight:700;">The Peoples Butchery</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">76 Meeu St, East Lynne, Pretoria</div>
+            </div>
+          </div>
+          <p style="font-size:0.85rem; color:var(--text-muted);">Collection is free. We'll notify you when your order is ready.</p>
+        </div>
+      </section>
+    </div>
+
+    <aside>
+      <section class="cart-section" style="position: sticky; top: calc(var(--navbar-h) + 24px);">
+        <h2 class="cart-title">💰 Summary</h2>
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span id="summary-subtotal">R0.00</span>
+        </div>
+        <div class="summary-row" id="row-delivery">
+          <span>Delivery Fee</span>
+          <span id="summary-delivery">R0.00</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span id="summary-total">R0.00</span>
+        </div>
+
+        <div id="auth-warning" style="margin-top:20px; padding:12px; background:rgba(232,160,32,0.1); border:1px solid var(--gold); border-radius:var(--radius); font-size:0.85rem; color:var(--text-primary); display:none;">
+          ⚠️ Please <a href="login.html" style="color:var(--primary); font-weight:700;">Login</a> to complete your order.
+        </div>
+
+        <div id="balance-warning" style="margin-top:20px; padding:12px; background:rgba(192,57,43,0.1); border:1px solid var(--error); border-radius:var(--radius); font-size:0.85rem; color:var(--text-primary); display:none;">
+          ❌ Insufficient credit. Your balance: <span id="current-balance" style="font-weight:700;">R0.00</span>.
+          <a href="dashboard.html#credits" style="color:var(--primary); font-weight:700;">Top up here</a>.
+        </div>
+
+        <button class="checkout-btn" id="checkout-btn" onclick="window.processCheckout()">Place Order</button>
+        <p style="text-align:center; font-size:0.75rem; color:var(--text-muted); margin-top:16px;">By placing an order, you agree to our terms.</p>
+      </section>
+    </aside>
+  </main>
+
+  <!-- Map Modal -->
+  <div id="map-modal-overlay" class="map-modal-overlay">
+    <div class="map-modal">
+      <div class="map-modal-header">
+        <h3 style="font-family:var(--font-head);font-weight:800;margin:0">📍 Set Delivery Location</h3>
+        <button id="cancel-map-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">✕</button>
+      </div>
+      <div class="map-search-container">
+        <div class="input-group">
+          <input id="map-search-input" type="text" class="form-control" placeholder="🔍 Search for your address or suburb..." style="padding-left:16px">
+        </div>
+      </div>
+      <div id="map-canvas"></div>
+      <div class="map-modal-footer">
+        <div style="flex:1;font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">💡</span> Drag the pin exactly onto your house for the fastest delivery.
+        </div>
+        <button id="confirm-map-btn" class="btn btn-primary">✅ Use This Location</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script type="module" src="js/cartNew.js"></script>
+  <script type="module">
+    import { initGoogleMaps, openMapModal } from './js/google-maps.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderNavbar({ active: 'shop', showCart: false });
+      
+      // Initialize Google Maps
+      initGoogleMaps().catch(err => console.error('Google Maps failed to load:', err));
+
+      // Open Map Modal
+      const delBtn = document.getElementById('open-map-btn');
+      delBtn?.addEventListener('click', () => {
+        if (typeof openMapModal === 'function') {
+          openMapModal((location) => {
+            const event = new CustomEvent('locationSelected', { detail: location });
+            window.dispatchEvent(event);
+          });
+        }
+      });
+
+      document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
+        document.getElementById('map-modal-overlay').classList.remove('open');
+      });
+    });
+  </script>
+</body>
+
+</html>
