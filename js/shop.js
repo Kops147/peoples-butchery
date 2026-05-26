@@ -26,17 +26,17 @@ async function loadProductsFromAPI() {
   console.log('Loading products...');
   console.log('LOCAL_CATALOG available:', typeof LOCAL_CATALOG, Array.isArray(LOCAL_CATALOG), LOCAL_CATALOG?.length);
   
+  const container = document.getElementById('products-grid');
+  
   // 1. Load from local catalog immediately as a baseline
   try {
     if (typeof LOCAL_CATALOG !== 'undefined' && Array.isArray(LOCAL_CATALOG) && LOCAL_CATALOG.length > 0) {
       const mapped = LOCAL_CATALOG.map(mapToProduct);
       console.log('Local catalog mapped successfully:', mapped.length, 'products');
-      console.log('First product:', mapped[0]);
       apiProducts = mapped;
       renderProducts();
     } else {
       console.error('LOCAL_CATALOG is empty or invalid:', { type: typeof LOCAL_CATALOG, isArray: Array.isArray(LOCAL_CATALOG), length: LOCAL_CATALOG?.length });
-      const container = document.getElementById('products-grid');
       if (container) {
         container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
           <div class="empty-icon">⚠️</div>
@@ -47,7 +47,6 @@ async function loadProductsFromAPI() {
     }
   } catch (err) {
     console.error('Error mapping local catalog:', err);
-    const container = document.getElementById('products-grid');
     if (container) {
       container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
         <div class="empty-icon">❌</div>
@@ -60,7 +59,12 @@ async function loadProductsFromAPI() {
   // 2. Try to fetch fresh data from Supabase in the background
   try {
     console.log('Attempting to fetch from Supabase...');
-    const { data, error } = await supabase.from('products').select('*').eq('is_active', true);
+    // Add a small timeout for the Supabase call
+    const fetchPromise = supabase.from('products').select('*').eq('is_active', true);
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase timeout')), 5000));
+    
+    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+    
     if (error) {
       console.warn('Supabase error:', error);
       return;
@@ -79,6 +83,11 @@ async function loadProductsFromAPI() {
     }
   } catch (err) {
     console.warn('Supabase products unavailable, staying with local catalog:', err.message);
+  } finally {
+    // Final check: if we are still "loading" and have products, render them
+    if (container && container.querySelector('.empty-icon')?.textContent === '⏳' && apiProducts.length > 0) {
+      renderProducts();
+    }
   }
 }
 
