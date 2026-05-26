@@ -82,11 +82,12 @@ window.addEventListener('locationSelected', (e) => {
   deliveryAddress = address;
   deliveryCoords = { lat, lng };
   
-  const km = haversineKm(STORE_COORDS, deliveryCoords);
-  deliveryFee = Math.max(10, Math.round(km * 5));
+  // Use global calculation utilities from app.js
+  const km = typeof haversineKm === 'function' ? haversineKm(STORE_COORDS, deliveryCoords) : 0;
+  deliveryFee = typeof calcDeliveryFee === 'function' ? calcDeliveryFee(deliveryCoords) : 15;
   
   document.getElementById('addr-text').textContent = address;
-  document.getElementById('dist-text').textContent = `📍 ${km.toFixed(1)} km away · Delivery fee: R${deliveryFee}`;
+  document.getElementById('dist-text').textContent = `📍 ${km.toFixed(1)} km away · Delivery fee: ${typeof formatCurrency === 'function' ? formatCurrency(deliveryFee) : 'R' + deliveryFee}`;
   
   updateSummary();
 });

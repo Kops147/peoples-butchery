@@ -8,12 +8,14 @@
 // ── Constants ──────────────────────────────────
 // ── Constants ──────────────────────────────────
 const STORE_COORDS = { lat: -25.7219, lng: 28.3412 }; // Updated V2 Store Location
+window.STORE_COORDS = STORE_COORDS;
 const FLAT_DELIVERY_FEE = 15; // Minimum R15
 const RATE_PER_KM = 5; // R5/km for distance-based
 const MIN_DISTANCE_KM = 3; // First 3km included in flat fee
 const ADMIN_PIN = 'peoplesV2_2024';
 const SUPER_ADMIN_PIN = 'yType_Dev_2026';
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBLzgWnnZa3kBc_-Yx3SeK7KpNIWSJYAiU'; // User to replace with paid key
+window.GOOGLE_MAPS_API_KEY = GOOGLE_MAPS_API_KEY;
 
 // ── API Configuration ─────────────────────────
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -100,6 +102,7 @@ const DB = {
   },
   saveSettings(s) { this.set('settings', s); },
 };
+window.DB = DB;
 
 // ── Auth ───────────────────────────────────────
 const Auth = {
@@ -152,6 +155,7 @@ const Auth = {
     return DB.findUserById(sess.id) || sess;
   },
 };
+window.Auth = Auth;
 
 // ── API Helper (Simulated Backend) ────────────────
 const API = {
@@ -812,3 +816,15 @@ function generateAIResponse(text) {
   AutonomousAI.start();
   initAIChat();
 })();
+
+// Expose utilities to window for ES modules
+window.haversineKm = haversineKm;
+window.formatCurrency = formatCurrency;
+window.showToast = showToast;
+window.statusBadge = statusBadge;
+window.geocodeAddress = geocodeAddress;
+window.calcDeliveryFee = calcDeliveryFee;
+window.formatDeliveryFee = formatDeliveryFee;
+window.renderNavbar = renderNavbar;
+window.copyToClipboard = copyToClipboard;
+window.API = API;
