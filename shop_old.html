@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop — The Peoples Butchery | Fresh Meat Online</title>
+  <meta name="description"
+    content="Order fresh raw meat and cooked South African meals online from The Peoples Butchery. T-bones, boerewors, lamb chops, pap meals and more. Delivered to Pretoria.">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      padding-top: var(--navbar-h);
+      background: var(--bg-base);
+    }
+
+    .shop-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    @media(max-width:900px) {
+      .shop-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .shop-sidebar {
+      position: sticky;
+      top: calc(var(--navbar-h) + 16px);
+      height: fit-content;
+    }
+
+    .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar-card h3 {
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+
+    .filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: var(--transition);
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+    }
+
+    .filter-btn:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--primary-glow);
+      color: var(--primary);
+      border: 1px solid rgba(192, 57, 43, 0.2);
+    }
+
+    .filter-count {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-full);
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .shop-header {
+      margin-bottom: 24px;
+    }
+
+    .shop-title {
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 1.6rem;
+    }
+
+    .shop-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 10px 16px 10px 42px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      position: relative;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      z-index: 1;
+    }
+
+    #product-search {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 10px 16px 10px 42px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    #product-search:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    #product-search::placeholder {
+      color: var(--text-muted);
+    }
+
+    .products-count {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    #products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .user-credit-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .credit-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mobile-filter-bar {
+      display: none;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+
+    @media(max-width:900px) {
+      .shop-sidebar {
+        display: none;
+      }
+
+      .mobile-filter-bar {
+        display: flex;
+      }
+    }
+
+    .mobile-filter-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .mobile-filter-btn.active {
+      background: var(--primary-glow);
+      color: var(--primary);
+      border-color: rgba(192, 57, 43, 0.3);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <div id="app-navbar"></div>
+
+  <!-- Cart Panel -->
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <div class="cart-panel" id="cart-panel" role="dialog" aria-label="Shopping Cart">
+    <div class="cart-header">
+      <h3>🛒 Your Cart</h3>
+      <button class="modal-close" id="cart-close">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-footer">
+      <!-- Delivery / Collect -->
+      <div style="margin-bottom:12px">
+        <div
+          style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">
+          Fulfillment Method</div>
+        <div class="cart-delivery-options">
+          <label class="delivery-option selected" data-method="delivery">
+            <input type="radio" name="delivery" value="delivery" checked>
+            <div>
+              <div class="delivery-option-label">🚗 Deliver</div>
+              <div class="delivery-option-sub" id="delivery-fee-label">Fee calculated</div>
+            </div>
+          </label>
+          <label class="delivery-option" data-method="collect">
+            <input type="radio" name="delivery" value="collect">
+            <div>
+              <div class="delivery-option-label">🏪 Collect</div>
+              <div class="delivery-option-sub">At the shop · Free</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Delivery address input (shown when Deliver is selected) -->
+      <div id="delivery-location-row" style="margin-top:12px">
+        <div class="delivery-addr-wrap">
+          <input id="delivery-addr-input" class="delivery-addr-input" type="text" placeholder="Click to set delivery location..." readonly style="cursor:pointer">
+          <button id="open-map-btn" class="locate-btn" title="Open Map to Select Location">📍</button>
+        </div>
+        <div id="delivery-distance-tag" class="delivery-distance-tag"></div>
+      </div>
+
+      <div class="cart-summary" id="cart-summary"></div>
+      <button class="btn btn-outline btn-full mb-3" id="use-points-btn" style="display:none">💳 Use My Points</button>
+      <button class="btn btn-primary btn-full" id="checkout-btn">Checkout & Place Order</button>
+      <button class="btn btn-ghost btn-full btn-sm mt-2" id="clear-cart-btn">Clear Cart</button>
+    </div>
+  </div>
+
+  <!-- Shop Layout -->
+  <div class="shop-layout">
+    <!-- Sidebar Filters (desktop) -->
+    <aside class="shop-sidebar">
+      <div class="sidebar-card">
+        <h3>Filter Products</h3>
+        <div class="filter-list">
+          <button class="filter-btn active" data-filter="all">🍖 All Products <span class="filter-count"
+              id="count-all">0</span></button>
+          <button class="filter-btn" data-filter="raw">🥩 Raw Meats <span class="filter-count"
+              id="count-raw">0</span></button>
+          <button class="filter-btn" data-filter="cooked">🍽️ Cooked Meals <span class="filter-count"
+              id="count-cooked">0</span></button>
+        </div>
+      </div>
+      <div class="sidebar-card">
+        <h3>Your Account</h3>
+        <div id="sidebar-account-info">
+          <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:12px">Login to order and save your cart.
+          </p>
+          <a href="login.html" class="btn btn-primary btn-full btn-sm">Login</a>
+          <a href="register.html" class="btn btn-outline btn-full btn-sm mt-2">Register</a>
+        </div>
+        <div id="sidebar-account-loggedin" style="display:none">
+          <div class="balance-label">Your Credit Balance</div>
+          <div class="balance-amount" id="sidebar-balance">R0.00</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px" id="sidebar-ref-display"></div>
+          <a href="dashboard.html" class="btn btn-outline btn-full btn-sm mt-3">View Dashboard</a>
+        </div>
+      </div>
+      <div class="sidebar-card" style="background:linear-gradient(135deg,rgba(192,57,43,0.06),rgba(232,160,32,0.04))">
+        <div style="font-size:1.5rem;margin-bottom:8px">🚗</div>
+        <h3>Delivery Info</h3>
+        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6">Free within 5km. R2/km beyond that.
+          Delivered from 76 Meeu St, East Lynne.</p>
+      </div>
+    </aside>
+
+    <!-- Main Product Area -->
+    <main>
+      <!-- User Credit Banner (shows when logged in) -->
+      <div class="user-credit-banner hidden" id="credit-banner">
+        <div class="credit-banner-left">
+          <div style="font-size:1.5rem">💰</div>
+          <div>
+            <div style="font-weight:700;font-size:0.95rem">Credit Balance: <span class="text-gold"
+                id="banner-balance">R0.00</span></div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">Deducted at checkout. <a
+                href="dashboard.html#credits" style="color:var(--primary)">Add credit →</a></div>
+          </div>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted)">REF: <span id="banner-ref"
+            style="color:var(--gold);font-family:var(--font-head);font-weight:700"></span></div>
+      </div>
+
+      <!-- Shop Header -->
+      <div class="shop-header">
+        <div class="flex-between" style="flex-wrap:wrap;gap:16px;margin-bottom:16px">
+          <h1 class="shop-title">Our Products</h1>
+          <span class="products-count" id="product-count-label">Loading...</span>
+        </div>
+        <div class="shop-controls">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="product-search" placeholder="Search products...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Filter Bar -->
+      <div class="mobile-filter-bar">
+        <button class="mobile-filter-btn active filter-btn" data-filter="all">🍖 All</button>
+        <button class="mobile-filter-btn filter-btn" data-filter="raw">🥩 Raw Meats</button>
+        <button class="mobile-filter-btn filter-btn" data-filter="cooked">🍽️ Cooked Meals</button>
+      </div>
+
+      <!-- Category Header -->
+      <div id="category-header" style="margin-bottom:16px"></div>
+
+      <!-- Products Grid -->
+      <div id="products-grid"></div>
+    </main>
+  </div>
+
+  <footer class="footer" style="padding:40px 0;border-top:1px solid var(--border);text-align:center;background:var(--bg-card);margin-top:60px">
+    <div class="container">
+      <div class="footer-support-links" style="display:flex;justify-content:center;gap:24px;margin-bottom:30px;font-size:0.85rem">
+        <a href="https://wa.me/27790534865" target="_blank" style="color:var(--text-secondary);text-decoration:none;transition:var(--transition)">💬 WhatsApp Support</a>
+        <button id="ai-chat-toggle-btn" style="color:var(--text-secondary);text-decoration:none;transition:var(--transition);background:none;border:none;cursor:pointer;font-size:0.85rem;padding:0">🤖 Live AI Support</button>
+      </div>
+      <div class="sponsor-brand animate-fade-in" style="flex-direction:column;gap:12px;display:flex;align-items:center">
+        <span style="font-size:0.7rem;color:var(--text-muted);letter-spacing:1.5px">POWERED BY</span>
+        <svg width="160" height="44" viewBox="0 0 160 44">
+          <rect width="160" height="44" rx="6" fill="#0A0A0A"/>
+          <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
+          <text x="12" y="40" font-family="Arial" font-size="10" fill="#666">Automate iT</text>
+          <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
+        </svg>
+      </div>
+      <p style="margin-top:20px;font-size:0.8rem;color:var(--text-muted)">&copy; 2026 The Peoples Butchery. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Chat Widget -->
+  <button id="chat-fab" aria-label="Chat with Lebo">
+    <span class="chat-fab-icon">🔥</span>
+    <span class="chat-fab-close">✕</span>
+  </button>
+
+  <div id="chat-panel">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <div class="chat-avatar">🥩</div>
+        <div>
+          <div class="chat-name">Lebo</div>
+          <div class="chat-status">Butchery Assistant</div>
+        </div>
+      </div>
+      <button id="chat-close" class="chat-close-btn">✕</button>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <input id="chat-lebo-input" class="chat-input" type="text" placeholder="Ask about products, prices..." autocomplete="off">
+      <button id="chat-send" class="chat-send-btn">➤</button>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script type="module" src="js/shop.js"></script>
+  <script src="js/chat.js"></script>
+  
+  <!-- Map Modal -->
+  <div id="map-modal-overlay" class="map-modal-overlay">
+    <div class="map-modal">
+      <div class="map-modal-header">
+        <h3 style="font-family:var(--font-head);font-weight:800;margin:0">📍 Set Delivery Location</h3>
+        <button id="cancel-map-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">✕</button>
+      </div>
+      <div class="map-search-container">
+        <div class="input-group">
+          <input id="map-search-input" type="text" class="form-control" placeholder="🔍 Search for your address or suburb..." style="padding-left:16px">
+        </div>
+      </div>
+      <div id="map-canvas"></div>
+      <div class="map-modal-footer">
+        <div style="flex:1;font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">💡</span> Drag the pin exactly onto your house for the fastest delivery.
+        </div>
+        <button id="confirm-map-btn" class="btn btn-primary">✅ Use This Location</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initGoogleMaps, openMapModal } from './js/google-maps.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        renderNavbar({ active: 'shop', showCart: true });
+        
+        // Initialize Google Maps in the background without blocking the UI
+        initGoogleMaps().catch(err => console.error('Google Maps failed to load:', err));
+
+        // Open Map Modal when clicking delivery address input
+        const delInput = document.getElementById('delivery-addr-input');
+        const delBtn = document.getElementById('open-map-btn');
+        
+        const handleOpenMap = () => {
+          if (typeof openMapModal === 'function') {
+            openMapModal((location) => {
+              // Trigger distance calculation in shop.js via event
+              const event = new CustomEvent('locationSelected', { detail: location });
+              window.dispatchEvent(event);
+            });
+          } else {
+            console.error('Map modal not ready');
+          }
+        };
+
+        delInput?.addEventListener('click', handleOpenMap);
+        delBtn?.addEventListener('click', handleOpenMap);
+
+        // AI Chat toggle button (CSP-compliant event listener)
+        const aiChatToggle = document.getElementById('ai-chat-toggle-btn');
+        if (aiChatToggle && typeof toggleAIChat === 'function') {
+          aiChatToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleAIChat();
+          });
+        }
+      } catch (e) {
+        console.error('Shop initialization error:', e);
+      }
+    });
+  </script>
+</body>
+
+</html>
