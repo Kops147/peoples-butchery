@@ -257,11 +257,12 @@
       <div class="form-group" style="position:relative">
         <label class="form-label" for="r-address">Full Street Address *</label>
         <div class="input-group">
-          <textarea id="r-address" class="form-control" rows="3" placeholder="Click to select from map..."
-            readonly style="cursor:pointer;padding-right:45px"></textarea>
-          <button type="button" id="reg-open-map-btn" class="input-icon-right" style="border:none;background:none;font-size:1.2rem;cursor:pointer">📍</button>
+          <textarea id="r-address" class="form-control" rows="3" placeholder="Type address or tap 📍 for map"
+            autocomplete="street-address" style="padding-right:45px"></textarea>
+          <button type="button" id="reg-open-map-btn" class="input-icon-right" style="border:none;background:none;font-size:1.2rem;cursor:pointer" title="Pick on map">📍</button>
         </div>
-        <div class="form-hint">Precision delivery location - tap the pin to open map</div>
+        <div id="reg-address-suggestions" class="delivery-suggestions" style="position:absolute;width:100%;z-index:100;top:100%"></div>
+        <div class="form-hint">Type your address, pick a suggestion, or tap 📍 for map/search</div>
         <div class="form-error hidden" id="err-address">Please enter your delivery address</div>
       </div>
 
@@ -391,6 +392,9 @@
     // Points button listener
     document.addEventListener('DOMContentLoaded', async () => {
       if (window.initGoogleMaps) await window.initGoogleMaps();
+      document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
+        document.getElementById('map-modal-overlay')?.classList.remove('open');
+      });
     });
   </script>
   <script type="module">
@@ -469,18 +473,19 @@
 
     document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
 
-    // Maps logic
+    // Maps logic — pin button only (address field stays editable)
     (function() {
-      const addrInput = document.getElementById('r-address');
       const openBtn = document.getElementById('reg-open-map-btn');
-      
+
       const handleOpenMap = () => {
+        if (typeof window.openMapModal !== 'function') {
+          showToast('Map loading — type address and use Calculate Fee', 'warning');
+          return;
+        }
         window.openMapModal((location) => {
-          addrInput.value = location.address;
+          document.getElementById('r-address').value = location.address;
           pendingCoords = { lat: location.lat, lng: location.lng };
           hideError('err-address');
-          
-          // Auto-calculate delivery fee when address is picked
           const box = document.getElementById('delivery-estimate-box');
           box.classList.remove('hidden');
           const fee = calcDeliveryFee(pendingCoords);
@@ -490,7 +495,6 @@
         });
       };
 
-      addrInput?.addEventListener('click', handleOpenMap);
       openBtn?.addEventListener('click', handleOpenMap);
     })();
 

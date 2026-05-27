@@ -339,15 +339,41 @@ function formatDeliveryFee(fee) {
   return `R${fee.toFixed(2)}`;
 }
 
+async function geocodePhoton(address) {
+  try {
+    const q = encodeURIComponent(`${address}, Pretoria`);
+    const url = `https://photon.komoot.io/api/?q=${q}&lat=${STORE_COORDS.lat}&lon=${STORE_COORDS.lng}&limit=5&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const hit = (data.features || []).find((f) => {
+      const [lng, lat] = f.geometry.coordinates;
+      return lng >= 27.8 && lng <= 28.7 && lat >= -25.9 && lat <= -25.5;
+    });
+    if (!hit) return null;
+    const [lng, lat] = hit.geometry.coordinates;
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
+
 async function geocodeAddress(address) {
+  if (!address || !String(address).trim()) return null;
+  const photon = await geocodePhoton(address);
+  if (photon) return photon;
   try {
     const q = encodeURIComponent(address + ', Pretoria, South Africa');
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&addressdetails=1`, {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=3&addressdetails=1`, {
       headers: { 'Accept-Language': 'en', 'User-Agent': 'ThePeoplesButchery/1.0' }
     });
     const data = await res.json();
-    if (data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const inPretoria = data.find((row) => {
+      const lat = parseFloat(row.lat);
+      const lng = parseFloat(row.lon);
+      return lng >= 27.8 && lng <= 28.7 && lat >= -25.9 && lat <= -25.5;
+    }) || data[0];
+    if (inPretoria) {
+      return { lat: parseFloat(inPretoria.lat), lng: parseFloat(inPretoria.lon) };
     }
     return null;
   } catch {
