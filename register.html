@@ -118,6 +118,31 @@
       height: 16px;
       flex-shrink: 0;
     }
+
+    /* Google Places Autocomplete styling */
+    .pac-container {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .pac-item {
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pac-item:hover,
+    .pac-item-selected {
+      background-color: var(--bg-elevated);
+    }
+
+    .pac-matched {
+      font-weight: 600;
+      color: var(--primary);
+    }
   </style>
 </head>
 
@@ -231,7 +256,7 @@
 
     <!-- Step 2: Address & Contact -->
     <div class="form-step step-content" id="step-2">
-      <div id="google-prefill-banner" style="display:none;background:rgba(66,133,244,0.08);border:1px solid rgba(66,133,244,0.25);border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:20px;font-size:0.88rem">
+      <div id="google-prefill-banner" style="display:none;background:rgba(66,133,244,0.08);border:1px solid rgba(66,133,244,0.25);border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:20px">
         <span style="font-weight:600;color:#4285F4">✓ Signed in with Google</span>
         <span style="color:var(--text-secondary)"> — phone verification is optional. Just add your address to continue.</span>
       </div>
@@ -250,7 +275,6 @@
           <input type="text" id="r-suburb" class="form-control" placeholder="e.g. Silverton, Mamelodi, East Lynne"
             autocomplete="off">
         </div>
-        <div id="reg-suburb-suggestions" class="delivery-suggestions" style="position:absolute;width:100%;z-index:100;top:100%"></div>
         <div class="form-hint">Start typing your suburb — suggestions will appear</div>
         <div class="form-error hidden" id="err-suburb">Please enter your suburb</div>
       </div>
@@ -261,7 +285,6 @@
             autocomplete="street-address" style="padding-right:45px"></textarea>
           <button type="button" id="reg-open-map-btn" class="input-icon-right" style="border:none;background:none;font-size:1.2rem;cursor:pointer" title="Pick on map">📍</button>
         </div>
-        <div id="reg-address-suggestions" class="delivery-suggestions" style="position:absolute;width:100%;z-index:100;top:100%"></div>
         <div class="form-hint">Type your address, pick a suggestion, or tap 📍 for map/search</div>
         <div class="form-error hidden" id="err-address">Please enter your delivery address</div>
       </div>
@@ -498,124 +521,102 @@
       openBtn?.addEventListener('click', handleOpenMap);
     })();
 
-    // Suburb autocomplete (Photon, Pretoria area)
+    // Google Maps Places Autocomplete for Suburb
     (function () {
       const suburbInput = document.getElementById('r-suburb');
-      const suggestionsEl = document.getElementById('reg-suburb-suggestions');
-      let timer;
+      let suburbAutocomplete = null;
 
-      suburbInput.addEventListener('input', () => {
-        clearTimeout(timer);
-        suggestionsEl.innerHTML = '';
-        const q = suburbInput.value.trim();
-        if (q.length < 3) return;
-
-        timer = setTimeout(async () => {
-          try {
-            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-25.7219&lon=28.3412&limit=6&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
-            const res = await fetch(url);
-            const json = await res.json();
-            const results = (json.features || []).filter(f => {
-              const c = f.properties.country_code;
-              const [lng, lat] = f.geometry.coordinates;
-              // Strict bounding box filter: 27.8,-25.9,28.7,-25.5
-              const inBox = lng >= 27.8 && lng <= 28.7 && lat >= -25.9 && lat <= -25.5;
-              return (!c || c === 'za') && inBox;
-            });
-            suggestionsEl.innerHTML = '';
-            results.slice(0, 5).forEach(r => {
-              const p = r.properties;
-              const suburb = p.suburb || p.district || p.neighbourhood || p.name || '';
-              const street = p.housenumber ? `${p.housenumber} ${p.street || ''}`.trim() : (p.street || '');
-              const city = p.city || p.town || p.county || 'Pretoria';
-              const fullAddress = [street, suburb, city].filter(Boolean).join(', ');
-              const label = suburb || p.name || city;
-              const [lng, lat] = r.geometry.coordinates;
-
-              const item = document.createElement('div');
-              item.className = 'delivery-suggestion-item';
-              item.textContent = label + (city && city !== label ? `, ${city}` : '');
-              item.addEventListener('click', () => {
-                suburbInput.value = label;
-                const addrEl = document.getElementById('r-address');
-                if (!addrEl.value.trim()) addrEl.value = fullAddress;
-                pendingCoords = { lat, lng };
-                suggestionsEl.innerHTML = '';
-                hideError('err-suburb');
-              });
-              suggestionsEl.appendChild(item);
-            });
-          } catch {
-            // silent — user can type manually
-          }
-        }, 500);
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!suburbInput.contains(e.target) && !suggestionsEl.contains(e.target)) {
-          suggestionsEl.innerHTML = '';
+      // Initialize when Google Maps is ready
+      const initSuburbAutocomplete = async () => {
+        if (!window.google || !window.google.maps || !window.google.maps.places) {
+          return;
         }
-      });
+
+        suburbAutocomplete = new google.maps.places.Autocomplete(suburbInput, {
+          componentRestrictions: { country: 'za' },
+          fields: ['address_components', 'geometry', 'formatted_address', 'name'],
+          types: ['geocode'],
+          bounds: new google.maps.LatLngBounds(
+            { lat: -25.9, lng: 27.8 },
+            { lat: -25.5, lng: 28.7 }
+          )
+        });
+
+        suburbAutocomplete.addListener('place_changed', () => {
+          const place = suburbAutocomplete.getPlace();
+          if (!place.geometry) {
+            showToast('Please select a location from the suggestions', 'warning');
+            return;
+          }
+
+          // Extract suburb/locality from address components
+          let suburb = '';
+          if (place.address_components) {
+            const localityComponent = place.address_components.find(c => c.types.includes('locality'));
+            if (localityComponent) suburb = localityComponent.long_name;
+          }
+          if (!suburb) suburb = place.name;
+
+          suburbInput.value = suburb;
+          pendingCoords = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+          hideError('err-suburb');
+        });
+      };
+
+      // Call after Google Maps loads
+      setTimeout(initSuburbAutocomplete, 500);
+      window.addEventListener('google-maps-ready', initSuburbAutocomplete);
     })();
 
-    // Address autocomplete (Photon, Pretoria area)
+    // Google Maps Places Autocomplete for Address
     (function () {
       const addressInput = document.getElementById('r-address');
-      const suggestionsEl = document.getElementById('reg-address-suggestions');
-      let timer;
+      let addressAutocomplete = null;
 
-      addressInput.addEventListener('input', () => {
-        clearTimeout(timer);
-        suggestionsEl.innerHTML = '';
-        const q = addressInput.value.trim();
-        if (q.length < 5) return; // Street addresses need more context
-
-        timer = setTimeout(async () => {
-          try {
-            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-25.7219&lon=28.3412&limit=6&lang=en&bbox=27.8,-25.9,28.7,-25.5`;
-            const res = await fetch(url);
-            const json = await res.json();
-              const results = (json.features || []).filter(f => {
-                const c = f.properties.country_code;
-                const [lng, lat] = f.geometry.coordinates;
-                // Strict bounding box filter: 27.8,-25.9,28.7,-25.5
-                const inBox = lng >= 27.8 && lng <= 28.7 && lat >= -25.9 && lat <= -25.5;
-                return (!c || c === 'za') && inBox;
-              });
-            suggestionsEl.innerHTML = '';
-            results.forEach(r => {
-              const p = r.properties;
-              const street = p.housenumber ? `${p.housenumber} ${p.street || ''}`.trim() : (p.street || '');
-              const suburb = p.suburb || p.district || p.neighbourhood || '';
-              const city = p.city || p.town || 'Pretoria';
-              const fullAddress = [street, suburb, city].filter(Boolean).join(', ');
-              const [lng, lat] = r.geometry.coordinates;
-
-              const item = document.createElement('div');
-              item.className = 'delivery-suggestion-item';
-              item.textContent = fullAddress;
-              item.addEventListener('click', () => {
-                addressInput.value = fullAddress;
-                if (suburb) document.getElementById('r-suburb').value = suburb;
-                pendingCoords = { lat, lng };
-                suggestionsEl.innerHTML = '';
-                hideError('err-address');
-                // Auto-calculate delivery fee when address is picked
-                document.getElementById('calc-delivery-btn').click();
-              });
-              suggestionsEl.appendChild(item);
-            });
-          } catch {
-            // silent
-          }
-        }, 600);
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!addressInput.contains(e.target) && !suggestionsEl.contains(e.target)) {
-          suggestionsEl.innerHTML = '';
+      const initAddressAutocomplete = async () => {
+        if (!window.google || !window.google.maps || !window.google.maps.places) {
+          return;
         }
-      });
+
+        addressAutocomplete = new google.maps.places.Autocomplete(addressInput, {
+          componentRestrictions: { country: 'za' },
+          fields: ['address_components', 'geometry', 'formatted_address'],
+          types: ['geocode'],
+          bounds: new google.maps.LatLngBounds(
+            { lat: -25.9, lng: 27.8 },
+            { lat: -25.5, lng: 28.7 }
+          )
+        });
+
+        addressAutocomplete.addListener('place_changed', () => {
+          const place = addressAutocomplete.getPlace();
+          if (!place.geometry) {
+            showToast('Please select a location from the suggestions', 'warning');
+            return;
+          }
+
+          const fullAddress = place.formatted_address;
+          addressInput.value = fullAddress;
+
+          // Extract suburb from address components
+          if (place.address_components) {
+            const localityComponent = place.address_components.find(c => c.types.includes('locality'));
+            if (localityComponent) {
+              document.getElementById('r-suburb').value = localityComponent.long_name;
+            }
+          }
+
+          pendingCoords = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+          hideError('err-address');
+          
+          // Auto-calculate delivery fee when address is picked
+          document.getElementById('calc-delivery-btn').click();
+        });
+      };
+
+      // Call after Google Maps loads
+      setTimeout(initAddressAutocomplete, 500);
+      window.addEventListener('google-maps-ready', initAddressAutocomplete);
     })();
 
     // Delivery fee calculation
