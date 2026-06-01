@@ -1,6 +1,7 @@
 /* ── Pretoria Suburbs Database with Coordinates ── */
 /* Accurate hardcoded coordinates for 20km radius from butchery */
 /* Store location: -25.7219, 28.3412 (East Lynne) */
+/* Delivery: <3km R5 flat | >3km R4.95/km */
 
 const SUBURBS_DB = {
   'east lynne': { lat: -25.7219, lng: 28.3412, km: 0 },
@@ -54,11 +55,9 @@ function calcDeliveryFeeBySuburb(suburb) {
   const coords = getSuburbCoords(suburb);
   if (!coords) return null;
   const km = coords.km;
-  const FLAT_FEE = 15;
-  const MIN_KM = 3;
-  const RATE_PER_KM = 5;
-  if (km <= MIN_KM) return FLAT_FEE;
-  return FLAT_FEE + (Math.ceil(km - MIN_KM) * RATE_PER_KM);
+  // <3km: R5 flat | >3km: R4.95/km
+  if (km < 3) return 5;
+  return Math.round(km * 4.95 * 100) / 100; // Round to 2 decimals
 }
 
 function getAllSuburbs() {
