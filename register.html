@@ -261,49 +261,11 @@
         <label class="form-label" for="r-suburb">Suburb / Area *</label>
         <div class="input-group">
           <span class="input-icon">🏘️</span>
-          <input type="text" id="r-suburb" class="form-control" placeholder="e.g. Silverton, Mamelodi, East Lynne"
-            autocomplete="off" list="pretoria-suburbs">
-          <datalist id="pretoria-suburbs">
-            <option value="East Lynne">
-            <option value="Silverton">
-            <option value="Mamelodi">
-            <option value="Pretoria Central">
-            <option value="Pretoria East">
-            <option value="Pretoria North">
-            <option value="Pretoria West">
-            <option value="Pretoria Gardens">
-            <option value="Arcadia">
-            <option value="Brooklyn">
-            <option value="Hatfield">
-            <option value="Lynnwood">
-            <option value="Menlyn">
-            <option value="Moreleta Park">
-            <option value="Waterkloof">
-            <option value="Groenkloof">
-            <option value="Faerie Glen">
-            <option value="Constantia Park">
-            <option value="Wierda Park">
-            <option value="Centurion">
-            <option value="Midrand">
-            <option value="Sunnyside">
-            <option value="Gezina">
-            <option value="Queenswood">
-            <option value="Rietfontein">
-            <option value="Wonderboom">
-            <option value="Annlin">
-            <option value="Doornpoort">
-            <option value="Montana">
-            <option value="Zambezi">
-            <option value="Sinoville">
-            <option value="Kameeldrift">
-            <option value="Roodeplaat">
-            <option value="Cullinan">
-            <option value="Rayton">
-            <option value="Bapsfontein">
-            <option value="Bronkhorstspruit">
-          </datalist>
+          <input type="text" id="r-suburb" class="form-control" placeholder="e.g. Lindopark, Eersterust, Silverton"
+            autocomplete="off">
         </div>
-        <div class="form-hint">Select from list or type your suburb</div>
+        <div id="suburb-suggestions" style="max-height:200px;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border);border-top:none;display:none;"></div>
+        <div class="form-hint">Type your suburb name (e.g. "Li" for Lindopark, "EE" for Eersterust)</div>
         <div class="form-error hidden" id="err-suburb">Please enter your suburb</div>
       </div>
       <div class="form-group" style="position:relative">
@@ -367,7 +329,7 @@
       <label class="terms-check mt-6">
         <input type="checkbox" id="terms-check">
         <span style="font-size:0.85rem;color:var(--text-secondary)">I agree to The Peoples Butchery's terms. I
-          understand that delivery fees apply beyond 5km from East Lynne.</span>
+          understand that delivery fees apply based on distance from East Lynne.</span>
       </label>
       <div class="form-error hidden" id="err-terms">You must accept the terms to continue</div>
 
@@ -434,6 +396,7 @@
   </div>
 
   <script src="js/app.js"></script>
+  <script src="js/suburbs.js"></script>
   <script type="module">
     import { openMapModal } from './js/location-picker.js';
     window.openMapModal = openMapModal;
@@ -443,6 +406,42 @@
       document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
         document.getElementById('map-modal-overlay')?.classList.remove('open');
       });
+
+      // Suburb autocomplete
+      const suburbInput = document.getElementById('r-suburb');
+      const suburbSuggestions = document.getElementById('suburb-suggestions');
+      
+      if (suburbInput) {
+        suburbInput.addEventListener('input', () => {
+          const query = suburbInput.value.trim();
+          if (query.length < 1) {
+            suburbSuggestions.style.display = 'none';
+            return;
+          }
+          const filtered = window.filterSuburbs ? window.filterSuburbs(query) : [];
+          if (filtered.length === 0) {
+            suburbSuggestions.style.display = 'none';
+            return;
+          }
+          suburbSuggestions.innerHTML = filtered.map(suburb => 
+            `<div class="delivery-suggestion-item" style="cursor:pointer">${suburb}</div>`
+          ).join('');
+          suburbSuggestions.style.display = 'block';
+          
+          suburbSuggestions.querySelectorAll('.delivery-suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+              suburbInput.value = item.textContent;
+              suburbSuggestions.style.display = 'none';
+            });
+          });
+        });
+        
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('#r-suburb') && !e.target.closest('#suburb-suggestions')) {
+            suburbSuggestions.style.display = 'none';
+          }
+        });
+      }
     });
   </script>
   <script type="module">
@@ -521,10 +520,9 @@
 
     document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
 
-    // Maps logic — pin button only (address field stays editable)
+    // Maps logic
     (function() {
       const openBtn = document.getElementById('reg-open-map-btn');
-
       const handleOpenMap = () => {
         if (typeof window.openMapModal !== 'function') {
           showToast('Map loading — type address and use Calculate Fee', 'warning');
@@ -532,17 +530,20 @@
         }
         window.openMapModal((location) => {
           document.getElementById('r-address').value = location.address;
+          if (location.suburb) document.getElementById('r-suburb').value = location.suburb;
           pendingCoords = { lat: location.lat, lng: location.lng };
           hideError('err-address');
           const box = document.getElementById('delivery-estimate-box');
           box.classList.remove('hidden');
-          const fee = calcDeliveryFee(pendingCoords);
+          const suburb = location.suburb || document.getElementById('r-suburb').value;
+          const fee = window.calcDeliveryFeeBySuburb(suburb);
           pendingDeliveryFee = fee;
-          document.getElementById('delivery-estimate-text').textContent =
-            fee === 0 ? '🆓 FREE delivery! You are within 5km of the shop.' : `Estimated delivery fee: R${fee.toFixed(2)} (you're ~${Math.round(haversineKm(STORE_COORDS, pendingCoords))}km away)`;
+          if (fee !== null) {
+            document.getElementById('delivery-estimate-text').textContent =
+              `Estimated delivery fee: R${fee.toFixed(2)} (${location.suburb || 'your area'})`;
+          }
         });
       };
-
       openBtn?.addEventListener('click', handleOpenMap);
     })();
 
@@ -551,21 +552,36 @@
       const suburb = document.getElementById('r-suburb').value.trim();
       const address = document.getElementById('r-address').value.trim();
       if (!suburb && !address) { showToast('Enter your suburb or address first', 'warning'); return; }
+      
       const btn = document.getElementById('calc-delivery-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Calculating...';
-      const coords = await geocodeAddress(suburb || address);
-      pendingCoords = coords;
+      
+      let fee = null;
+      
+      // Try suburb lookup first
+      if (suburb && window.calcDeliveryFeeBySuburb) {
+        fee = window.calcDeliveryFeeBySuburb(suburb);
+        pendingCoords = window.getSuburbCoords(suburb);
+      }
+      
+      // Fallback to address geocoding if suburb not found
+      if (fee === null && address) {
+        const coords = await geocodeAddress(address);
+        pendingCoords = coords;
+      }
+      
       const box = document.getElementById('delivery-estimate-box');
       box.classList.remove('hidden');
-      if (coords) {
-        const fee = calcDeliveryFee(coords);
+      
+      if (fee !== null) {
         pendingDeliveryFee = fee;
         document.getElementById('delivery-estimate-text').textContent =
-          fee === 0 ? '🆓 FREE delivery! You are within 5km of the shop.' : `Estimated delivery fee: R${fee.toFixed(2)} (you're ~${Math.round(haversineKm(STORE_COORDS, coords))}km away)`;
+          `Estimated delivery fee: R${fee.toFixed(2)} (${suburb})`;
       } else {
-        document.getElementById('delivery-estimate-text').textContent = 'Could not geocode address. Fee will be calculated at checkout.';
+        document.getElementById('delivery-estimate-text').textContent = 'Could not calculate fee. Will be updated at checkout.';
       }
+      
       btn.disabled = false;
       btn.innerHTML = '🗺️ Calculate My Delivery Fee';
     });
@@ -586,13 +602,13 @@
       const rSurname = document.getElementById('r-surname').value.trim();
       pendingRef = ensureUniqueRef(rName, rSurname, phone);
       document.getElementById('preview-ref').textContent = pendingRef;
-      document.getElementById('rv-name').textContent = `${document.getElementById('r-name').value.trim()} ${document.getElementById('r-surname').value.trim()}`;
+      document.getElementById('rv-name').textContent = `${rName} ${rSurname}`;
       document.getElementById('rv-email').textContent = document.getElementById('r-email').value.trim();
       document.getElementById('rv-phone').textContent = phone;
       document.getElementById('rv-suburb').textContent = suburb;
       document.getElementById('rv-address').textContent = address;
       document.getElementById('rv-delivery').textContent = pendingDeliveryFee !== null
-        ? (pendingDeliveryFee === 0 ? 'FREE (within 5km)' : `R${pendingDeliveryFee.toFixed(2)}`)
+        ? `R${pendingDeliveryFee.toFixed(2)}`
         : 'Calculated at checkout';
       goToStep(3);
     });
@@ -622,7 +638,7 @@
 
       // Try geocode if not done yet
       if (!pendingCoords) {
-        pendingCoords = await geocodeAddress(suburb || address);
+        pendingCoords = window.getSuburbCoords(suburb) || await geocodeAddress(suburb || address);
       }
 
       try {
@@ -645,7 +661,6 @@
         users.push(sessionUser);
         DB.saveUsers(users);
 
-        // session is null when Supabase email confirmation is required
         Auth.login(sessionUser, data.session?.access_token ?? null);
 
         document.getElementById('success-ref').textContent = pendingRef;
@@ -653,7 +668,6 @@
         document.getElementById('step-success').classList.add('active');
         document.querySelector('.steps-indicator').style.display = 'none';
 
-        // If email confirmation required, surface a reminder
         if (!data.session) {
           const successEl = document.getElementById('step-success');
           if (successEl && !document.getElementById('email-confirm-notice')) {
