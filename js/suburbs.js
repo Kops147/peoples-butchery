@@ -5,8 +5,8 @@
 
 const SUBURBS_DB = {
   'east lynne': { lat: -25.7084818, lng: 28.2855143, km: 0 },
-  'lindopark': { lat: -25.7150, lng: 28.3480, km: 3.8 },
-  'eersterust': { lat: -25.7076819, lng: 28.3159252, km: 3.2 },
+  'lindopark': { lat: -25.7150, lng: 28.3480, km: 0.6 },
+  'eersterust': { lat: -25.7076819, lng: 28.3159252, km: 1.2 },
   'silverton': { lat: -25.7333, lng: 28.3000, km: 4.1 },
   'mamelodi': { lat: -25.5900, lng: 28.3200, km: 13.5 },
   'pretoria central': { lat: -25.7414, lng: 28.2302, km: 6.8 },
