@@ -282,10 +282,10 @@
           <input id="map-search-input" type="text" class="form-control" placeholder="🔍 Search for your address or suburb..." style="padding-left:16px">
         </div>
       </div>
-      <div id="map-canvas"></div>
+      <div id="map-fallback-results" class="delivery-suggestions" style="max-height:280px;margin-top:8px;overflow:auto"></div>
       <div class="map-modal-footer">
         <div style="flex:1;font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px">
-          <span style="font-size:1.2rem">💡</span> Drag the pin exactly onto your house for the fastest delivery.
+          <span style="font-size:1.2rem">💡</span> Search for your address and select from the list.
         </div>
         <button id="confirm-map-btn" class="btn btn-primary">✅ Use This Location</button>
       </div>
@@ -295,13 +295,10 @@
   <script src="js/app.js"></script>
   <script type="module" src="js/cartNew.js"></script>
   <script type="module">
-    import { initGoogleMaps, openMapModal } from './js/google-maps.js';
+    import { openMapModal } from './js/location-picker.js';
 
     document.addEventListener('DOMContentLoaded', async () => {
       renderNavbar({ active: 'shop', showCart: false });
-      
-      // Initialize Google Maps
-      initGoogleMaps().catch(err => console.error('Google Maps failed to load:', err));
 
       // Open Map Modal
       const delBtn = document.getElementById('open-map-btn');

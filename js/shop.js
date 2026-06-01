@@ -823,7 +823,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     el.addEventListener('click', () => setDeliveryMethod(el.dataset.method));
   });
 
-  // Listen for Google Maps selection
+  // Listen for location selection from location picker
   window.addEventListener('locationSelected', (e) => {
     const { address, lat, lng } = e.detail;
     const input = document.getElementById('delivery-addr-input');

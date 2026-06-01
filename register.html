@@ -119,29 +119,18 @@
       flex-shrink: 0;
     }
 
-    /* Google Places Autocomplete styling */
-    .pac-container {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .pac-item {
+    /* Location suggestions styling */
+    .delivery-suggestion-item {
       padding: 10px 12px;
       font-size: 0.9rem;
       color: var(--text-primary);
       border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background-color 0.2s;
     }
 
-    .pac-item:hover,
-    .pac-item-selected {
+    .delivery-suggestion-item:hover {
       background-color: var(--bg-elevated);
-    }
-
-    .pac-matched {
-      font-weight: 600;
-      color: var(--primary);
     }
   </style>
 </head>
@@ -395,10 +384,10 @@
           <input id="map-search-input" type="text" class="form-control" placeholder="🔍 Search for your address or suburb..." style="padding-left:16px">
         </div>
       </div>
-      <div id="map-canvas"></div>
+      <div id="map-fallback-results" class="delivery-suggestions" style="max-height:280px;margin-top:8px;overflow:auto"></div>
       <div class="map-modal-footer">
         <div style="flex:1;font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px">
-          <span style="font-size:1.2rem">💡</span> Drag the pin exactly onto your house for the fastest delivery.
+          <span style="font-size:1.2rem">💡</span> Search for your address and select from the list.
         </div>
         <button id="confirm-map-btn" class="btn btn-primary">✅ Use This Location</button>
       </div>
@@ -407,14 +396,11 @@
 
   <script src="js/app.js"></script>
   <script type="module">
-    import { initGoogleMaps, openMapModal } from './js/google-maps.js';
-    window.initGoogleMaps = initGoogleMaps;
+    import { openMapModal } from './js/location-picker.js';
     window.openMapModal = openMapModal;
   </script>
   <script>
-    // Points button listener
-    document.addEventListener('DOMContentLoaded', async () => {
-      if (window.initGoogleMaps) await window.initGoogleMaps();
+    document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
         document.getElementById('map-modal-overlay')?.classList.remove('open');
       });
@@ -519,104 +505,6 @@
       };
 
       openBtn?.addEventListener('click', handleOpenMap);
-    })();
-
-    // Google Maps Places Autocomplete for Suburb
-    (function () {
-      const suburbInput = document.getElementById('r-suburb');
-      let suburbAutocomplete = null;
-
-      // Initialize when Google Maps is ready
-      const initSuburbAutocomplete = async () => {
-        if (!window.google || !window.google.maps || !window.google.maps.places) {
-          return;
-        }
-
-        suburbAutocomplete = new google.maps.places.Autocomplete(suburbInput, {
-          componentRestrictions: { country: 'za' },
-          fields: ['address_components', 'geometry', 'formatted_address', 'name'],
-          types: ['geocode'],
-          bounds: new google.maps.LatLngBounds(
-            { lat: -25.9, lng: 27.8 },
-            { lat: -25.5, lng: 28.7 }
-          )
-        });
-
-        suburbAutocomplete.addListener('place_changed', () => {
-          const place = suburbAutocomplete.getPlace();
-          if (!place.geometry) {
-            showToast('Please select a location from the suggestions', 'warning');
-            return;
-          }
-
-          // Extract suburb/locality from address components
-          let suburb = '';
-          if (place.address_components) {
-            const localityComponent = place.address_components.find(c => c.types.includes('locality'));
-            if (localityComponent) suburb = localityComponent.long_name;
-          }
-          if (!suburb) suburb = place.name;
-
-          suburbInput.value = suburb;
-          pendingCoords = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
-          hideError('err-suburb');
-        });
-      };
-
-      // Call after Google Maps loads
-      setTimeout(initSuburbAutocomplete, 500);
-      window.addEventListener('google-maps-ready', initSuburbAutocomplete);
-    })();
-
-    // Google Maps Places Autocomplete for Address
-    (function () {
-      const addressInput = document.getElementById('r-address');
-      let addressAutocomplete = null;
-
-      const initAddressAutocomplete = async () => {
-        if (!window.google || !window.google.maps || !window.google.maps.places) {
-          return;
-        }
-
-        addressAutocomplete = new google.maps.places.Autocomplete(addressInput, {
-          componentRestrictions: { country: 'za' },
-          fields: ['address_components', 'geometry', 'formatted_address'],
-          types: ['geocode'],
-          bounds: new google.maps.LatLngBounds(
-            { lat: -25.9, lng: 27.8 },
-            { lat: -25.5, lng: 28.7 }
-          )
-        });
-
-        addressAutocomplete.addListener('place_changed', () => {
-          const place = addressAutocomplete.getPlace();
-          if (!place.geometry) {
-            showToast('Please select a location from the suggestions', 'warning');
-            return;
-          }
-
-          const fullAddress = place.formatted_address;
-          addressInput.value = fullAddress;
-
-          // Extract suburb from address components
-          if (place.address_components) {
-            const localityComponent = place.address_components.find(c => c.types.includes('locality'));
-            if (localityComponent) {
-              document.getElementById('r-suburb').value = localityComponent.long_name;
-            }
-          }
-
-          pendingCoords = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
-          hideError('err-address');
-          
-          // Auto-calculate delivery fee when address is picked
-          document.getElementById('calc-delivery-btn').click();
-        });
-      };
-
-      // Call after Google Maps loads
-      setTimeout(initAddressAutocomplete, 500);
-      window.addEventListener('google-maps-ready', initAddressAutocomplete);
     })();
 
     // Delivery fee calculation
