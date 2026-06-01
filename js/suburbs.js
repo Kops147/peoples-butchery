@@ -4,6 +4,7 @@
 
 const SUBURBS_DB = {
   'east lynne': { lat: -25.7219, lng: 28.3412, km: 0 },
+  'lindopark': { lat: -25.7150, lng: 28.3480, km: 0.6 },
   'silverton': { lat: -25.7333, lng: 28.3000, km: 5.2 },
   'mamelodi': { lat: -25.5900, lng: 28.3200, km: 15.8 },
   'pretoria central': { lat: -25.7414, lng: 28.2302, km: 7.5 },
@@ -41,7 +42,6 @@ const SUBURBS_DB = {
   'bapsfontein': { lat: -25.5950, lng: 28.5200, km: 16.8 },
   'bronkhorstspruit': { lat: -25.6700, lng: 28.6200, km: 17.5 },
   'eersterust': { lat: -25.5650, lng: 28.1850, km: 13.2 },
-  'lindopark': { lat: -25.7000, lng: 28.4200, km: 8.8 },
 };
 
 function getSuburbCoords(suburb) {
