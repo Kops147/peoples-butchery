@@ -302,18 +302,32 @@ export const LOCAL_CATALOG = [
   { stock_code: '216', name: 'Shortbread Biscuits', price: 10, unit: 'Each', category: 'Snacks', image: '', emoji: '🍪' }
 ];
 
+const CATEGORY_MAP = {
+  'Meat & Protein': 'raw',
+  'Eggs & Dairy': 'raw',
+  'Groceries': 'raw',
+  'Produce': 'raw',
+  'Sausages': 'raw',
+  'Ready-to-Eat': 'cooked',
+  'Snacks': 'cooked',
+  'Beverages': 'other',
+  'Other': 'other'
+};
+
 export function mapToProduct(p) {
+  const hasImage = !!(p.image);
   return {
     id: p.stock_code || String(p.name).toLowerCase().replace(/\s+/g, '-'),
     name: p.name,
-    category: ['Meat & Protein','Eggs & Dairy','Groceries','Produce','Sausages'].includes(p.category) ? 'raw' : 'cooked',
+    category: CATEGORY_MAP[p.category] || 'other',
     categoryLabel: p.category,
     description: '',
     price: parseFloat(p.price) || 0,
     unit: p.unit || 'each',
-    image: p.image || (p.emoji || ''),
+    image: hasImage ? p.image : '',
     emoji: p.emoji || '',
-    image_url: p.image || (p.emoji || ''),
+    image_url: hasImage ? p.image : '',
+    hasImage: hasImage,
     is_active: true,
     available: true,
     stockQty: 100,

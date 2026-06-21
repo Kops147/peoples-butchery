@@ -294,17 +294,23 @@ function renderProducts() {
     const all = apiProducts.filter(p => p && (p.available !== false));
     
     const products = all
-      .filter(p => activeFilter === 'all' || p.category === activeFilter)
-      .sort((a, b) => (b.category === 'cooked') - (a.category === 'cooked'));
+      .filter(p => activeFilter === 'all' || p.category === activeFilter || (activeFilter === 'other' && p.category === 'other'))
+      .sort((a, b) => {
+        // Products with real images first, then by category
+        if ((b.hasImage || b.image) !== (a.hasImage || a.image)) return (b.hasImage || b.image) ? 1 : -1;
+        return (b.category === 'cooked') - (a.category === 'cooked');
+      });
 
     const countAllEl = document.getElementById('count-all');
     const countRawEl = document.getElementById('count-raw');
     const countCookedEl = document.getElementById('count-cooked');
+    const countOtherEl = document.getElementById('count-other');
     const countLabelEl = document.getElementById('product-count-label');
     
     if (countAllEl) countAllEl.textContent = all.length;
     if (countRawEl) countRawEl.textContent = all.filter(p => p.category === 'raw').length;
     if (countCookedEl) countCookedEl.textContent = all.filter(p => p.category === 'cooked').length;
+    if (countOtherEl) countOtherEl.textContent = all.filter(p => p.category === 'other').length;
     if (countLabelEl) countLabelEl.textContent = all.length + ' products available';
 
     if (products.length === 0) {
@@ -324,13 +330,16 @@ function renderProducts() {
         const weighted = isWeightBased(p);
         const catLabel = p.categoryLabel || p.category || 'Meat';
         
-        const catBadge = (p.category === 'cooked' || catLabel === 'Other' || catLabel === 'Sides')
+        const catBadge = p.category === 'cooked'
           ? '<span class="badge badge-gold">🍽️ Cooked Meal</span>'
-          : `<span class="badge badge-red">🥩 ${catLabel}</span>`;
+          : p.category === 'other'
+            ? `<span class="badge badge-muted">📦 ${catLabel}</span>`
+            : `<span class="badge badge-red">🥩 ${catLabel}</span>`;
 
         const qtyBased = isQtyBased(p);
         const prodImage = p.image || p.image_url || '';
         const prodEmoji = p.emoji || '';
+        const showEmoji = !prodImage && prodEmoji;
 
         let cartControl;
         if (weighted) {
@@ -404,7 +413,7 @@ function renderProducts() {
 
         return `<div class="product-card" id="pc-${p.id}">
             <div class="product-img">
-              ${prodImage ? `<img src="${prodImage}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">` : `<div class="product-emoji">${prodEmoji}</div>`}
+              ${showEmoji ? `<div class="product-emoji">${prodEmoji}</div>` : `<img src="${prodImage}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">`}
               <div class="product-category-tag">${catBadge}</div>
             </div>
             <div class="product-info">
@@ -462,13 +471,14 @@ window.adjustPap = function(productId, delta) {
 // ── Render Cart Panel ──────────────────────────
 function renderCartPanel() {
   const itemsEl = document.getElementById('cart-items');
-  const countEl = document.getElementById('cart-count');
-  const navCountEl = document.getElementById('nav-cart-count');
   if (!itemsEl) return;
 
   const count = getCartCount();
-  if (countEl) countEl.textContent = count;
-  if (navCountEl) { navCountEl.textContent = count; navCountEl.style.display = count > 0 ? 'flex' : 'none'; }
+  // Update all cart count badges
+  document.querySelectorAll('#cart-count, #nav-cart-count, #cart-badge-count, .cart-count, .cart-badge').forEach(el => {
+    el.textContent = count;
+    el.style.display = count > 0 ? '' : 'none';
+  });
 
   if (cart.length === 0) {
     itemsEl.innerHTML = `<div class="cart-empty">

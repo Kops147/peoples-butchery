@@ -136,6 +136,24 @@
       border-color: var(--primary);
     }
 
+    .filter-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.15);
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .filter-btn.active .filter-count {
+      background: rgba(255,255,255,0.25);
+    }
+
     #products-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -315,9 +333,10 @@
     </header>
 
     <div class="filter-bar">
-      <button class="filter-btn active" data-filter="all">🍖 All Products</button>
-      <button class="filter-btn" data-filter="raw">🥩 Raw Meats</button>
-      <button class="filter-btn" data-filter="cooked">🍽️ Cooked Meals</button>
+      <button class="filter-btn active" data-filter="all">🍖 All <span class="filter-count" id="count-all">0</span></button>
+      <button class="filter-btn" data-filter="raw">🥩 Raw Meats <span class="filter-count" id="count-raw">0</span></button>
+      <button class="filter-btn" data-filter="cooked">🍽️ Cooked Meals <span class="filter-count" id="count-cooked">0</span></button>
+      <button class="filter-btn" data-filter="other">📦 Other <span class="filter-count" id="count-other">0</span></button>
     </div>
 
     <div id="products-grid">
