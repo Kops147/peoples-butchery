@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mobile Cashier — The Peoples Butchery</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #e8a020;
+      --dark: #0A0A0A;
+      --card: #141414;
+      --border: #1e1e1e;
+      --text: #E0E0E0;
+      --muted: #555;
+      --green: #22c55e;
+      --red: #ef4444;
+      --blue: #3498db;
+      --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      font-family: var(--font);
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    input, button, select { font-family: inherit; }
+
+    /* PIN Screen */
+    .pin-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .pin-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px 24px; width: 100%; max-width: 360px;
+      text-align: center;
+    }
+    .pin-box .logo { width: 80px; height: 80px; margin-bottom: 16px; object-fit: contain; }
+    .pin-box h2 { font-size: 1.3rem; margin-bottom: 4px; }
+    .pin-box p { color: var(--muted); font-size: .82rem; margin-bottom: 24px; }
+    .pin-input {
+      width: 100%; background: var(--dark); border: 1px solid #2a2a2a;
+      color: var(--text); padding: 14px 16px; border-radius: 12px;
+      font-size: 1.2rem; text-align: center; letter-spacing: 6px;
+      margin-bottom: 12px; outline: none;
+    }
+    .pin-input:focus { border-color: var(--gold); }
+    .pin-err { color: var(--red); font-size: .8rem; min-height: 20px; }
+    .btn-primary {
+      width: 100%; padding: 14px; border-radius: 12px; border: none;
+      background: var(--gold); color: #000; font-weight: 800; font-size: 1rem;
+      cursor: pointer;
+    }
+    .btn-primary:active { opacity: .8; }
+
+    /* Header */
+    .header {
+      background: var(--card); border-bottom: 2px solid var(--border);
+      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header .logo-sm { width: 36px; height: 36px; border-radius: 8px; object-fit: contain; }
+    .header h1 { font-size: .95rem; flex: 1; }
+    .header .badge {
+      font-size: .65rem; color: var(--gold); background: rgba(232,160,32,.1);
+      border: 1px solid rgba(232,160,32,.2); padding: 3px 8px; border-radius: 20px;
+      font-weight: 700;
+    }
+    .header .back-btn {
+      background: none; border: none; color: var(--muted); font-size: 1.3rem;
+      padding: 4px 8px; cursor: pointer;
+    }
+
+    /* Mode Selector */
+    .mode-select {
+      padding: 20px 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .mode-btn {
+      padding: 20px; border-radius: 16px; border: 1px solid var(--border);
+      background: var(--card); text-align: left; cursor: pointer;
+      transition: all .15s; display: flex; align-items: center; gap: 14px;
+    }
+    .mode-btn:active { border-color: var(--gold); background: #1a1814; }
+    .mode-btn .icon { font-size: 2rem; }
+    .mode-btn .label { font-weight: 700; font-size: 1.05rem; margin-bottom: 2px; }
+    .mode-btn .desc { font-size: .78rem; color: var(--muted); }
+
+    /* Barcode Scanner Section */
+    .scanner-section { padding: 12px; }
+    .scanner-wrap {
+      background: var(--card); border-radius: 16px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    #scanner { width: 100%; min-height: 200px; }
+    #scanner video { border-radius: 12px; }
+    .scan-result {
+      padding: 14px; border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .scan-result .code { font-size: 1.3rem; font-weight: 800; color: var(--gold); }
+    .scan-result .name { font-size: .9rem; color: var(--text); margin-top: 2px; }
+    .scan-result .price { font-size: 1.1rem; font-weight: 800; color: var(--green); margin-top: 4px; }
+
+    /* Manual entry */
+    .manual-row {
+      display: flex; gap: 8px; padding: 12px 16px;
+    }
+    .manual-row input {
+      flex: 1; background: var(--dark); border: 1px solid #2a2a2a;
+      color: var(--text); padding: 12px 14px; border-radius: 10px;
+      font-size: 1rem; outline: none;
+    }
+    .manual-row input:focus { border-color: var(--gold); }
+    .manual-row button {
+      padding: 12px 18px; border-radius: 10px; border: none;
+      background: var(--gold); color: #000; font-weight: 800;
+      font-size: .9rem; cursor: pointer; white-space: nowrap;
+    }
+    .manual-row button:active { opacity: .8; }
+
+    /* Product search results */
+    .search-results {
+      padding: 0 16px 12px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .search-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .search-item:active { border-color: var(--gold); }
+    .si-left .si-name { font-weight: 600; font-size: .88rem; }
+    .si-left .si-cat { font-size: .7rem; color: var(--muted); }
+    .si-right { text-align: right; }
+    .si-right .si-price { font-weight: 800; color: var(--gold); font-size: .95rem; }
+    .si-right .si-unit { font-size: .7rem; color: var(--muted); }
+
+    /* Cart */
+    .cart-section { padding: 12px; }
+    .cart-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .cart-header h2 { font-size: 1rem; }
+    .cart-clear {
+      background: none; border: 1px solid #2a2a2a; color: var(--muted);
+      padding: 6px 12px; border-radius: 8px; font-size: .78rem; cursor: pointer;
+    }
+    .cart-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .cart-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .ci-name { flex: 1; font-size: .85rem; font-weight: 600; }
+    .ci-qty {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ci-qty button {
+      width: 28px; height: 28px; border-radius: 50%; border: none;
+      background: #2a2a2a; color: var(--text); font-size: 1.1rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .ci-qty button:active { background: #3a3a3a; }
+    .ci-qty span { font-weight: 800; font-size: 1rem; min-width: 20px; text-align: center; }
+    .ci-price { font-weight: 800; color: var(--gold); font-size: .9rem; min-width: 60px; text-align: right; }
+    .ci-remove { color: var(--muted); font-size: .85rem; padding: 4px; cursor: pointer; }
+
+    .cart-empty {
+      text-align: center; padding: 30px; color: #333; font-size: .85rem;
+    }
+
+    /* Totals */
+    .cart-totals {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; margin-bottom: 12px;
+    }
+    .tot-row {
+      display: flex; justify-content: space-between; font-size: .85rem;
+      color: var(--muted); margin-bottom: 4px;
+    }
+    .tot-row.grand {
+      color: var(--gold); font-weight: 900; font-size: 1.3rem;
+      border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;
+    }
+
+    /* Order Type + Payment */
+    .order-type-select {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+    }
+    .ot-btn {
+      padding: 12px; border-radius: 10px; border: 1px solid #2a2a2a;
+      background: var(--dark); color: var(--muted); text-align: center;
+      font-weight: 700; font-size: .85rem; cursor: pointer;
+    }
+    .ot-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(232,160,32,.08); }
+    .ot-btn.walkin.active { border-color: var(--green); color: var(--green); background: rgba(34,197,94,.08); }
+
+    .pay-methods {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px;
+    }
+    .pay-btn {
+      padding: 10px; border-radius: 10px; border: 1px solid #2a2a2a;
+      background: var(--dark); color: var(--muted); text-align: center;
+      font-weight: 700; font-size: .78rem; cursor: pointer;
+    }
+    .pay-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(232,160,32,.08); }
+
+    .cash-input {
+      width: 100%; background: var(--dark); border: 1px solid #2a2a2a;
+      color: var(--text); padding: 14px; border-radius: 10px;
+      font-size: 1.1rem; outline: none; margin-bottom: 8px; text-align: center;
+    }
+    .cash-input:focus { border-color: var(--green); }
+    .change-display {
+      background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.2);
+      border-radius: 10px; padding: 12px 14px; display: flex;
+      justify-content: space-between; margin-bottom: 12px;
+    }
+    .change-val { font-weight: 900; color: var(--green); font-size: 1.1rem; }
+
+    .complete-btn {
+      width: 100%; padding: 16px; border-radius: 12px; border: none;
+      background: var(--green); color: #000; font-weight: 900; font-size: 1.05rem;
+      cursor: pointer; margin-bottom: 20px;
+    }
+    .complete-btn:disabled { background: #1a1a1a; color: #444; cursor: default; }
+    .complete-btn:active:not(:disabled) { opacity: .8; }
+
+    /* Online Order Panel */
+    .online-panel { padding: 12px; }
+    .online-order-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; margin-top: 12px;
+    }
+    .oo-header {
+      padding: 14px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .oo-id { font-weight: 800; font-size: 1.1rem; }
+    .oo-status { font-size: .72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+    .oo-status.pending { background: rgba(232,160,32,.15); color: var(--gold); }
+    .oo-status.ready { background: rgba(34,197,94,.15); color: var(--green); }
+    .oo-body { padding: 14px; }
+    .oo-customer { font-weight: 600; font-size: .95rem; margin-bottom: 4px; }
+    .oo-detail { font-size: .8rem; color: var(--muted); margin-bottom: 2px; }
+    .oo-items { margin-top: 10px; }
+    .oo-item {
+      display: flex; justify-content: space-between; font-size: .85rem;
+      padding: 4px 0; border-bottom: 1px solid #1a1a1a;
+    }
+    .oo-total {
+      font-weight: 900; font-size: 1.2rem; color: var(--gold);
+      text-align: right; margin-top: 10px;
+    }
+    .oo-actions { padding: 14px; border-top: 1px solid var(--border); }
+    .oo-actions button {
+      width: 100%; padding: 14px; border-radius: 10px; border: none;
+      font-weight: 800; font-size: .95rem; cursor: pointer; margin-bottom: 6px;
+    }
+    .oo-actions button:active { opacity: .8; }
+    .btn-ready { background: var(--green); color: #000; }
+    .btn-print-order { background: var(--card); color: var(--gold); border: 1px solid var(--border) !important; }
+
+    /* Receipt / Slip */
+    .slip-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.9);
+      z-index: 500; overflow-y: auto; padding: 20px 12px;
+    }
+    .slip-overlay.open { display: flex; flex-direction: column; align-items: center; }
+    .slip {
+      background: #fff; color: #000; border-radius: 12px;
+      padding: 24px 20px; width: 100%; max-width: 380px; font-family: 'Courier New', monospace;
+      font-size: .8rem; line-height: 1.5;
+    }
+    .slip .slip-logo { text-align: center; margin-bottom: 8px; }
+    .slip .slip-logo img { width: 64px; height: 64px; object-fit: contain; }
+    .slip h3 { text-align: center; font-size: 1rem; margin-bottom: 2px; font-family: var(--font); }
+    .slip .slip-sub { text-align: center; font-size: .7rem; color: #666; margin-bottom: 4px; }
+    .slip .slip-type {
+      text-align: center; font-weight: 800; font-size: .85rem;
+      padding: 4px 0; margin-bottom: 8px;
+    }
+    .slip .slip-type.walkin { color: #16a34a; }
+    .slip .slip-type.online { color: #e8a020; }
+    .slip-divider { border: none; border-top: 1px dashed #ccc; margin: 8px 0; }
+    .slip-line { display: flex; justify-content: space-between; font-size: .78rem; margin-bottom: 3px; }
+    .slip-total {
+      display: flex; justify-content: space-between; font-weight: 900;
+      font-size: 1rem; margin-top: 6px;
+    }
+    .slip-footer { text-align: center; font-size: .7rem; color: #999; margin-top: 10px; }
+    .slip-actions {
+      display: flex; gap: 8px; margin-top: 16px; max-width: 380px; width: 100%;
+    }
+    .slip-actions button {
+      flex: 1; padding: 14px; border-radius: 10px; border: none;
+      font-weight: 800; font-size: .9rem; cursor: pointer;
+    }
+    .slip-actions .slip-print { background: #000; color: #fff; }
+    .slip-actions .slip-done { background: var(--green); color: #000; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: var(--text); padding: 10px 20px;
+      border-radius: 10px; font-size: .85rem; font-weight: 700;
+      z-index: 999; display: none; white-space: nowrap;
+      border: 1px solid var(--border);
+    }
+
+    /* Utility */
+    .hidden { display: none !important; }
+    .text-center { text-align: center; }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex; background: var(--card); border-top: 1px solid var(--border);
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .tab-bar button {
+      flex: 1; padding: 10px; border: none; background: none;
+      color: var(--muted); font-size: .7rem; font-weight: 700;
+      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .tab-bar button .tab-icon { font-size: 1.3rem; }
+    .tab-bar button.active { color: var(--gold); border-top: 2px solid var(--gold); }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ═══ PIN SCREEN ═══ -->
+<div id="pin-screen" class="pin-wrap">
+  <div class="pin-box">
+    <img src="assets/img/logo-navbar.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+    <h2>Mobile Cashier</h2>
+    <p>The Peoples Butchery</p>
+    <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="30" inputmode="text" autocomplete="off">
+    <div class="pin-err" id="pin-err"></div>
+    <button class="btn-primary" onclick="checkPin()">Unlock</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app" style="display:none;padding-bottom:70px">
+
+  <!-- Header -->
+  <div class="header">
+    <img src="assets/img/logo-navbar.png" alt="Logo" class="logo-sm" onerror="this.style.display='none'">
+    <h1>Mobile Cashier</h1>
+    <span class="badge" id="mode-badge">Walk-in</span>
+  </div>
+
+  <!-- ═══ WALK-IN VIEW ═══ -->
+  <div id="walkin-view">
+
+    <!-- Scanner -->
+    <div class="scanner-section">
+      <div class="scanner-wrap">
+        <div id="scanner"></div>
+        <div class="scan-result" id="scan-result" style="display:none">
+          <div class="code" id="scan-code"></div>
+          <div class="name" id="scan-name"></div>
+          <div class="price" id="scan-price"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual barcode entry -->
+    <div class="manual-row">
+      <input type="text" id="manual-code" placeholder="Type barcode number…" inputmode="numeric" autocomplete="off">
+      <button onclick="lookupManual()">Search</button>
+    </div>
+
+    <!-- Product search results -->
+    <div class="search-results" id="search-results" style="display:none"></div>
+
+    <!-- Cart -->
+    <div class="cart-section">
+      <div class="cart-header">
+        <h2>🛒 Current Sale</h2>
+        <button class="cart-clear" onclick="clearCart()">✕ Clear</button>
+      </div>
+      <div class="cart-items" id="cart-items">
+        <div class="cart-empty">Scan or search products to add</div>
+      </div>
+
+      <div id="cart-totals-area" style="display:none">
+        <div class="order-type-select">
+          <button class="ot-btn walkin active" id="ot-walkin" onclick="setOrderType('walkin')">🏪 Walk-in</button>
+          <button class="ot-btn" id="ot-online" onclick="setOrderType('online')">🌐 Online Order</button>
+        </div>
+
+        <div class="cart-totals">
+          <div class="tot-row"><span>Subtotal</span><span id="cart-subtotal">R 0.00</span></div>
+          <div class="tot-row grand"><span>TOTAL</span><span id="cart-total">R 0.00</span></div>
+        </div>
+
+        <div class="pay-methods">
+          <button class="pay-btn active" id="pay-cash" onclick="setPayMethod('cash')">💵 Cash</button>
+          <button class="pay-btn" id="pay-card" onclick="setPayMethod('card')">💳 Card</button>
+          <button class="pay-btn" id="pay-account" onclick="setPayMethod('account')">🏦 Account</button>
+        </div>
+
+        <div id="cash-section">
+          <input type="number" class="cash-input" id="cash-tendered" placeholder="Cash received (R)…" min="0" step="0.01" oninput="calcChange()">
+          <div class="change-display" id="change-display" style="display:none">
+            <span>Change due</span>
+            <span class="change-val" id="change-val">R 0.00</span>
+          </div>
+        </div>
+
+        <button class="complete-btn" id="complete-btn" onclick="completeSale()" disabled>Complete Sale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ONLINE ORDER VIEW ═══ -->
+  <div id="online-view" class="hidden">
+    <div class="scanner-section">
+      <div class="scanner-wrap">
+        <div id="scanner-online"></div>
+        <div class="scan-result" id="online-scan-result" style="display:none">
+          <div class="code" id="online-scan-code"></div>
+        </div>
+      </div>
+    </div>
+    <div class="manual-row">
+      <input type="text" id="manual-order" placeholder="Scan or type order number…" autocomplete="off">
+      <button onclick="lookupOrder()">Find</button>
+    </div>
+    <div class="online-panel" id="online-order-detail" style="display:none"></div>
+  </div>
+
+</div>
+
+<!-- ═══ TAB BAR ═══ -->
+<div class="tab-bar" id="tab-bar" style="display:none">
+  <button class="active" onclick="switchTab('walkin')">
+    <span class="tab-icon">🏪</span> Walk-in
+  </button>
+  <button onclick="switchTab('online')">
+    <span class="tab-icon">📦</span> Orders
+  </button>
+</div>
+
+<!-- ═══ SLIP / RECEIPT ═══ -->
+<div class="slip-overlay" id="slip-overlay">
+  <div class="slip" id="slip-content"></div>
+  <div class="slip-actions">
+    <button class="slip-print" onclick="printSlip()">🖨️ Print</button>
+    <button class="slip-done" onclick="closeSlip()">✓ New Sale</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// ── PRICELIST (295 products) ──
+// ═══════════════════════════════════════════════
+const PRICELIST = [{"code":"103","name":"1.25L COLD DRINKS","price":15,"unit":"Each","category":"Beverages"},{"code":"373","name":"1.25l stoney","price":15,"unit":"Each","category":"Beverages"},{"code":"108","name":"1.5L WATER","price":21,"unit":"Each","category":"Beverages"},{"code":"382","name":"1.5l coke","price":23,"unit":"Each","category":"Beverages"},{"code":"100","name":"2.5L COKE","price":32,"unit":"Each","category":"Beverages"},{"code":"101","name":"2L COLDDRINK","price":26,"unit":"Each","category":"Beverages"},{"code":"286","name":"300ml coke","price":10,"unit":"Each","category":"Beverages"},{"code":"144","name":"440ML COLDRINKS","price":14,"unit":"Each","category":"Beverages"},{"code":"319","name":"750 ml WATER","price":17,"unit":"Each","category":"Beverages"},{"code":"102","name":"BUDDY COLDDRINK","price":8,"unit":"Each","category":"Beverages"},{"code":"312","name":"CAN COKE","price":15,"unit":"Each","category":"Beverages"},{"code":"106","name":"JUICE 330ML","price":13,"unit":"Each","category":"Beverages"},{"code":"107","name":"WATER 500ML","price":12,"unit":"Each","category":"Beverages"},{"code":"383","name":"coke 1.5","price":23,"unit":"Each","category":"Beverages"},{"code":"1","name":"coke 1.5lt","price":23,"unit":"Each","category":"Beverages"},{"code":"343","name":"6 Eggs","price":15,"unit":"Each","category":"Eggs & Dairy"},{"code":"263","name":"CHEESE PUFFS","price":10,"unit":"Each","category":"Eggs & Dairy"},{"code":"345","name":"EGGS","price":65,"unit":"Each","category":"Eggs & Dairy"},{"code":"358","name":"5kg BEENMEEL","price":60,"unit":"Each","category":"Groceries"},{"code":"390","name":"kolskoot spice","price":25,"unit":"Each","category":"Groceries"},{"code":"194","name":"spices","price":15,"unit":"Each","category":"Groceries"},{"code":"77","name":"1KG BEEF MALA MOGODU","price":45,"unit":"Each","category":"Meat & Protein"},{"code":"1170","name":"1KG CHICKEN INTESTINES","price":15,"unit":"Each","category":"Meat & Protein"},{"code":"297","name":"2.5kg Beefstew","price":200,"unit":"Each","category":"Meat & Protein"},{"code":"362","name":"500G BEEF KNUCKLES","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"361","name":"500G CHICKEN NECKS","price":15,"unit":"Each","category":"Meat & Protein"},{"code":"1103","name":"500G CHILLI WORS","price":35,"unit":"Each","category":"Meat & Protein"},{"code":"356","name":"500g pork stew","price":27.5,"unit":"Each","category":"Meat & Protein"},{"code":"1091","name":"5KG BEEF TRIPE","price":225,"unit":"Each","category":"Meat & Protein"},{"code":"281","name":"5KG MIXED PORTION CHICKEN","price":300,"unit":"Each","category":"Meat & Protein"},{"code":"1073","name":"5kg pork bones","price":135,"unit":"Each","category":"Meat & Protein"},{"code":"1053","name":"BEEF INTESTINES 1KG","price":300,"unit":"Each","category":"Meat & Protein"},{"code":"176","name":"BEEF INTESTINES 5KG","price":175,"unit":"Each","category":"Meat & Protein"},{"code":"178","name":"BEEF MALA MOGODU MIX 2KG","price":80,"unit":"Each","category":"Meat & Protein"},{"code":"1109","name":"BEEF MEATY BONES 1KG","price":34,"unit":"Each","category":"Meat & Protein"},{"code":"1038","name":"BEEF MEATY BONES 2.5KG","price":85,"unit":"Each","category":"Meat & Protein"},{"code":"264","name":"BEEF RIB PIE","price":22,"unit":"Each","category":"Meat & Protein"},{"code":"1139","name":"BEEF SHIN","price":130,"unit":"Each","category":"Meat & Protein"},{"code":"1126","name":"BEEF STEW","price":100,"unit":"Each","category":"Meat & Protein"},{"code":"1189","name":"BEEF STEW 5KG","price":400,"unit":"Each","category":"Meat & Protein"},{"code":"229","name":"BEEF STEW BULK","price":100,"unit":"Each","category":"Meat & Protein"},{"code":"1090","name":"BEEF TRIPE 1KG","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"177","name":"BEEF TRIPE 2.5KG","price":112.5,"unit":"Each","category":"Meat & Protein"},{"code":"1092","name":"BEEF TRIPE 500G","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"254","name":"BOEREWORS MIX","price":65,"unit":"Each","category":"Meat & Protein"},{"code":"1057","name":"BRAAI WORS 1KG","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"1095","name":"BRAAI WORS 2KG","price":140,"unit":"Each","category":"Meat & Protein"},{"code":"1039","name":"BRAAI WORS 500G","price":35,"unit":"Each","category":"Meat & Protein"},{"code":"1102","name":"BRAAI WORS CHILLI 2KG","price":140,"unit":"Each","category":"Meat & Protein"},{"code":"1059","name":"BRAAI WORS CHILLI 5KG","price":300,"unit":"Each","category":"Meat & Protein"},{"code":"184","name":"BRAAI WORS/KG","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"1030","name":"Beef Uncut 5kg Cavalier /kg","price":24,"unit":"Each","category":"Meat & Protein"},{"code":"1001","name":"Beef Uncut Bones /kg","price":28,"unit":"Each","category":"Meat & Protein"},{"code":"341","name":"Beef knuckles 1kg","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"342","name":"Beef knuckles 2kg","price":100,"unit":"Each","category":"Meat & Protein"},{"code":"61","name":"CHIC WORS PAP & GRAVY","price":45,"unit":"Each","category":"Meat & Protein"},{"code":"171","name":"CHICK/WORS/TAM/PAP","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"239","name":"CHICKEN CURRY AND RICE","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"226","name":"CHICKEN DRUM STICKS","price":65,"unit":"Each","category":"Meat & Protein"},{"code":"1167","name":"CHICKEN FEET 1KG","price":39.95,"unit":"Each","category":"Meat & Protein"},{"code":"219","name":"CHICKEN FILLET 1KG","price":75,"unit":"Each","category":"Meat & Protein"},{"code":"224","name":"CHICKEN FILLET 500G","price":49.99,"unit":"Each","category":"Meat & Protein"},{"code":"1168","name":"CHICKEN GIZZARDS 1KG","price":35,"unit":"Each","category":"Meat & Protein"},{"code":"392","name":"CHICKEN HEAD","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"1044","name":"CHICKEN HEARTS 1KG","price":30,"unit":"Each","category":"Meat & Protein"},{"code":"1166","name":"CHICKEN HEARTS 1KG","price":35,"unit":"Each","category":"Meat & Protein"},{"code":"1165","name":"CHICKEN LIVER 1KG","price":30,"unit":"Each","category":"Meat & Protein"},{"code":"246","name":"CHICKEN LIVERS & PAP","price":35,"unit":"Each","category":"Meat & Protein"},{"code":"1164","name":"CHICKEN NECKS 1KG","price":30,"unit":"Each","category":"Meat & Protein"},{"code":"364","name":"CHICKEN THIGHS","price":55,"unit":"Each","category":"Meat & Protein"},{"code":"193","name":"CHICKEN WINGS","price":81,"unit":"Each","category":"Meat & Protein"},{"code":"192","name":"CHICKEN WINGS 500G","price":63,"unit":"Each","category":"Meat & Protein"},{"code":"195","name":"CHICKEN WINGS MERENADE","price":69.99,"unit":"Each","category":"Meat & Protein"},{"code":"1068","name":"CHILLI WORS 1KG","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"1121","name":"CLUB STEAK","price":125,"unit":"Each","category":"Meat & Protein"},{"code":"180","name":"CLUB STEAK AND PAP","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"378","name":"Chicken burgers & Chips","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"1160","name":"DROE WORS","price":239.99,"unit":"Each","category":"Meat & Protein"},{"code":"240","name":"EXTRA BEEF STEW","price":35,"unit":"Each","category":"Meat & Protein"},{"code":"62","name":"EXTRA CHICKEN","price":15,"unit":"Each","category":"Meat & Protein"},{"code":"1206","name":"GM BOERE WORS","price":95.99,"unit":"Each","category":"Meat & Protein"},{"code":"340","name":"HALF CHICKEN/ CHIPS","price":80,"unit":"Each","category":"Meat & Protein"},{"code":"181","name":"HALF PORK HEAD","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"1040","name":"LAMB BONES 2 KG","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"310","name":"LAMB BONES 5KG","price":125.01,"unit":"Each","category":"Meat & Protein"},{"code":"243","name":"LAMB KIDNEY 1KG","price":40,"unit":"Each","category":"Meat & Protein"},{"code":"212","name":"LAMB KIDNEY 500g","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"322","name":"LAMB LIVER 500g","price":27.5,"unit":"Each","category":"Meat & Protein"},{"code":"1176","name":"LAMB LOIN CHOPS","price":189.99,"unit":"Each","category":"Meat & Protein"},{"code":"326","name":"LAMB MIX MALA 1kg","price":40,"unit":"Each","category":"Meat & Protein"},{"code":"1147","name":"LAMB NUCKLES 1KG","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"1179","name":"LAMB STEW","price":140,"unit":"Each","category":"Meat & Protein"},{"code":"353","name":"LAMB TRIMMINGS","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"37","name":"LAMB TRIPE","price":30,"unit":"Each","category":"Meat & Protein"},{"code":"28","name":"LAMB TRIPE 500G","price":15,"unit":"Each","category":"Meat & Protein"},{"code":"25","name":"LAMB TRIPE 5KG","price":150,"unit":"Each","category":"Meat & Protein"},{"code":"1127","name":"LEAN BEEF MINCE","price":91.99,"unit":"Each","category":"Meat & Protein"},{"code":"1013","name":"Lamb Uncut /kg","price":24,"unit":"Each","category":"Meat & Protein"},{"code":"296","name":"MARINADE RIB","price":110,"unit":"Each","category":"Meat & Protein"},{"code":"372","name":"MARINADE SMOKED PORK RIB","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"58","name":"MEAT CHIC WORS PAP & GRAVY","price":55,"unit":"Each","category":"Meat & Protein"},{"code":"1156","name":"MEAT WORS PAP & GRAVY","price":45,"unit":"Each","category":"Meat & Protein"},{"code":"1108","name":"OX LIVER 1KG","price":55,"unit":"Each","category":"Meat & Protein"},{"code":"1069","name":"OX LIVER 2.5KG","price":100,"unit":"Each","category":"Meat & Protein"},{"code":"1065","name":"OXL LIVER 500G","price":27.5,"unit":"Each","category":"Meat & Protein"},{"code":"1163","name":"PAP AND BEEF STEW","price":45,"unit":"Each","category":"Meat & Protein"},{"code":"80","name":"PAP AND LAMB STEW","price":35,"unit":"Each","category":"Meat & Protein"},{"code":"279","name":"PAP/BEEF STEW/SALAD","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"196","name":"PAP/CHICKEN STEW","price":40,"unit":"Each","category":"Meat & Protein"},{"code":"324","name":"PAP/LIVER","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"31","name":"PORK  TROTTERS","price":40,"unit":"Each","category":"Meat & Protein"},{"code":"12","name":"PORK BONES 1KG","price":40,"unit":"Each","category":"Meat & Protein"},{"code":"13","name":"PORK BONES 2KG","price":80,"unit":"Each","category":"Meat & Protein"},{"code":"1042","name":"PORK CHOPS 1KG","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"331","name":"PORK RASHERS","price":55,"unit":"Each","category":"Meat & Protein"},{"code":"379","name":"PORK STEW 5KG","price":225,"unit":"Each","category":"Meat & Protein"},{"code":"20","name":"PORK TRIMMING","price":40,"unit":"Each","category":"Meat & Protein"},{"code":"290","name":"PRESSED BEEF POLONY","price":110,"unit":"Each","category":"Meat & Protein"},{"code":"1140","name":"PRIME RIB","price":89.99,"unit":"Each","category":"Meat & Protein"},{"code":"1048","name":"Pork Stew 1KG","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"232","name":"RICE / BEEF STEW","price":45,"unit":"Each","category":"Meat & Protein"},{"code":"185","name":"SIRLOIN STEAK","price":135,"unit":"Each","category":"Meat & Protein"},{"code":"201","name":"SPARE RIB WORS PAP GRAVY","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"93","name":"STEAK AND CHIPS","price":55,"unit":"Each","category":"Meat & Protein"},{"code":"96","name":"STEAK FILLET","price":179.99,"unit":"Each","category":"Meat & Protein"},{"code":"339","name":"STEAK/CHICKEN/PAP","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"172","name":"STEAK/WORS/CHICK/TAM/GRAV","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"170","name":"STEAK/WORS/TAM/GRAVY","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"1142","name":"T BONE STEAK","price":130,"unit":"Each","category":"Meat & Protein"},{"code":"211","name":"T BONE/WORS/ PAP/ GRAVY","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"94","name":"WORS AND CHIPS","price":45,"unit":"Each","category":"Meat & Protein"},{"code":"244","name":"WORS ROLL","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"1031","name":"Wors","price":36,"unit":"Each","category":"Meat & Protein"},{"code":"60","name":"X2 MEAT X1 WORS PAP & GRAVY R45","price":55,"unit":"Each","category":"Meat & Protein"},{"code":"173","name":"X2STEAK/WORS/TAM/PAP","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"1124","name":"[HALAAL] BRISCKET","price":130,"unit":"Each","category":"Meat & Protein"},{"code":"1208","name":"beef steak p kg","price":130,"unit":"Each","category":"Meat & Protein"},{"code":"1135","name":"beef stirfry","price":130,"unit":"Each","category":"Meat & Protein"},{"code":"338","name":"chicken necks and gizzards","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"51","name":"extra meat","price":30,"unit":"Each","category":"Meat & Protein"},{"code":"21","name":"extra wors","price":15,"unit":"Each","category":"Meat & Protein"},{"code":"291","name":"lamb chops*","price":140,"unit":"Each","category":"Meat & Protein"},{"code":"1207","name":"lamb leg","price":179.99,"unit":"Each","category":"Meat & Protein"},{"code":"1151","name":"lamb liver","price":20,"unit":"Each","category":"Meat & Protein"},{"code":"1181","name":"lamb neck","price":159.99,"unit":"Each","category":"Meat & Protein"},{"code":"1180","name":"lamb rib","price":130,"unit":"Each","category":"Meat & Protein"},{"code":"376","name":"lamb rib","price":25,"unit":"Each","category":"Meat & Protein"},{"code":"1178","name":"lamb rib chops","price":189.99,"unit":"Each","category":"Meat & Protein"},{"code":"384","name":"lamb rib wors & gravy","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"1182","name":"lamb shanks","price":180,"unit":"Each","category":"Meat & Protein"},{"code":"1200","name":"lamb stew p kg","price":119.99,"unit":"Each","category":"Meat & Protein"},{"code":"380","name":"pork chops 5kg","price":300,"unit":"Each","category":"Meat & Protein"},{"code":"351","name":"rump steak","price":135,"unit":"Each","category":"Meat & Protein"},{"code":"375","name":"sparerib & steak pap & gravy","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"381","name":"steak & chicken","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"385","name":"steak / lamb rib pap & gravy","price":60,"unit":"Each","category":"Meat & Protein"},{"code":"395","name":"steak wors chicken with rice","price":75,"unit":"Each","category":"Meat & Protein"},{"code":"394","name":"steak wors with rice","price":65,"unit":"Each","category":"Meat & Protein"},{"code":"284","name":"steak/wors/stamp","price":50,"unit":"Each","category":"Meat & Protein"},{"code":"1198","name":"tenderised steak","price":70,"unit":"Each","category":"Meat & Protein"},{"code":"333","name":"wors rolls","price":20,"unit":"Each","category":"Meat & Protein"},{"code":"344","name":"1 Tray","price":65,"unit":"Each","category":"Other"},{"code":"186","name":"1KG MALA MUGODU","price":40,"unit":"Each","category":"Other"},{"code":"207","name":"1kg MAKANYANISE","price":32,"unit":"Each","category":"Other"},{"code":"174","name":"20kg makanyanise","price":580,"unit":"Each","category":"Other"},{"code":"156","name":"2KG MAKANYANISE","price":64,"unit":"Each","category":"Other"},{"code":"1107","name":"330g Makanyanise","price":12,"unit":"Each","category":"Other"},{"code":"208","name":"3kg MAKANYANISE","price":96,"unit":"Each","category":"Other"},{"code":"360","name":"500G GIZZARDS","price":17.5,"unit":"Each","category":"Other"},{"code":"1096","name":"500g intestine","price":18,"unit":"Each","category":"Other"},{"code":"155","name":"5KG MAKANYANISE","price":160,"unit":"Each","category":"Other"},{"code":"40","name":"ARTCHAAR","price":50,"unit":"Each","category":"Other"},{"code":"151","name":"BEETROOT SALAD","price":5,"unit":"Each","category":"Other"},{"code":"130","name":"BLACK LENTILS 200g","price":10,"unit":"Each","category":"Other"},{"code":"313","name":"BLACK PEPPER","price":15,"unit":"Each","category":"Other"},{"code":"311","name":"BOTTEL CHILLIES","price":50,"unit":"Each","category":"Other"},{"code":"164","name":"BRAAI PACK","price":73.28,"unit":"Each","category":"Other"},{"code":"69","name":"BUTCHER POLONY","price":100,"unit":"Each","category":"Other"},{"code":"367","name":"Bokkoors","price":25,"unit":"Each","category":"Other"},{"code":"137","name":"Bulk mince","price":80,"unit":"Each","category":"Other"},{"code":"152","name":"CARROT SALAD","price":5,"unit":"Each","category":"Other"},{"code":"1112","name":"CHILLI BITES","price":349.99,"unit":"Each","category":"Other"},{"code":"3","name":"CHILLI MUTTON SAUSAGE","price":96,"unit":"Each","category":"Other"},{"code":"1123","name":"CHUCK","price":130,"unit":"Each","category":"Other"},{"code":"213","name":"CLUB SPECIAL","price":140,"unit":"Each","category":"Other"},{"code":"1012","name":"Cow Head","price":260,"unit":"Each","category":"Other"},{"code":"71","name":"DISC","price":560,"unit":"Each","category":"Other"},{"code":"1085","name":"DISC","price":1.43,"unit":"Each","category":"Other"},{"code":"82","name":"DISC","price":5,"unit":"Each","category":"Other"},{"code":"45","name":"DISCONTINUED","price":2,"unit":"Each","category":"Other"},{"code":"110","name":"DRAGON","price":10,"unit":"Each","category":"Other"},{"code":"125","name":"DURBAN MASALA 100G","price":25,"unit":"Each","category":"Other"},{"code":"126","name":"DURBAN MASALA 200g","price":45,"unit":"Each","category":"Other"},{"code":"56","name":"EXTRA GRAVY","price":10,"unit":"Each","category":"Other"},{"code":"387","name":"EXTRA HLOGO GRAVY","price":30,"unit":"Each","category":"Other"},{"code":"249","name":"FINE JEEROO","price":28,"unit":"Each","category":"Other"},{"code":"111","name":"FIRE LIGHTERS","price":35,"unit":"Each","category":"Other"},{"code":"220","name":"GOOLASH","price":130,"unit":"Each","category":"Other"},{"code":"183","name":"HALF SKOP UNCOOKED","price":60,"unit":"Each","category":"Other"},{"code":"150","name":"HALFSKOP","price":35,"unit":"Each","category":"Other"},{"code":"159","name":"HAMPER 1KG","price":710,"unit":"Each","category":"Other"},{"code":"161","name":"HAMPER 2.5KG","price":2050,"unit":"Each","category":"Other"},{"code":"160","name":"HAMPER 2KG","price":1140,"unit":"Each","category":"Other"},{"code":"158","name":"HAMPER 500G","price":310,"unit":"Each","category":"Other"},{"code":"1169","name":"I.Q.F MIX PORTIONS 2KG","price":95,"unit":"Each","category":"Other"},{"code":"265","name":"ITSY BITSY","price":20,"unit":"Each","category":"Other"},{"code":"1191","name":"LEAN MINCE PER KG","price":110,"unit":"Each","category":"Other"},{"code":"167","name":"MALAMUGODU","price":20,"unit":"Each","category":"Other"},{"code":"329","name":"MERINATED DRUMSTICKS","price":70,"unit":"Each","category":"Other"},{"code":"330","name":"MERINATED WINGS","price":70,"unit":"Each","category":"Other"},{"code":"287","name":"MINCE","price":90,"unit":"Each","category":"Other"},{"code":"327","name":"MINI CHILI WHEELS","price":239.99,"unit":"Each","category":"Other"},{"code":"214","name":"MINI CLUB SPECIAL","price":70,"unit":"Each","category":"Other"},{"code":"120","name":"MIX MASALA 100g","price":25,"unit":"Each","category":"Other"},{"code":"119","name":"MIX MASALA 200g","price":45,"unit":"Each","category":"Other"},{"code":"247","name":"MIXED PORTIONS PER KG","price":2250,"unit":"Each","category":"Other"},{"code":"203","name":"MOGODU ONLY","price":30,"unit":"Each","category":"Other"},{"code":"123","name":"MOTHER INLAW 100G","price":25,"unit":"Each","category":"Other"},{"code":"122","name":"MOTHER INLAW 200g","price":40,"unit":"Each","category":"Other"},{"code":"4","name":"NUCKLES 2KG","price":100,"unit":"Each","category":"Other"},{"code":"1201","name":"NUCKLES 5KG","price":175,"unit":"Each","category":"Other"},{"code":"218","name":"PEANUTS","price":5,"unit":"Each","category":"Other"},{"code":"169","name":"PENS EN POOITJIES","price":35,"unit":"Each","category":"Other"},{"code":"147","name":"PENS/POOTJIES/STAMP","price":45,"unit":"Each","category":"Other"},{"code":"124","name":"PINK LENTILS 200G","price":15,"unit":"Each","category":"Other"},{"code":"140","name":"PINK LENTILS 400g","price":30,"unit":"Each","category":"Other"},{"code":"235","name":"PLASTIC BAG","price":1,"unit":"Each","category":"Other"},{"code":"104","name":"PLASTIC CUP","price":1,"unit":"Each","category":"Other"},{"code":"1056","name":"Packed Makananjies","price":620,"unit":"Each","category":"Other"},{"code":"282","name":"SALAMIE","price":85,"unit":"Each","category":"Other"},{"code":"115","name":"SKAAP PENS EN POOT","price":80,"unit":"Each","category":"Other"},{"code":"142","name":"SKAAP POOTJIES","price":50,"unit":"Each","category":"Other"},{"code":"86","name":"SMALL ATCHAR","price":6,"unit":"Each","category":"Other"},{"code":"241","name":"SPA LETTA","price":22,"unit":"Each","category":"Other"},{"code":"118","name":"SPECIAL MIX MASALA 100G","price":25,"unit":"Each","category":"Other"},{"code":"168","name":"STAMP / STEW","price":45,"unit":"Each","category":"Other"},{"code":"109","name":"SWITCH","price":12,"unit":"Each","category":"Other"},{"code":"347","name":"Six gun grill 200g","price":25,"unit":"Each","category":"Other"},{"code":"210","name":"T BONE","price":30,"unit":"Each","category":"Other"},{"code":"1119","name":"T-BONE BLOCKS","price":102.99,"unit":"Each","category":"Other"},{"code":"1120","name":"T-BONE PORTIONS","price":104.99,"unit":"Each","category":"Other"},{"code":"129","name":"TUMERIC 100G","price":15,"unit":"Each","category":"Other"},{"code":"231","name":"TURKEY DRUMS","price":58,"unit":"Each","category":"Other"},{"code":"127","name":"WHITE PEPPER 100G","price":20,"unit":"Each","category":"Other"},{"code":"303","name":"WOOD SPOON","price":15,"unit":"Each","category":"Other"},{"code":"389","name":"babalas mix","price":320,"unit":"Each","category":"Other"},{"code":"377","name":"cow head","price":450,"unit":"Each","category":"Other"},{"code":"374","name":"cow heels","price":40,"unit":"Each","category":"Other"},{"code":"73","name":"disc","price":950,"unit":"Each","category":"Other"},{"code":"1055","name":"disc","price":550,"unit":"Each","category":"Other"},{"code":"72","name":"disc","price":270,"unit":"Each","category":"Other"},{"code":"1153","name":"disc","price":265,"unit":"Each","category":"Other"},{"code":"337","name":"fire sticks","price":15,"unit":"Each","category":"Other"},{"code":"336","name":"firestarter kit","price":50,"unit":"Each","category":"Other"},{"code":"227","name":"fomo","price":3,"unit":"Each","category":"Other"},{"code":"346","name":"hout","price":40,"unit":"Each","category":"Other"},{"code":"352","name":"ice cream cup","price":10,"unit":"Each","category":"Other"},{"code":"64","name":"mix mala mugodu","price":162.5,"unit":"Each","category":"Other"},{"code":"165","name":"ox tail","price":100,"unit":"Each","category":"Other"},{"code":"70","name":"plastic bag","price":1,"unit":"Each","category":"Other"},{"code":"300","name":"prawns 2kg","price":300,"unit":"Each","category":"Other"},{"code":"1141","name":"sliced billtong","price":299,"unit":"Each","category":"Other"},{"code":"157","name":"stamp","price":15,"unit":"Each","category":"Other"},{"code":"1077","name":"voortrekker","price":40.25,"unit":"Each","category":"Other"},{"code":"153","name":"GRAPES","price":25,"unit":"Each","category":"Produce"},{"code":"294","name":"PUMKIN","price":5,"unit":"Each","category":"Produce"},{"code":"280","name":"48 X TOILET PAPER","price":170,"unit":"Each","category":"Ready-to-Eat"},{"code":"132","name":"6 x TOILET PAPER","price":25,"unit":"Each","category":"Ready-to-Eat"},{"code":"304","name":"BRAAI PAK","price":35,"unit":"Each","category":"Ready-to-Eat"},{"code":"234","name":"BRIYANI","price":50,"unit":"Each","category":"Ready-to-Eat"},{"code":"309","name":"CURRY CHILLIES","price":100,"unit":"Each","category":"Ready-to-Eat"},{"code":"85","name":"CURRY CHILLIES SMALL","price":10,"unit":"Each","category":"Ready-to-Eat"},{"code":"1173","name":"EXTRA PAP","price":10,"unit":"Each","category":"Ready-to-Eat"},{"code":"242","name":"EXTRA RICE","price":15,"unit":"Each","category":"Ready-to-Eat"},{"code":"386","name":"HLOGO AND PAP","price":45,"unit":"Each","category":"Ready-to-Eat"},{"code":"388","name":"Hardbody & Pap","price":45,"unit":"Each","category":"Ready-to-Eat"},{"code":"90","name":"MEDUIM CHIPS","price":42,"unit":"Each","category":"Ready-to-Eat"},{"code":"1087","name":"MINI CHIPS","price":15,"unit":"Each","category":"Ready-to-Eat"},{"code":"88","name":"MINI CHIPS","price":15,"unit":"Each","category":"Ready-to-Eat"},{"code":"149","name":"PAP/HALFSKOP","price":40,"unit":"Each","category":"Ready-to-Eat"},{"code":"10","name":"PAP/MALAMUGODU","price":45,"unit":"Each","category":"Ready-to-Eat"},{"code":"274","name":"PENS/POOITJIES/RICE","price":45,"unit":"Each","category":"Ready-to-Eat"},{"code":"146","name":"PENS/POOTJIES/PAP","price":45,"unit":"Each","category":"Ready-to-Eat"},{"code":"262","name":"PIE AND SALAD COMBO","price":45,"unit":"Each","category":"Ready-to-Eat"},{"code":"133","name":"PRO SOFT TOILET PAPER","price":170,"unit":"Each","category":"Ready-to-Eat"},{"code":"285","name":"PROSOFT TOILET PAPER X6","price":30,"unit":"Each","category":"Ready-to-Eat"},{"code":"189","name":"SIMBA CHIPS","price":7,"unit":"Each","category":"Ready-to-Eat"},{"code":"1196","name":"TOILET PAPER X48","price":215,"unit":"Each","category":"Ready-to-Eat"},{"code":"317","name":"X12 TOILET PAPER","price":60,"unit":"Each","category":"Ready-to-Eat"},{"code":"391","name":"mutton curry","price":35,"unit":"Each","category":"Ready-to-Eat"},{"code":"393","name":"mutton curry & pap","price":60,"unit":"Each","category":"Ready-to-Eat"},{"code":"301","name":"mutton curry / rice","price":60,"unit":"Each","category":"Ready-to-Eat"},{"code":"288","name":"pap/gravy","price":20,"unit":"Each","category":"Ready-to-Eat"},{"code":"222","name":"COCONUT BISCUITS","price":10,"unit":"Each","category":"Snacks"},{"code":"216","name":"SHORTBREAD BISCUITS","price":10,"unit":"Each","category":"Snacks"}];
+
+// ═══════════════════════════════════════════════
+// ── STATE ──
+// ═══════════════════════════════════════════════
+const PIN = 'peoplesV2_2024';
+const SUPER_PIN = 'yType_Dev_2026';
+
+let cart = [];
+let payMethod = 'cash';
+let orderType = 'walkin';
+let currentTab = 'walkin';
+
+let html5QrCode = null;
+let html5QrCodeOnline = null;
+let scanRunning = false;
+
+// ═══════════════════════════════════════════════
+// ── SUPABASE CONFIG ──
+// ═══════════════════════════════════════════════
+const SUPABASE_URL = 'https://qhlzbphdvfundrmejzzf.supabase.co';
+let SUPABASE_ANON_KEY = '';
+(async function loadSupabaseKey() {
+  try {
+    const resp = await fetch('js/supabase-config.js');
+    const text = await resp.text();
+    const match = text.match(/['\"]([^'\"]{40,})['\"]/);
+    if (match) SUPABASE_ANON_KEY = match[1];
+  } catch(e) { console.warn('Could not load Supabase key, using fallback'); }
+})();
+
+function supabaseFetch(path, opts = {}) {
+  return fetch(SUPABASE_URL + path, {
+    ...opts,
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {})
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// ── PIN ──
+// ═══════════════════════════════════════════════
+function checkPin() {
+  const val = document.getElementById('pin-input').value;
+  if (val === PIN || val === SUPER_PIN) {
+    document.getElementById('pin-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('tab-bar').style.display = 'flex';
+    startWalkinScanner();
+  } else {
+    document.getElementById('pin-err').textContent = 'Incorrect PIN';
+    document.getElementById('pin-input').value = '';
+  }
+}
+document.getElementById('pin-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPin();
+});
+
+// ═══════════════════════════════════════════════
+// ── TAB SWITCHING ──
+// ═══════════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.tab-bar button:nth-child(${tab === 'walkin' ? 1 : 2})`).classList.add('active');
+
+  document.getElementById('walkin-view').classList.toggle('hidden', tab !== 'walkin');
+  document.getElementById('online-view').classList.toggle('hidden', tab !== 'online');
+  document.getElementById('mode-badge').textContent = tab === 'walkin' ? 'Walk-in' : 'Orders';
+
+  if (tab === 'walkin') {
+    stopOnlineScanner();
+    startWalkinScanner();
+  } else {
+    stopWalkinScanner();
+    startOnlineScanner();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ── BARCODE SCANNER (Walk-in) ──
+// ═══════════════════════════════════════════════
+function startWalkinScanner() {
+  if (html5QrCode) return;
+  html5QrCode = new Html5Qrcode('scanner');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 15, qrbox: { width: 250, height: 120 } },
+    onWalkinScan,
+    () => {}
+  ).catch(() => {
+    document.getElementById('scanner').innerHTML =
+      '<div style="padding:30px;text-align:center;color:#555;font-size:.85rem">📷 Camera not available<br>Type barcode number below</div>';
+  });
+}
+
+function stopWalkinScanner() {
+  if (html5QrCode) {
+    try { html5QrCode.stop(); } catch(e) {}
+    html5QrCode = null;
+  }
+}
+
+function onWalkinScan(decodedText) {
+  const code = decodedText.trim();
+  const product = PRICELIST.find(p => p.code === code);
+  const resultEl = document.getElementById('scan-result');
+  if (product) {
+    document.getElementById('scan-code').textContent = 'Code: ' + code;
+    document.getElementById('scan-name').textContent = product.name;
+    document.getElementById('scan-price').textContent = 'R ' + product.price.toFixed(2);
+    resultEl.style.display = 'block';
+    addToCart(product);
+    showToast('✓ ' + product.name);
+    setTimeout(() => { resultEl.style.display = 'none'; }, 2000);
+  } else {
+    document.getElementById('scan-code').textContent = '⚠️ Unknown code: ' + code;
+    document.getElementById('scan-name').textContent = '';
+    document.getElementById('scan-price').textContent = '';
+    resultEl.style.display = 'block';
+    showToast('Unknown product: ' + code);
+    setTimeout(() => { resultEl.style.display = 'none'; }, 2000);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ── BARCODE SCANNER (Online orders) ──
+// ═══════════════════════════════════════════════
+function startOnlineScanner() {
+  if (html5QrCodeOnline) return;
+  html5QrCodeOnline = new Html5Qrcode('scanner-online');
+  html5QrCodeOnline.start(
+    { facingMode: 'environment' },
+    { fps: 15, qrbox: { width: 250, height: 120 } },
+    onOnlineScan,
+    () => {}
+  ).catch(() => {
+    document.getElementById('scanner-online').innerHTML =
+      '<div style="padding:30px;text-align:center;color:#555;font-size:.85rem">📷 Camera not available<br>Type order number below</div>';
+  });
+}
+
+function stopOnlineScanner() {
+  if (html5QrCodeOnline) {
+    try { html5QrCodeOnline.stop(); } catch(e) {}
+    html5QrCodeOnline = null;
+  }
+}
+
+function onOnlineScan(decodedText) {
+  const code = decodedText.trim();
+  document.getElementById('online-scan-code').textContent = 'Order: ' + code;
+  document.getElementById('online-scan-result').style.display = 'block';
+  document.getElementById('manual-order').value = code;
+  lookupOrder();
+  setTimeout(() => {
+    document.getElementById('online-scan-result').style.display = 'none';
+  }, 3000);
+}
+
+// ═══════════════════════════════════════════════
+// ── MANUAL LOOKUP ──
+// ═══════════════════════════════════════════════
+function lookupManual() {
+  const val = document.getElementById('manual-code').value.trim();
+  if (!val) return;
+  const byCode = PRICELIST.find(p => p.code === val);
+  if (byCode) {
+    addToCart(byCode);
+    document.getElementById('manual-code').value = '';
+    document.getElementById('search-results').style.display = 'none';
+    showToast('✓ ' + byCode.name);
+    return;
+  }
+  const q = val.toLowerCase();
+  const matches = PRICELIST.filter(p =>
+    p.name.toLowerCase().includes(q) || p.code === val || p.category.toLowerCase().includes(q)
+  ).slice(0, 8);
+  const el = document.getElementById('search-results');
+  if (matches.length) {
+    el.innerHTML = matches.map(p => `
+      <div class="search-item" onclick="addFromSearch('${p.code}')">
+        <div class="si-left">
+          <div class="si-name">${p.name}</div>
+          <div class="si-cat">#${p.code} · ${p.category}</div>
+        </div>
+        <div class="si-right">
+          <div class="si-price">R ${p.price.toFixed(2)}</div>
+          <div class="si-unit">${p.unit}</div>
+        </div>
+      </div>
+    `).join('');
+    el.style.display = 'flex';
+  } else {
+    el.innerHTML = '<div style="text-align:center;padding:10px;color:#555">No products found</div>';
+    el.style.display = 'flex';
+  }
+}
+
+document.getElementById('manual-code').addEventListener('input', function() {
+  if (this.value.length >= 2) lookupManual();
+  else document.getElementById('search-results').style.display = 'none';
+});
+document.getElementById('manual-code').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') lookupManual();
+});
+
+function addFromSearch(code) {
+  const p = PRICELIST.find(x => x.code === code);
+  if (p) {
+    addToCart(p);
+    document.getElementById('manual-code').value = '';
+    document.getElementById('search-results').style.display = 'none';
+    showToast('✓ ' + p.name);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ── CART ──
+// ═══════════════════════════════════════════════
+function addToCart(product) {
+  const existing = cart.find(i => i.code === product.code);
+  if (existing) {
+    existing.qty++;
+  } else {
+    cart.push({ ...product, qty: 1 });
+  }
+  renderCart();
+}
+
+function changeQty(code, delta) {
+  const idx = cart.findIndex(i => i.code === code);
+  if (idx === -1) return;
+  cart[idx].qty += delta;
+  if (cart[idx].qty <= 0) cart.splice(idx, 1);
+  renderCart();
+}
+
+function removeItem(code) {
+  cart = cart.filter(i => i.code !== code);
+  renderCart();
+}
+
+function clearCart() {
+  cart = [];
+  payMethod = 'cash';
+  document.getElementById('cash-tendered').value = '';
+  document.getElementById('change-display').style.display = 'none';
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pay-cash').classList.add('active');
+  renderCart();
+}
+
+function renderCart() {
+  const el = document.getElementById('cart-items');
+  if (!cart.length) {
+    el.innerHTML = '<div class="cart-empty">Scan or search products to add</div>';
+    document.getElementById('cart-totals-area').style.display = 'none';
+    return;
+  }
+  document.getElementById('cart-totals-area').style.display = 'block';
+  el.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="ci-name">${item.name}</div>
+      <div class="ci-qty">
+        <button onclick="changeQty('${item.code}',-1)">−</button>
+        <span>${item.qty}</span>
+        <button onclick="changeQty('${item.code}',1)">+</button>
+      </div>
+      <div class="ci-price">R ${(item.price * item.qty).toFixed(2)}</div>
+      <span class="ci-remove" onclick="removeItem('${item.code}')">✕</span>
+    </div>
+  `).join('');
+
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('cart-subtotal').textContent = 'R ' + total.toFixed(2);
+  document.getElementById('cart-total').textContent = 'R ' + total.toFixed(2);
+  calcChange();
+  updateCompleteBtn();
+}
+
+// ═══════════════════════════════════════════════
+// ── ORDER TYPE + PAYMENT ──
+// ═══════════════════════════════════════════════
+function setOrderType(type) {
+  orderType = type;
+  document.getElementById('ot-walkin').classList.toggle('active', type === 'walkin');
+  document.getElementById('ot-walkin').classList.toggle('walkin', type === 'walkin');
+  document.getElementById('ot-online').classList.toggle('active', type === 'online');
+}
+
+function setPayMethod(method) {
+  payMethod = method;
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pay-' + method).classList.add('active');
+  document.getElementById('cash-section').style.display = method === 'cash' ? 'block' : 'none';
+  updateCompleteBtn();
+}
+
+function calcChange() {
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const tendered = parseFloat(document.getElementById('cash-tendered').value) || 0;
+  const changeEl = document.getElementById('change-display');
+  if (payMethod === 'cash' && tendered >= total && tendered > 0) {
+    document.getElementById('change-val').textContent = 'R ' + (tendered - total).toFixed(2);
+    changeEl.style.display = 'flex';
+  } else {
+    changeEl.style.display = 'none';
+  }
+  updateCompleteBtn();
+}
+
+function updateCompleteBtn() {
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const btn = document.getElementById('complete-btn');
+  let ready = false;
+  if (cart.length && total > 0) {
+    if (payMethod === 'cash') {
+      ready = (parseFloat(document.getElementById('cash-tendered').value) || 0) >= total;
+    } else {
+      ready = true;
+    }
+  }
+  btn.disabled = !ready;
+  btn.textContent = ready ? '✓ Complete Sale — R ' + total.toFixed(2) : 'Complete Sale';
+}
+
+// ═══════════════════════════════════════════════
+// ── COMPLETE SALE ──
+// ═══════════════════════════════════════════════
+async function completeSale() {
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  if (!cart.length || total <= 0) return;
+  const btn = document.getElementById('complete-btn');
+  btn.disabled = true;
+  btn.textContent = 'Processing…';
+
+  const tendered = parseFloat(document.getElementById('cash-tendered').value) || 0;
+  const change = payMethod === 'cash' ? Math.max(0, tendered - total) : 0;
+  const now = new Date();
+
+  try {
+    const orderNumber = 'WI-' + now.getTime().toString(36).toUpperCase();
+    const saleData = {
+      order_number: orderNumber,
+      items: cart.map(i => ({ code: i.code, name: i.name, qty: i.qty, price: i.price })),
+      total,
+      pay_method: payMethod,
+      order_type: orderType,
+      tendered: payMethod === 'cash' ? tendered : 0,
+      change,
+      created_at: now.toISOString(),
+      status: 'completed'
+    };
+
+    // Try save to Supabase
+    if (SUPABASE_ANON_KEY) {
+      try {
+        await supabaseFetch('/rest/v1/transactions', {
+          method: 'POST',
+          body: JSON.stringify({
+            amount: total,
+            type: 'sale',
+            notes: `Mobile cashier ${orderType} — ${payMethod}`,
+            status: 'completed',
+            created_at: now.toISOString()
+          })
+        });
+      } catch(e) { console.warn('Supabase save failed', e); }
+    }
+
+    const cartSnap = [...cart];
+    const currentOrderType = orderType;
+    const currentPayMethod = payMethod;
+
+    clearCart();
+
+    showSlip({
+      type: currentOrderType,
+      payMethod: currentPayMethod,
+      items: cartSnap,
+      total,
+      tendered,
+      change,
+      orderNumber,
+      date: now
+    });
+    showToast('✅ Sale complete!');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '✓ Complete Sale';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ── ONLINE ORDER LOOKUP ──
+// ═══════════════════════════════════════════════
+async function lookupOrder() {
+  const val = document.getElementById('manual-order').value.trim();
+  if (!val) return;
+  const el = document.getElementById('online-order-detail');
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#555">🔍 Looking up order…</div>';
+  el.style.display = 'block';
+
+  try {
+    if (!SUPABASE_ANON_KEY) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:#ff4d4d">⚠️ Cannot connect to database</div>';
+      return;
+    }
+    const resp = await supabaseFetch('/rest/v1/orders?order_number=eq.' + encodeURIComponent(val) + '&select=*');
+    const orders = await resp.json();
+    const order = Array.isArray(orders) ? orders[0] : orders;
+
+    if (!order || order.error) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:#ff4d4d">❌ Order not found</div>';
+      return;
+    }
+
+    const items = order.items || [];
+    const isDeliv = order.delivery_method === 'delivery';
+    const itemRows = Array.isArray(items) ? items.map(i =>
+      `<div class="oo-item"><span>${i.quantity || i.qty || 1}× ${i.name || 'Item'}</span><span>R ${(parseFloat(i.price) || 0).toFixed(2)}</span></div>`
+    ).join('') : '';
+
+    el.innerHTML = `
+      <div class="online-order-card">
+        <div class="oo-header">
+          <div class="oo-id">#${(order.id || order.order_number || val).toString().slice(-8).toUpperCase()}</div>
+          <span class="oo-status ${order.status === 'ready' ? 'ready' : 'pending'}">${order.status || 'pending'}</span>
+        </div>
+        <div class="oo-body">
+          <div class="oo-customer">${order.customer_name || order.user_name || 'Customer'}</div>
+          <div class="oo-detail">📞 ${order.customer_phone || order.user_phone || '—'}</div>
+          <div class="oo-detail">${isDeliv ? '🚗 ' + (order.delivery_address || 'Delivery') : '🏪 Collection'}</div>
+          <div class="oo-detail">🕐 ${new Date(order.created_at).toLocaleString('en-ZA')}</div>
+          <div class="oo-items">${itemRows}</div>
+          <div class="oo-total">R ${(parseFloat(order.total) || 0).toFixed(2)}</div>
+        </div>
+        <div class="oo-actions">
+          <button class="btn-ready" onclick="completeOnlineOrder('${order.id}','${order.order_number || val}')">✓ Mark Ready / Complete</button>
+          <button class="btn-print-order" onclick="printOnlineSlip('${order.id}')">🖨️ Print Slip</button>
+        </div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#ff4d4d">⚠️ Error: ' + e.message + '</div>';
+  }
+}
+
+document.getElementById('manual-order').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') lookupOrder();
+});
+
+async function completeOnlineOrder(orderId, orderNum) {
+  try {
+    if (SUPABASE_ANON_KEY) {
+      await supabaseFetch('/rest/v1/orders?id=eq.' + orderId, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'ready', updated_at: new Date().toISOString() })
+      });
+    }
+    document.getElementById('online-order-detail').innerHTML =
+      '<div style="text-align:center;padding:20px;color:var(--green)">✅ Order completed! Ready for collection.</div>';
+    showToast('✅ Order completed!');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+function printOnlineSlip(orderId) {
+  showToast('Open the order and use print button from detail view');
+}
+
+// ═══════════════════════════════════════════════
+// ── SLIP / RECEIPT ──
+// ═══════════════════════════════════════════════
+function showSlip({ type, payMethod, items, total, tendered, change, orderNumber, date }) {
+  const slipType = type === 'online' ? 'ONLINE ORDER' : 'WALK-IN SALE';
+  const slipTypeClass = type === 'online' ? 'online' : 'walkin';
+  const payLabel = payMethod === 'cash' ? 'Cash'
+    : payMethod === 'card' ? 'Card / EFT' : 'Account';
+  const cashLine = payMethod === 'cash' && tendered > 0
+    ? `<div class="slip-line"><span>Tendered</span><span>R ${tendered.toFixed(2)}</span></div>
+       <div class="slip-line" style="color:#16a34a;font-weight:700"><span>Change</span><span>R ${change.toFixed(2)}</span></div>`
+    : '';
+  const orderNumDisplay = orderNumber || ('#' + Date.now().toString(36).toUpperCase());
+
+  document.getElementById('slip-content').innerHTML = `
+    <div class="slip-logo">
+      <img src="assets/img/logo-navbar.png" alt="The Peoples Butchery" onerror="this.style.display='none'">
+    </div>
+    <h3>THE PEOPLES BUTCHERY</h3>
+    <div class="slip-sub">76 Meeu St, East Lynne, Pretoria</div>
+    <div class="slip-sub">${date.toLocaleString('en-ZA')}</div>
+    <div class="slip-type ${slipTypeClass}">${slipType}</div>
+    <div style="text-align:center;font-size:.7rem;color:#999;margin-bottom:4px">#${orderNumDisplay}</div>
+    <hr class="slip-divider">
+    ${items.map(i => `<div class="slip-line"><span>${i.qty}× ${i.name}</span><span>R ${(i.price * i.qty).toFixed(2)}</span></div>`).join('')}
+    <hr class="slip-divider">
+    <div class="slip-total"><span>TOTAL</span><span>R ${total.toFixed(2)}</span></div>
+    <div class="slip-line" style="margin-top:4px"><span>Payment</span><span>${payLabel}</span></div>
+    ${cashLine}
+    <hr class="slip-divider">
+    <div class="slip-footer">
+      Thank you for shopping with us!<br>
+      thepeoplesbutchery.online<br>
+      📞 072 241 9751
+    </div>
+  `;
+
+  document.getElementById('slip-overlay').classList.add('open');
+}
+
+function printSlip() {
+  const slipContent = document.getElementById('slip-content').innerHTML;
+  const printWin = window.open('', '', 'width=400,height=600');
+  printWin.document.write(`
+    <html><head><title>Receipt</title>
+    <style>
+      body { font-family: 'Courier New', monospace; font-size: .8rem; padding: 20px; line-height: 1.5; max-width: 380px; margin: 0 auto; }
+      .slip-logo { text-align: center; margin-bottom: 8px; }
+      .slip-logo img { width: 64px; height: 64px; object-fit: contain; }
+      h3 { text-align: center; font-size: 1rem; font-family: sans-serif; margin-bottom: 2px; }
+      .slip-sub { text-align: center; font-size: .7rem; color: #666; margin-bottom: 4px; }
+      .slip-type { text-align: center; font-weight: 800; font-size: .85rem; padding: 4px 0; margin-bottom: 8px; }
+      .slip-type.walkin { color: #16a34a; }
+      .slip-type.online { color: #e8a020; }
+      .slip-divider { border: none; border-top: 1px dashed #ccc; margin: 8px 0; }
+      .slip-line { display: flex; justify-content: space-between; font-size: .78rem; margin-bottom: 3px; }
+      .slip-total { display: flex; justify-content: space-between; font-weight: 900; font-size: 1rem; margin-top: 6px; }
+      .slip-footer { text-align: center; font-size: .7rem; color: #999; margin-top: 10px; }
+      @media print { body { padding: 10px; } }
+    </style>
+    </head><body>${slipContent}</body></html>
+  `);
+  printWin.document.close();
+  setTimeout(() => { printWin.focus(); printWin.print(); }, 500);
+}
+
+function closeSlip() {
+  document.getElementById('slip-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════
+// ── TOAST ──
+// ═══════════════════════════════════════════════
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 2500);
+}
+
+// ═══════════════════════════════════════════════
+// ── UTILITY ──
+// ═══════════════════════════════════════════════
+function fmtCurrency(n) {
+  return 'R ' + (parseFloat(n) || 0).toFixed(2);
+}
+</script>
+</body>
+</html>
