@@ -15,23 +15,24 @@ function isAddressResult(f) {
   const key = p.osm_key || '';
   const val = p.osm_value || '';
   const ptype = p.type || '';
-  // Keep: streets, houses, neighbourhoods/suburbs, amenities
-  // Exclude: postcodes, administrative boundaries, municipalities
-  if (ptype === 'postcode' || val === 'postcode') return false;
-  if (ptype === 'municipality') return false;
-  if (key === 'highway') return true;            // streets/roads
-  if (key === 'place' && val === 'house') return true;  // house numbers
-  if (key === 'place' && (val === 'suburb' || val === 'neighbourhood' || val === 'town')) return true;
-  if (key === 'amenity') return true;             // shops, landmarks
-  if (key === 'shop' || key === 'office') return true;
-  if (key === 'building') return true;
-  // Accept if it has a street name or house number
+  // Explicit ward/postcode/neighbourhood reject list
+  const reject = ['postcode', 'postal_code', 'municipality', 'administrative', 'ward', 'county', 'state', 'city', 'village'];
+  if (reject.includes(ptype) || reject.includes(val)) return false;
+  // Accept known address types
+  if (key === 'highway') return true;
+  if (key === 'place' && val === 'house') return true;
+  if (key === 'place' && (val === 'suburb' || val === 'neighbourhood')) return true;
+  if (key === 'amenity' || key === 'shop' || key === 'office' || key === 'building') return true;
+  // Accept if it has a street name
   if (p.street) return true;
-  // Reject administrative areas
-  if (ptype === 'administrative') return false;
-  if (val === 'postal_code' || val === 'administrative') return false;
-  // Default: accept only if it looks like an address (has name or street)
-  return !!(p.name || p.street);
+  // Has a house number without a street — odd but accept
+  if (p.housenumber) return true;
+  // Reject boundaries
+  if (ptype === 'administrative' || val === 'administrative') return false;
+  // Default: only accept named places (but not just "Pretoria" or "South Africa")
+  const name = (p.name || '').toLowerCase();
+  if (name === 'pretoria' || name === 'south africa' || name === 'tshwane') return false;
+  return !!(p.name);
 }
 
 async function photonSearch(query) {

@@ -177,9 +177,10 @@
     }
 
     /* Map Modal Styles */
-    #map-modal-overlay.open {
-      display: flex;
-    }
+    #map-modal-overlay.open { display: flex; }
+    .locate-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-primary); font-size: 0.88rem; cursor: pointer; transition: var(--transition); width: 100%; justify-content: center; margin-top: 12px; }
+    .locate-btn:hover { background: var(--bg-surface); border-color: var(--gold); }
+    .locate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 
@@ -272,22 +273,22 @@
 
   <!-- Map Modal -->
   <div id="map-modal-overlay" class="map-modal-overlay">
-    <div class="map-modal">
+    <div class="map-modal" style="height:auto;max-height:90vh;max-width:520px">
       <div class="map-modal-header">
         <h3 style="font-family:var(--font-head);font-weight:800;margin:0">📍 Set Delivery Location</h3>
         <button id="cancel-map-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.5rem">✕</button>
       </div>
       <div class="map-search-container">
         <div class="input-group">
-          <input id="map-search-input" type="text" class="form-control" placeholder="🔍 Search for your address or suburb..." style="padding-left:16px">
+          <input id="map-search-input" type="text" class="form-control" placeholder="Street name + number, Pretoria" style="padding-left:16px" autocomplete="off">
         </div>
+        <div id="map-fallback-results" style="max-height:240px;overflow-y:auto;margin-top:4px"></div>
+        <button id="locate-me-btn" class="locate-btn">
+          <span>📍</span> Use My Current Location
+        </button>
       </div>
-      <div id="map-fallback-results" class="delivery-suggestions" style="max-height:280px;margin-top:8px;overflow:auto"></div>
-      <div class="map-modal-footer">
-        <div style="flex:1;font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px">
-          <span style="font-size:1.2rem">💡</span> Search for your address and select from the list.
-        </div>
-        <button id="confirm-map-btn" class="btn btn-primary">✅ Use This Location</button>
+      <div class="map-modal-footer" style="justify-content:center">
+        <button id="confirm-map-btn" class="btn btn-primary" style="flex:1">✅ Use This Location</button>
       </div>
     </div>
   </div>
@@ -300,7 +301,6 @@
     document.addEventListener('DOMContentLoaded', async () => {
       renderNavbar({ active: 'shop', showCart: false });
 
-      // Open Map Modal
       const delBtn = document.getElementById('open-map-btn');
       delBtn?.addEventListener('click', () => {
         if (typeof openMapModal === 'function') {
@@ -313,6 +313,45 @@
 
       document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
         document.getElementById('map-modal-overlay').classList.remove('open');
+      });
+
+      // Use My Location
+      document.getElementById('locate-me-btn')?.addEventListener('click', () => {
+        const btn = document.getElementById('locate-me-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Detecting...';
+        if (!navigator.geolocation) {
+          showToast('Geolocation is not supported by your browser', 'error');
+          btn.innerHTML = '<span>📍</span> Use My Current Location';
+          btn.disabled = false;
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude, address: pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5) };
+            // Find nearest suburb
+            let nearest = 'your area';
+            let minDist = Infinity;
+            if (window.SUBURBS_DB) {
+              for (const [name, data] of Object.entries(window.SUBURBS_DB)) {
+                const d = Math.sqrt(Math.pow(data.lat - loc.lat, 2) + Math.pow(data.lng - loc.lng, 2));
+                if (d < minDist) { minDist = d; nearest = name; }
+              }
+            }
+            loc.suburb = nearest;
+            const event = new CustomEvent('locationSelected', { detail: loc });
+            window.dispatchEvent(event);
+            document.getElementById('map-modal-overlay').classList.remove('open');
+            btn.innerHTML = '<span>📍</span> Use My Current Location';
+            btn.disabled = false;
+          },
+          () => {
+            showToast('Could not detect location. Please type your address.', 'warning');
+            btn.innerHTML = '<span>📍</span> Use My Current Location';
+            btn.disabled = false;
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
       });
     });
   </script>
