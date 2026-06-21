@@ -6,13 +6,15 @@
 'use strict';
 
 // ── Constants ──────────────────────────────────
-// ── Constants ──────────────────────────────────
 const STORE_COORDS = { lat: -25.7219, lng: 28.3412 }; // Updated V2 Store Location
 window.STORE_COORDS = STORE_COORDS;
 const FLAT_DELIVERY_FEE = 15; // Minimum R15
 const RATE_PER_KM = 5; // R5/km for distance-based
 const MIN_DISTANCE_KM = 3; // First 3km included in flat fee
 const ADMIN_PIN = 'peoplesV2_2024';
+
+// ── make.com Chatbot Config ────────────────────
+const MAKE_WEBHOOK_URL = ''; // Set your make.com webhook URL here
 const SUPER_ADMIN_PIN = 'yType_Dev_2026';
 
 // ── API Configuration ─────────────────────────
@@ -514,41 +516,10 @@ function renderNavbar({ active = '', showCart = false, showOrderNow = false } = 
   </nav>`;
 
   initNavbar();
-  renderBottomNav(active);
 
   const logoutHandler = () => { Auth.logout(); window.location.href = 'index.html'; };
   document.getElementById('nav-logout-btn')?.addEventListener('click', logoutHandler);
   document.getElementById('nav-logout-btn-mobile')?.addEventListener('click', logoutHandler);
-}
-
-function renderBottomNav(active = '') {
-  // Only for customer pages
-  if (Auth.isAdmin()) return;
-  
-  const existing = document.querySelector('.bottom-nav');
-  if (existing) existing.remove();
-
-  const nav = document.createElement('div');
-  nav.className = 'bottom-nav';
-  nav.innerHTML = `
-    <a href="index.html" class="bottom-nav-item${active === 'home' ? ' active' : ''}">
-      <span class="nav-icon">🏠</span>
-      <span>Home</span>
-    </a>
-    <a href="shop.html" class="bottom-nav-item${active === 'shop' ? ' active' : ''}">
-      <span class="nav-icon">🛒</span>
-      <span>Shop</span>
-    </a>
-    <a href="dashboard.html" class="bottom-nav-item${active === 'dashboard' ? ' active' : ''}">
-      <span class="nav-icon">📊</span>
-      <span>Orders</span>
-    </a>
-    <a href="dashboard.html?tab=profile" class="bottom-nav-item${active === 'profile' ? ' active' : ''}">
-      <span class="nav-icon">👤</span>
-      <span>Profile</span>
-    </a>
-  `;
-  document.body.appendChild(nav);
 }
 
 // ── Tabs ──────────────────────────────────────
@@ -788,7 +759,7 @@ function initAIChat() {
   };
 
   if (send && input) {
-    const sendMessage = () => {
+    const sendMessage = async () => {
       const text = input.value.trim();
       if (!text) return;
 
@@ -799,21 +770,46 @@ function initAIChat() {
       input.value = '';
       msgs.scrollTop = msgs.scrollHeight;
 
-      // Simulated AI response
-      setTimeout(() => {
+      // Show typing indicator
+      const typingEl = document.createElement('div');
+      typingEl.className = 'msg ai typing';
+      typingEl.textContent = '...';
+      msgs.appendChild(typingEl);
+      msgs.scrollTop = msgs.scrollHeight;
+
+      try {
+        let reply;
+        if (MAKE_WEBHOOK_URL) {
+          const res = await fetch(MAKE_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, user: Auth.getCurrentUser() || null })
+          });
+          reply = res.ok ? (await res.json()).reply || (await res.text()) : 'Connection issue. Please try again.';
+        } else {
+          reply = generateLocalResponse(text);
+        }
+        typingEl.remove();
         const aiMsg = document.createElement('div');
         aiMsg.className = 'msg ai';
-        aiMsg.textContent = generateAIResponse(text);
+        aiMsg.textContent = reply;
         msgs.appendChild(aiMsg);
         msgs.scrollTop = msgs.scrollHeight;
-      }, 1000);
+      } catch {
+        typingEl.remove();
+        const aiMsg = document.createElement('div');
+        aiMsg.className = 'msg ai';
+        aiMsg.textContent = 'Connection issue. Please try again.';
+        msgs.appendChild(aiMsg);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
     };
     send.onclick = sendMessage;
     input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
   }
 }
 
-function generateAIResponse(text) {
+function generateLocalResponse(text) {
   const t = text.toLowerCase();
   const user = Auth.getCurrentUser();
   if (t.includes('order') || t.includes('tracking')) {

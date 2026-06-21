@@ -1,3 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — The Peoples Butchery</title>
+  <meta name="description" content="Create your The Peoples Butchery account to order fresh meat and track deliveries.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: var(--bg-base); }
+    .auth-page { min-height: 100vh; }
+    .auth-left { padding: 48px 60px; }
+    @media(max-width:600px) { .auth-left { padding: 32px 24px; } }
+    .auth-brand { margin-bottom: 40px; }
+    .auth-title { font-family: var(--font-head); font-weight: 800; font-size: 2rem; margin-bottom: 8px; }
+    .auth-subtitle { color: var(--text-secondary); font-size: 0.9rem; }
+    .form-error { color: var(--primary); font-size: 0.8rem; margin-top: 4px; }
+    #suburb-suggestions { display: none; position: absolute; z-index: 100; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); max-height: 200px; overflow-y: auto; width: 100%; }
+    .delivery-suggestion-item { padding: 10px 14px; font-size: 0.88rem; color: var(--text-secondary); cursor: pointer; transition: background 0.2s; }
+    .delivery-suggestion-item:hover { background: var(--bg-surface); color: var(--text-primary); }
+    .map-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; }
+    .map-modal-overlay.open { display: flex; }
+    .map-modal { background: var(--bg-elevated); border-radius: var(--radius-lg); padding: 24px; width: 90%; max-width: 600px; max-height: 80vh; }
+    #delivery-estimate-box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-top: 12px; font-size: 0.88rem; }
+    #delivery-estimate-box.hidden { display: none; }
+    .delivery-help { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; }
+    .review-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .review-row:last-child { border-bottom: none; }
+    .review-label { color: var(--text-muted); }
+    .review-value { color: var(--text-primary); font-weight: 600; }
+    .referral-note { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+  </style>
+</head>
+
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Map Modal -->
+  <div class="map-modal-overlay" id="map-modal-overlay">
+    <div class="map-modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-family:var(--font-head);font-weight:700">📍 Pick Location</h3>
+        <button id="cancel-map-btn" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">✕</button>
+      </div>
+      <div id="map-container" style="height:350px;border-radius:var(--radius);background:var(--bg-base);display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Map loading...</div>
+    </div>
+  </div>
+
+  <div class="auth-page">
+    <div class="auth-left" style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;max-width:560px">
+      <div class="auth-brand">
+        <a href="index.html" class="navbar-brand">
+          <div class="brand-logo">NB</div>
+          <span class="brand-name">The Peoples <span>Butchery</span></span>
+        </a>
+      </div>
+
+      <div>
+        <div class="auth-title">Create Account 🥩</div>
+        <p class="auth-subtitle">Join The Peoples Butchery family and start ordering fresh meat today.</p>
+      </div>
+
+      <!-- Steps Indicator -->
+      <div class="steps-indicator">
+        <div class="step-item active" id="step-item-1">
+          <div class="step-circle">1</div>
+          <span class="step-label">Personal</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="step-item-2">
+          <div class="step-circle">2</div>
+          <span class="step-label">Delivery</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="step-item-3">
+          <div class="step-circle">3</div>
+          <span class="step-label">Review</span>
+        </div>
+      </div>
+
+      <!-- Step 1: Personal Details -->
+      <div class="form-step active" id="step-1">
+        <div class="form-group">
+          <label class="form-label" for="r-name">First Name</label>
+          <div class="input-group">
+            <span class="input-icon">👤</span>
+            <input type="text" id="r-name" class="form-control" placeholder="Your first name" autocomplete="given-name" required>
+          </div>
+          <div class="form-error hidden" id="err-name"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="r-surname">Last Name</label>
+          <div class="input-group">
+            <span class="input-icon">👤</span>
+            <input type="text" id="r-surname" class="form-control" placeholder="Your last name" autocomplete="family-name" required>
+          </div>
+          <div class="form-error hidden" id="err-surname"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="r-email">Email Address</label>
+          <div class="input-group">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="r-email" class="form-control" placeholder="your@email.com" autocomplete="email" required>
+          </div>
+          <div class="form-error hidden" id="err-email"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="r-password">Password</label>
+          <div class="input-group">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="r-password" class="form-control has-right" placeholder="At least 6 characters" autocomplete="new-password" required>
+            <span class="input-icon-right" id="toggle-pw1">👁️</span>
+          </div>
+          <div class="form-error hidden" id="err-password"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="r-confirm">Confirm Password</label>
+          <div class="input-group">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="r-confirm" class="form-control has-right" placeholder="Repeat password" autocomplete="new-password" required>
+            <span class="input-icon-right" id="toggle-pw2">👁️</span>
+          </div>
+          <div class="form-error hidden" id="err-confirm"></div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-full btn-lg" id="step1-next" style="margin-top:8px">
+          Continue → <span style="font-size:0.78rem;font-weight:400;opacity:0.7">Delivery Details</span>
+        </button>
+
+        <div style="display:flex;align-items:center;gap:12px;margin:20px 0">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:0.8rem;color:var(--text-muted)">or</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+
+        <button type="button" id="google-register-btn" class="btn btn-outline btn-full" style="gap:10px;font-size:0.95rem">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google">
+          Continue with Google
+        </button>
+
+        <p style="text-align:center;margin-top:20px;font-size:0.88rem;color:var(--text-secondary)">
+          Already have an account? <a href="login.html" style="color:var(--primary);font-weight:600">Sign in →</a>
+        </p>
+      </div>
+
+      <!-- Step 2: Delivery Details -->
+      <div class="form-step" id="step-2">
+        <div class="form-group">
+          <label class="form-label" for="r-phone">Phone Number</label>
+          <div class="input-group">
+            <span class="input-icon">📱</span>
+            <input type="tel" id="r-phone" class="form-control" placeholder="072 123 4567" autocomplete="tel" required>
+          </div>
+          <div class="form-error hidden" id="err-phone"></div>
+        </div>
+
+        <div class="form-group" style="position:relative">
+          <label class="form-label" for="r-suburb">Suburb</label>
+          <div class="input-group">
+            <span class="input-icon">🏘️</span>
+            <input type="text" id="r-suburb" class="form-control" placeholder="e.g. East Lynne" autocomplete="address-level2" required>
+          </div>
+          <div id="suburb-suggestions"></div>
+          <div class="form-error hidden" id="err-suburb"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="r-address">Delivery Address</label>
+          <div class="input-group">
+            <span class="input-icon">📍</span>
+            <input type="text" id="r-address" class="form-control" placeholder="Street name, house number" autocomplete="street-address" required>
+            <span class="input-icon-right" id="reg-open-map-btn" title="Pick on map" style="cursor:pointer;font-size:1.1rem">🗺️</span>
+          </div>
+          <div class="form-error hidden" id="err-address"></div>
+        </div>
+
+        <button type="button" class="btn btn-outline btn-full" id="calc-delivery-btn" style="gap:8px;margin-top:4px">
+          🗺️ Calculate My Delivery Fee
+        </button>
+
+        <div id="delivery-estimate-box" class="hidden">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:1.2rem">🚚</span>
+            <span id="delivery-estimate-text" style="font-size:0.88rem;color:var(--text-secondary)"></span>
+          </div>
+          <div class="delivery-help">Free delivery within 5km of 76 Meeu St, East Lynne</div>
+        </div>
+
+        <div class="form-group" style="margin-top:20px">
+          <label class="form-label" for="r-referral">Referral Code <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+          <div class="input-group">
+            <span class="input-icon">🎁</span>
+            <input type="text" id="r-referral" class="form-control" placeholder="Enter REF code" autocomplete="off">
+          </div>
+          <div class="referral-note">If someone referred you, enter their REF number to earn a reward!</div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn btn-outline btn-lg" id="step2-back" style="flex:1">← Back</button>
+          <button type="button" class="btn btn-primary btn-lg" id="step2-next" style="flex:2">Review →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Review & Submit -->
+      <div class="form-step" id="step-3">
+        <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:20px">
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:12px;color:var(--gold)">📋 Account Summary</div>
+          <div class="review-row">
+            <span class="review-label">REF Number</span>
+            <span class="review-value" id="preview-ref" style="color:var(--gold)">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Name</span>
+            <span class="review-value" id="rv-name">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Email</span>
+            <span class="review-value" id="rv-email">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Phone</span>
+            <span class="review-value" id="rv-phone">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Suburb</span>
+            <span class="review-value" id="rv-suburb">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Address</span>
+            <span class="review-value" id="rv-address">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Delivery Fee</span>
+            <span class="review-value" id="rv-delivery" style="color:var(--success)">—</span>
+          </div>
+        </div>
+
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">
+          <input type="checkbox" id="terms-check" style="margin-top:3px;accent-color:var(--gold)">
+          <span>I accept the <a href="#" style="color:var(--primary)">Terms & Conditions</a> and <a href="#" style="color:var(--primary)">Privacy Policy</a>. By creating an account, I agree to the processing of my personal data in accordance with POPIA.</span>
+        </label>
+        <div class="form-error hidden" id="err-terms"></div>
+
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn btn-outline btn-lg" id="step3-back" style="flex:1">← Back</button>
+          <button type="button" class="btn btn-success btn-lg" id="submit-btn" style="flex:2">🎉 Create My Account</button>
+        </div>
+      </div>
+
+      <!-- Success Step -->
+      <div class="form-step" id="step-success" style="text-align:center;padding:40px 0">
+        <div style="font-size:4rem;margin-bottom:16px">🎉</div>
+        <h2 style="font-family:var(--font-head);font-weight:800;font-size:1.8rem;margin-bottom:8px">Account Created!</h2>
+        <p style="color:var(--text-secondary);font-size:0.95rem;margin-bottom:8px">Welcome to The Peoples Butchery family.</p>
+        <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin:20px 0;display:inline-block">
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px">Your REF Number</div>
+          <div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--gold);letter-spacing:2px" id="success-ref">—</div>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:24px">Save this number — you'll need it to load credit onto your account.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="shop.html" class="btn btn-primary btn-lg">🛒 Start Shopping</a>
+          <a href="dashboard.html" class="btn btn-outline btn-lg">📊 Go to Dashboard</a>
+        </div>
+      </div>
+
+      <div class="sponsor-brand animate-fade-in" style="flex-direction:column;gap:8px;display:flex;align-items:center;margin-top:40px;opacity:0.6">
+        <span style="font-size:0.65rem;color:var(--text-muted);letter-spacing:1px">POWERED BY</span>
+        <svg width="120" height="34" viewBox="0 0 160 44">
+          <rect width="160" height="44" rx="6" fill="#0A0A0A"/>
+          <text x="12" y="28" font-family="Arial" font-size="20" font-weight="800" fill="#3DD68C">yType</text>
+          <text x="12" y="40" font-family="Arial" font-size="10" fill="#666">Automate iT</text>
+          <path d="M85 8 L80 25 L88 25 L83 38 L95 20 L87 20 Z" fill="#3DD68C" />
+        </svg>
+      </div>
+
+      <p style="text-align:center;margin-top:32px;font-size:0.78rem;color:var(--text-muted)">
+        <a href="login.html" style="color:var(--text-muted)">Already registered? Sign in →</a> · <a href="index.html" style="color:var(--text-muted)">← Back to Home</a>
+      </p>
+    </div>
+  </div>
+
   <script src="js/app.js"></script>
   <script src="js/suburbs.js"></script>
   <script src="js/delivery.js"></script>
@@ -6,54 +293,43 @@
     window.openMapModal = openMapModal;
   </script>
   <script>
-    // Wait for suburbs.js to load, then setup suburb autocomplete
-    function setupSuburbAutocomplete() {
-      const suburbInput = document.getElementById('r-suburb');
-      const suburbSuggestions = document.getElementById('suburb-suggestions');
-      
-      if (!suburbInput || !window.filterSuburbs) {
-        // Retry if suburbs.js not loaded yet
-        setTimeout(setupSuburbAutocomplete, 100);
-        return;
-      }
-      
-      suburbInput.addEventListener('input', () => {
-        const query = suburbInput.value.trim();
-        if (query.length < 1) {
-          suburbSuggestions.style.display = 'none';
+    (function () {
+      function setupSuburbAutocomplete() {
+        const suburbInput = document.getElementById('r-suburb');
+        const suburbSuggestions = document.getElementById('suburb-suggestions');
+        if (!suburbInput || !window.filterSuburbs) {
+          setTimeout(setupSuburbAutocomplete, 100);
           return;
         }
-        const filtered = window.filterSuburbs(query);
-        if (filtered.length === 0) {
-          suburbSuggestions.style.display = 'none';
-          return;
-        }
-        suburbSuggestions.innerHTML = filtered.map(suburb => 
-          `<div class="delivery-suggestion-item" style="cursor:pointer">${suburb}</div>`
-        ).join('');
-        suburbSuggestions.style.display = 'block';
-        
-        suburbSuggestions.querySelectorAll('.delivery-suggestion-item').forEach(item => {
-          item.addEventListener('click', () => {
-            suburbInput.value = item.textContent;
-            suburbSuggestions.style.display = 'none';
+        suburbInput.addEventListener('input', () => {
+          const query = suburbInput.value.trim();
+          if (query.length < 1) { suburbSuggestions.style.display = 'none'; return; }
+          const filtered = window.filterSuburbs(query);
+          if (filtered.length === 0) { suburbSuggestions.style.display = 'none'; return; }
+          suburbSuggestions.innerHTML = filtered.map(s =>
+            '<div class="delivery-suggestion-item" style="cursor:pointer">' + s + '</div>'
+          ).join('');
+          suburbSuggestions.style.display = 'block';
+          suburbSuggestions.querySelectorAll('.delivery-suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+              suburbInput.value = item.textContent;
+              suburbSuggestions.style.display = 'none';
+            });
           });
         });
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('#r-suburb') && !e.target.closest('#suburb-suggestions')) {
+            suburbSuggestions.style.display = 'none';
+          }
+        });
+      }
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
+          document.getElementById('map-modal-overlay')?.classList.remove('open');
+        });
+        setupSuburbAutocomplete();
       });
-      
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('#r-suburb') && !e.target.closest('#suburb-suggestions')) {
-          suburbSuggestions.style.display = 'none';
-        }
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
-        document.getElementById('map-modal-overlay')?.classList.remove('open');
-      });
-      setupSuburbAutocomplete();
-    });
+    })();
   </script>
   <script type="module">
     import { supabase } from './js/supabase-config.js';
@@ -79,10 +355,8 @@
     let pendingCoords = null;
     let pendingDeliveryFee = null;
 
-    // Redirect if already logged in
     if (Auth.isLoggedIn() && !Auth.isAdmin()) window.location.href = 'dashboard.html';
 
-    // Toggle passwords
     ['toggle-pw1', 'toggle-pw2'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -112,15 +386,13 @@
     }
     function hideError(id) { document.getElementById(id)?.classList.add('hidden'); }
 
-    // Step 1 validation
-    document.getElementById('step1-next').addEventListener('click', async () => {
+    document.getElementById('step1-next').addEventListener('click', () => {
       const name = document.getElementById('r-name').value.trim();
       const surname = document.getElementById('r-surname').value.trim();
       const email = document.getElementById('r-email').value.trim();
       const pw = document.getElementById('r-password').value;
       const conf = document.getElementById('r-confirm').value;
       let valid = true;
-
       if (!name) { showError('err-name', 'Please enter your first name'); valid = false; } else hideError('err-name');
       if (!surname) { showError('err-surname', 'Please enter your last name'); valid = false; } else hideError('err-surname');
       if (!email || !/\S+@\S+\.\S+/.test(email)) { showError('err-email', 'Please enter a valid email'); valid = false; } else hideError('err-email');
@@ -131,8 +403,7 @@
 
     document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
 
-    // Maps logic
-    (function() {
+    (function () {
       const openBtn = document.getElementById('reg-open-map-btn');
       const handleOpenMap = () => {
         if (typeof window.openMapModal !== 'function') {
@@ -151,59 +422,42 @@
           pendingDeliveryFee = fee;
           if (fee !== null) {
             document.getElementById('delivery-estimate-text').textContent =
-              `Estimated delivery fee: R${fee.toFixed(2)} (${location.suburb || 'your area'})`;
+              'Estimated delivery fee: R' + fee.toFixed(2) + ' (' + (location.suburb || 'your area') + ')';
           }
         });
       };
-      openBtn?.addEventListener('click', handleOpenMap);
+      if (openBtn) openBtn.addEventListener('click', handleOpenMap);
     })();
 
-    // Delivery fee calculation
     document.getElementById('calc-delivery-btn').addEventListener('click', async () => {
       const suburb = document.getElementById('r-suburb').value.trim();
       const address = document.getElementById('r-address').value.trim();
       if (!suburb && !address) { showToast('Enter your suburb or address first', 'warning'); return; }
-      
       const btn = document.getElementById('calc-delivery-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Calculating...';
-      
       let fee = null;
-      
-      // Try suburb lookup first (accurate, hardcoded)
       if (suburb && window.calcDeliveryFeeBySuburb) {
         fee = window.calcDeliveryFeeBySuburb(suburb);
         const coords = window.getSuburbCoords(suburb);
-        if (coords) {
-          pendingCoords = { ...coords, suburb };
-        }
+        if (coords) pendingCoords = { ...coords, suburb };
       }
-      
-      // Fallback to address geocoding if suburb not found
       if (fee === null && address) {
         const coords = await geocodeAddress(address);
-        if (coords) {
-          pendingCoords = coords;
-          fee = calcDeliveryFee(coords);
-        }
+        if (coords) { pendingCoords = coords; fee = calcDeliveryFee(coords); }
       }
-      
       const box = document.getElementById('delivery-estimate-box');
       box.classList.remove('hidden');
-      
       if (fee !== null) {
         pendingDeliveryFee = fee;
-        document.getElementById('delivery-estimate-text').textContent =
-          `Estimated delivery fee: R${fee.toFixed(2)} (${suburb})`;
+        document.getElementById('delivery-estimate-text').textContent = 'Estimated delivery fee: R' + fee.toFixed(2) + ' (' + suburb + ')';
       } else {
         document.getElementById('delivery-estimate-text').textContent = 'Could not calculate fee. Will be updated at checkout.';
       }
-      
       btn.disabled = false;
       btn.innerHTML = '🗺️ Calculate My Delivery Fee';
     });
 
-    // Step 2 validation
     document.getElementById('step2-next').addEventListener('click', () => {
       const phone = document.getElementById('r-phone').value.trim();
       const suburb = document.getElementById('r-suburb').value.trim();
@@ -213,37 +467,30 @@
       if (!suburb) { showError('err-suburb', 'Please enter your suburb'); valid = false; } else hideError('err-suburb');
       if (!address) { showError('err-address', 'Please enter your delivery address'); valid = false; } else hideError('err-address');
       if (!valid) return;
-
-      // Populate review
       const rName = document.getElementById('r-name').value.trim();
       const rSurname = document.getElementById('r-surname').value.trim();
       pendingRef = ensureUniqueRef(rName, rSurname, phone);
       document.getElementById('preview-ref').textContent = pendingRef;
-      document.getElementById('rv-name').textContent = `${rName} ${rSurname}`;
+      document.getElementById('rv-name').textContent = rName + ' ' + rSurname;
       document.getElementById('rv-email').textContent = document.getElementById('r-email').value.trim();
       document.getElementById('rv-phone').textContent = phone;
       document.getElementById('rv-suburb').textContent = suburb;
       document.getElementById('rv-address').textContent = address;
-      document.getElementById('rv-delivery').textContent = pendingDeliveryFee !== null
-        ? `R${pendingDeliveryFee.toFixed(2)}`
-        : 'Calculated at checkout';
+      document.getElementById('rv-delivery').textContent = pendingDeliveryFee !== null ? 'R' + pendingDeliveryFee.toFixed(2) : 'Calculated at checkout';
       goToStep(3);
     });
 
     document.getElementById('step3-back').addEventListener('click', () => goToStep(2));
 
-    // Submit
     document.getElementById('submit-btn').addEventListener('click', async () => {
       if (!document.getElementById('terms-check').checked) {
         showError('err-terms', 'You must accept the terms to continue');
         return;
       }
       hideError('err-terms');
-
       const btn = document.getElementById('submit-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Creating Account...';
-
       const name = document.getElementById('r-name').value.trim();
       const surname = document.getElementById('r-surname').value.trim();
       const email = document.getElementById('r-email').value.trim();
@@ -252,44 +499,26 @@
       const suburb = document.getElementById('r-suburb').value.trim();
       const address = document.getElementById('r-address').value.trim();
       const referredBy = document.getElementById('r-referral').value.trim().toUpperCase();
-
-      // Try to get coords
       if (!pendingCoords) {
         const coords = window.getSuburbCoords ? window.getSuburbCoords(suburb) : null;
-        if (coords) {
-          pendingCoords = { ...coords, suburb };
-        } else {
-          pendingCoords = await geocodeAddress(suburb || address);
-        }
+        if (coords) { pendingCoords = { ...coords, suburb }; }
+        else { pendingCoords = await geocodeAddress(suburb || address); }
       }
-
       try {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-
-        const newUser = {
-          id: data.user.id,
-          email, name, surname, phone, suburb, address,
-          ref_number: pendingRef,
-          credit_balance: 0,
-          is_admin: false
-        };
-
+        const newUser = { id: data.user.id, email, name, surname, phone, suburb, address, ref_number: pendingRef, credit_balance: 0, is_admin: false };
         const { error: insertError } = await supabase.from('users').insert(newUser);
         if (insertError && !insertError.message.includes('duplicate')) throw insertError;
-
         const sessionUser = { ...newUser, refNumber: pendingRef, creditBalance: 0, isAdmin: false };
         const users = DB.getUsers();
         users.push(sessionUser);
         DB.saveUsers(users);
-
         Auth.login(sessionUser, data.session?.access_token ?? null);
-
         document.getElementById('success-ref').textContent = pendingRef;
         document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
         document.getElementById('step-success').classList.add('active');
         document.querySelector('.steps-indicator').style.display = 'none';
-
         if (!data.session) {
           const successEl = document.getElementById('step-success');
           if (successEl && !document.getElementById('email-confirm-notice')) {
@@ -301,7 +530,6 @@
             successEl.appendChild(notice);
           }
         }
-
       } catch (err) {
         btn.disabled = false;
         btn.textContent = '🎉 Create My Account';
