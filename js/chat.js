@@ -98,7 +98,7 @@
     },
     {
       match: /register|sign up|account|create/i,
-      reply: () => 'Register at thepeoplesbutchery.co.za/register.html — just fill in your name, email, and address. You\'ll get a unique REF number to load credit onto your account.'
+      reply: () => 'Register at thepeoplesbutchery.online/register.html — just fill in your name, email, and address. You\'ll get a unique REF number to load credit onto your account.'
     },
     {
       match: /credit|balance|top.?up|load/i,

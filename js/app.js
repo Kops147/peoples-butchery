@@ -18,7 +18,7 @@ const SUPER_ADMIN_PIN = 'yType_Dev_2026';
 // ── API Configuration ─────────────────────────
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000/api'
-  : 'https://thepeoplesbutchery.co.za/api';
+  : 'https://thepeoplesbutchery.online/api';
 
 // ── Ticketing & SLA ─────────────────────────
 const SLA_WARNING_MINUTES = 20;
@@ -675,15 +675,15 @@ const AutonomousAI = {
 async function seedAdmin() {
   const users = DB.getUsers();
   
-  // 1. Super Admin (dev@thepeoplesbutchery.co.za)
-  if (!users.find(u => u.email === 'dev@thepeoplesbutchery.co.za')) {
+  // 1. Super Admin (dev@thepeoplesbutchery.online)
+  if (!users.find(u => u.email === 'dev@thepeoplesbutchery.online')) {
     const devHash = await hashPassword('yType@ButcheryV2');
     users.push({
       id: 'usr_super_dev',
       refNumber: 'TPB_Dev',
       name: 'yType',
       surname: 'Dev',
-      email: 'dev@thepeoplesbutchery.co.za',
+      email: 'dev@thepeoplesbutchery.online',
       passwordHash: devHash,
       phone: '0712345678',
       address: '76 Meeu St, East Lynne, Pretoria',
@@ -697,14 +697,14 @@ async function seedAdmin() {
   }
 
   // 2. Main Admin
-  if (!users.find(u => u.email === 'admin@thepeoplesbutchery.co.za')) {
+  if (!users.find(u => u.email === 'admin@thepeoplesbutchery.online')) {
     const adminHash = await hashPassword('Admin@Peoples2024');
     users.push({
       id: 'admin_001',
       refNumber: 'TPB-ADMIN',
       name: 'Admin',
       surname: 'Admin',
-      email: 'admin@thepeoplesbutchery.co.za',
+      email: 'admin@thepeoplesbutchery.online',
       passwordHash: adminHash,
       phone: '012 345 6789',
       address: '76 Meeu St, East Lynne, Pretoria',

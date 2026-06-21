@@ -4,15 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<meta property="og:title" content="The People's Butchery">
-<meta property="og:description" content="Order Online. We Deliver Pretoria To The People. Real Meat. Real Flavour.">
-<meta property="og:image" content="https://thepeoplesbutchery.online/images/social-preview.jpg">
-<meta property="og:url" content="https://thepeoplesbutchery.online">
-<meta property="og:type" content="website">
-
-<meta name="twitter:card" content="summary_large_image">
-  
   <script>if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(s=>s.unregister()));}</script>
   <title>The Peoples Butchery — Fresh Meat, Delivered to Your Door | East Lynne, Pretoria</title>
   <meta name="description"
@@ -234,34 +225,19 @@
       font-weight: 600;
     }
 
-    .map-embed {
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      border: 1px solid var(--border);
+    .map-placeholder {
       background: var(--bg-elevated);
-    }
-
-    .map-embed iframe {
-      width: 100%;
+      border-radius: var(--radius-lg);
       height: 220px;
-      border: 0;
-      display: block;
-    }
-
-    .map-embed-footer {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
+      flex-direction: column;
       gap: 12px;
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      border-top: 1px solid var(--border);
-    }
-
-    .map-embed-footer address {
-      font-style: normal;
-      line-height: 1.4;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-align: center;
     }
 
     .float-badge {
@@ -572,9 +548,9 @@
         <div>
           <div class="section-label" style="margin-bottom:20px">⏰ Trading Hours</div>
           <div class="hours-list">
-            <div class="hours-row"><span>Monday – Friday</span><span class="hours-open">07:00 – 19:00</span></div>
-            <div class="hours-row"><span>Saturday</span><span class="hours-open">06:00 – 18:00</span></div>
-            <div class="hours-row"><span>Sunday</span><span class="hours-open">08:00 – 15:00</span></div>
+            <div class="hours-row"><span>Monday – Friday</span><span class="hours-open">07:00 – 18:00</span></div>
+            <div class="hours-row"><span>Saturday</span><span class="hours-open">07:00 – 18:00</span></div>
+            <div class="hours-row"><span>Sunday</span><span class="hours-open">Closed – Closed</span></div>
             <div class="hours-row"><span>Public Holidays</span><span style="color:var(--warning)">08:00 – 14:00</span>
             </div>
           </div>
@@ -582,21 +558,16 @@
           <div class="footer-info">
             <div class="footer-info-item"><span>📍</span><span>76 Meeu St, East Lynne, Pretoria, 0186</span></div>
             <div class="footer-info-item"><span>📞</span><span>012 345 6789</span></div>
-            <div class="footer-info-item"><span>📧</span><span>orders@thepeoplesbutchery.co.za</span></div>
+            <div class="footer-info-item"><span>📧</span><span>sales@thepeoplesbutchery.online</span></div>
           </div>
         </div>
         <div>
-          <div class="map-embed">
-            <iframe
-              title="The Peoples Butchery — 76 Meeu St, East Lynne, Pretoria"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=28.328%2C-25.732%2C28.354%2C-25.712&amp;layer=mapnik&amp;marker=-25.7219%2C28.3412"
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"></iframe>
-            <div class="map-embed-footer">
-              <address>76 Meeu St, East Lynne<br>Pretoria, Gauteng, 0186</address>
-              <a href="https://www.google.com/maps/search/?api=1&amp;query=-25.7219,28.3412" target="_blank"
-                rel="noopener noreferrer" class="btn btn-outline btn-sm">Open in Maps →</a>
-            </div>
+          <div class="map-placeholder">
+            <div style="font-size:3rem">🗺️</div>
+            <div style="font-weight:600;color:var(--text-primary)">76 Meeu St, East Lynne</div>
+            <div>Pretoria, Gauteng, 0186</div>
+            <a href="https://www.google.com/maps/search/76+Meeu+St+East+Lynne+Pretoria" target="_blank"
+              class="btn btn-outline btn-sm mt-3">Open in Maps →</a>
           </div>
         </div>
       </div>
