@@ -17,7 +17,7 @@
     .auth-title { font-family: var(--font-head); font-weight: 800; font-size: 2rem; margin-bottom: 8px; }
     .auth-subtitle { color: var(--text-secondary); font-size: 0.9rem; }
     .form-error { color: var(--primary); font-size: 0.8rem; margin-top: 4px; }
-    #suburb-suggestions { display: none; position: absolute; z-index: 100; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); max-height: 200px; overflow-y: auto; width: 100%; }
+    .address-suggestions, #suburb-suggestions { display: none; position: absolute; z-index: 100; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); max-height: 200px; overflow-y: auto; width: 100%; }
     .delivery-suggestion-item { padding: 10px 14px; font-size: 0.88rem; color: var(--text-secondary); cursor: pointer; transition: background 0.2s; }
     .delivery-suggestion-item:hover { background: var(--bg-surface); color: var(--text-primary); }
     .map-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; }
@@ -174,9 +174,10 @@
           <label class="form-label" for="r-address">Delivery Address</label>
           <div class="input-group">
             <span class="input-icon">📍</span>
-            <input type="text" id="r-address" class="form-control" placeholder="Street name, house number" autocomplete="street-address" required>
+            <input type="text" id="r-address" class="form-control has-right" placeholder="e.g. 78 Jacaranda St" autocomplete="off" required>
             <span class="input-icon-right" id="reg-open-map-btn" title="Pick on map" style="cursor:pointer;font-size:1.1rem">🗺️</span>
           </div>
+          <div class="address-suggestions" id="address-suggestions"></div>
           <div class="form-error hidden" id="err-address"></div>
         </div>
 
@@ -323,11 +324,65 @@
           }
         });
       }
+
+      function setupAddressAutocomplete() {
+        const addrInput = document.getElementById('r-address');
+        const addrSuggestions = document.getElementById('address-suggestions');
+        const suburbInput = document.getElementById('r-suburb');
+        if (!addrInput || !addrSuggestions) return;
+
+        let timer;
+        addrInput.addEventListener('input', () => {
+          clearTimeout(timer);
+          const q = addrInput.value.trim();
+          if (q.length < 3) { addrSuggestions.style.display = 'none'; return; }
+          timer = setTimeout(async () => {
+            const suburb = suburbInput ? suburbInput.value.trim() : '';
+            const ctx = suburb ? q + ', ' + suburb + ', Pretoria' : q + ', Pretoria';
+            try {
+              const res = await fetch('https://photon.komoot.io/api/?q=' + encodeURIComponent(ctx) + '&lat=-25.708&lon=28.286&limit=6&lang=en&bbox=27.8,-25.9,28.7,-25.5');
+              const data = await res.json();
+              const features = (data.features || []).filter(function(f) {
+                var c = f.geometry.coordinates;
+                var p = f.properties || {};
+                if (p.type === 'postcode' || p.osm_value === 'postcode') return false;
+                if (p.type === 'municipality' || p.osm_value === 'municipality') return false;
+                return c[0] >= 27.8 && c[0] <= 28.7 && c[1] >= -25.9 && c[1] <= -25.5;
+              });
+              if (!features.length) { addrSuggestions.style.display = 'none'; return; }
+              addrSuggestions.innerHTML = features.map(function(f) {
+                var p = f.properties || {};
+                var label = p.housenumber ? p.housenumber + ' ' : '';
+                label += p.street || p.name || '';
+                var area = p.suburb || p.district || '';
+                if (area && label.toLowerCase().indexOf(area.toLowerCase()) === -1) label += ', ' + area;
+                return '<div class="delivery-suggestion-item" style="cursor:pointer" data-lat="' + f.geometry.coordinates[1] + '" data-lng="' + f.geometry.coordinates[0] + '">' + label + '</div>';
+              }).join('');
+              addrSuggestions.style.display = 'block';
+              addrSuggestions.querySelectorAll('.delivery-suggestion-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                  addrInput.value = this.textContent;
+                  addrSuggestions.style.display = 'none';
+                  pendingCoords = { lat: parseFloat(this.dataset.lat), lng: parseFloat(this.dataset.lng), suburb: suburb };
+                });
+              });
+            } catch(e) { addrSuggestions.style.display = 'none'; }
+          }, 500);
+        });
+
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('#r-address') && !e.target.closest('#address-suggestions')) {
+            document.getElementById('address-suggestions').style.display = 'none';
+          }
+        });
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cancel-map-btn')?.addEventListener('click', () => {
           document.getElementById('map-modal-overlay')?.classList.remove('open');
         });
         setupSuburbAutocomplete();
+        setupAddressAutocomplete();
       });
     })();
   </script>
@@ -443,7 +498,7 @@
         if (coords) pendingCoords = { ...coords, suburb };
       }
       if (fee === null && address) {
-        const coords = await geocodeAddress(address);
+        const coords = await geocodeAddress(address, suburb);
         if (coords) { pendingCoords = coords; fee = calcDeliveryFee(coords); }
       }
       const box = document.getElementById('delivery-estimate-box');
@@ -502,7 +557,7 @@
       if (!pendingCoords) {
         const coords = window.getSuburbCoords ? window.getSuburbCoords(suburb) : null;
         if (coords) { pendingCoords = { ...coords, suburb }; }
-        else { pendingCoords = await geocodeAddress(suburb || address); }
+        else { pendingCoords = await geocodeAddress(address, suburb); }
       }
       try {
         const { data, error } = await supabase.auth.signUp({ email, password });
