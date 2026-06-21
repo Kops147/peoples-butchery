@@ -329,7 +329,8 @@ function renderProducts() {
           : `<span class="badge badge-red">🥩 ${catLabel}</span>`;
 
         const qtyBased = isQtyBased(p);
-        const prodImage = p.image || p.image_url || 'assets/img/food/meat_on_braai.jpg';
+        const prodImage = p.image || p.image_url || '';
+        const prodEmoji = p.emoji || '';
 
         let cartControl;
         if (weighted) {
@@ -403,7 +404,7 @@ function renderProducts() {
 
         return `<div class="product-card" id="pc-${p.id}">
             <div class="product-img">
-              <img src="${prodImage}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
+              ${prodImage ? `<img src="${prodImage}" alt="${p.name}" loading="lazy" onerror="this.src='assets/img/food/meat_on_braai.jpg'">` : `<div class="product-emoji">${prodEmoji}</div>`}
               <div class="product-category-tag">${catBadge}</div>
             </div>
             <div class="product-info">

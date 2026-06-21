@@ -75,12 +75,13 @@ function renderProducts() {
   container.innerHTML = _products.map(p => {
     const isActive = p.is_active !== false;
     const price = parseFloat(p.price || 0);
-    const image = p.image_url || p.image || 'assets/img/food/meat_on_braai.jpg';
+    const adminImg = p.image_url || p.image || '';
+    const adminEmoji = p.emoji || '📦';
 
     return `
     <div class="product-admin-card mb-4" id="prod-admin-${p.id}">
-      <div class="product-admin-img">
-        <img src="${image}" alt="${p.name}" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
+      <div class="product-admin-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem">
+        ${adminImg ? `<img src="${adminImg}" alt="${p.name}" onerror="this.src='assets/img/food/meat_on_braai.jpg'" style="width:100%;height:100%;object-fit:cover">` : `<span>${adminEmoji}</span>`}
       </div>
       <div class="product-admin-info">
         <div style="font-family:var(--font-head);font-weight:700;font-size:1.1rem">${p.name}</div>

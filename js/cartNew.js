@@ -115,9 +115,11 @@ function renderCart() {
     const lineTotal = p.price * item.qty;
     const isWeight = /kg/i.test(p.unit || '');
 
+    const imgSrc = p.image || p.image_url || '';
+    const emoji = p.emoji || '';
     return `
       <div class="cart-item">
-        <img src="${p.image}" alt="${p.name}" class="cart-item-img" onerror="this.src='assets/img/food/meat_on_braai.jpg'">
+        ${imgSrc ? `<img src="${imgSrc}" alt="${p.name}" class="cart-item-img" onerror="this.src='assets/img/food/meat_on_braai.jpg'">` : `<div class="cart-item-emoji"><span>${emoji}</span></div>`}
         <div class="cart-item-info">
           <div class="cart-item-name">${p.name}</div>
           <div class="cart-item-meta">${item.qty} ${isWeight ? 'kg' : 'each'} × ${formatCurrency(p.price)}</div>

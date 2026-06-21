@@ -1399,6 +1399,27 @@ tbody tr:hover {
   transform: scale(1.07);
 }
 
+.product-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 4.5rem;
+  filter: grayscale(0.2);
+}
+
+.cart-item-emoji {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-radius: var(--radius);
+}
+
 .product-category-tag {
   position: absolute;
   top: 12px;
