@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Barcodes — The Peoples Butchery</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #fff; }
+    h1 { font-size: 1.2rem; margin-bottom: 4px; }
+    p { font-size: .8rem; color: #666; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .card { border: 1px dashed #ccc; border-radius: 8px; padding: 12px; text-align: center; page-break-inside: avoid; }
+    .card img { max-width: 100%; height: auto; }
+    .card .code { font-weight: 700; font-size: .85rem; margin-top: 4px; }
+    .card .name { font-size: .75rem; color: #333; }
+    .card .price { font-size: .8rem; color: #16a34a; font-weight: 700; margin-top: 2px; }
+    @media print {
+      body { padding: 10px; }
+      .card { border: 1px solid #ccc; }
+      .no-print { display: none; }
+    }
+    .no-print { margin-bottom: 16px; }
+    .no-print button { padding: 10px 20px; font-size: 1rem; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Barcodes — The Peoples Butchery</h1>
+  <p>Scan these with mobile-cashier.html to test. Cut along dashed lines.</p>
+  <div class="no-print">
+    <button onclick="window.print()">🖨️ Print This Sheet</button>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <img src="test_103.png" alt="103">
+      <div class="code">103</div>
+      <div class="name">1.25L COLD DRINKS</div>
+      <div class="price">R15.00</div>
+    </div>
+    <div class="card">
+      <img src="test_1206.png" alt="1206">
+      <div class="code">1206</div>
+      <div class="name">BOEREWORS</div>
+      <div class="price">R95.99</div>
+    </div>
+    <div class="card">
+      <img src="test_1125.png" alt="1125">
+      <div class="code">1125</div>
+      <div class="name">SHORT RIB</div>
+      <div class="price">R130.00</div>
+    </div>
+    <div class="card">
+      <img src="test_37.png" alt="37">
+      <div class="code">37</div>
+      <div class="name">LAMB TRIPE</div>
+      <div class="price">R30.00</div>
+    </div>
+    <div class="card">
+      <img src="test_1112.png" alt="1112">
+      <div class="code">1112</div>
+      <div class="name">CHILLI BITES</div>
+      <div class="price">R349.99</div>
+    </div>
+    <div class="card">
+      <img src="test_291.png" alt="291">
+      <div class="code">291</div>
+      <div class="name">LAMB CHOPS</div>
+      <div class="price">R140.00</div>
+    </div>
+    <div class="card">
+      <img src="test_130.png" alt="130">
+      <div class="code">130</div>
+      <div class="name">BLACK LENTILS</div>
+      <div class="price">R10.00</div>
+    </div>
+    <div class="card">
+      <img src="test_85.png" alt="85">
+      <div class="code">85</div>
+      <div class="name">CURRY CHILLIES SMALL</div>
+      <div class="price">R10.00</div>
+    </div>
+    <div class="card">
+      <img src="test_216.png" alt="216">
+      <div class="code">216</div>
+      <div class="name">SHORTBREAD BISCUITS</div>
+      <div class="price">R10.00</div>
+    </div>
+    <div class="card">
+      <img src="test_1126.png" alt="1126">
+      <div class="code">1126</div>
+      <div class="name">BEEF STEW</div>
+      <div class="price">R100.00</div>
+    </div>
+    <div class="card">
+      <img src="test_1.png" alt="1">
+      <div class="code">1</div>
+      <div class="name">COKE 1.5LT</div>
+      <div class="price">R23.00</div>
+    </div>
+    <div class="card">
+      <img src="test_137.png" alt="137">
+      <div class="code">137</div>
+      <div class="name">BULK MINCE</div>
+      <div class="price">R80.00</div>
+    </div>
+  </div>
+</body>
+</html>
